@@ -13,7 +13,7 @@ static int motor_limit_pwm(int pwm)
     return pwm;
 }
 
-void Set_PWM(int pwmL,int pwmR)
+void motor_set_pwm(int pwmL,int pwmR)
 {
     pwmL = motor_limit_pwm(pwmL);
     pwmR = motor_limit_pwm(pwmR);
@@ -22,24 +22,33 @@ void Set_PWM(int pwmL,int pwmR)
     {
         DL_GPIO_setPins(AIN_PORT, AIN_AIN1_PIN);
         DL_GPIO_clearPins(AIN_PORT, AIN_AIN2_PIN);
-		    DL_Timer_setCaptureCompareValue(PWM_INST,abs(pwmL),GPIO_PWM_C0_IDX);
+		DL_Timer_setCaptureCompareValue(PWM_INST,pwmL,GPIO_PWM_C0_IDX);
     }
-    else//back
+    else if(pwmL<0)//back
     {
         DL_GPIO_setPins(AIN_PORT,AIN_AIN2_PIN);
         DL_GPIO_clearPins(AIN_PORT,AIN_AIN1_PIN);
-		    DL_Timer_setCaptureCompareValue(PWM_INST,abs(pwmL),GPIO_PWM_C0_IDX);
+		DL_Timer_setCaptureCompareValue(PWM_INST,-pwmL,GPIO_PWM_C0_IDX);
     }
+    else 
+    {
+        DL_Timer_setCaptureCompareValue(PWM_INST,0,GPIO_PWM_C0_IDX);
+    }
+
     if(pwmR>0)
     {
 		    DL_GPIO_setPins(BIN_PORT,BIN_BIN1_PIN);
         DL_GPIO_clearPins(BIN_PORT,BIN_BIN2_PIN);
-        DL_Timer_setCaptureCompareValue(PWM_INST,abs(pwmR),GPIO_PWM_C1_IDX);
+        DL_Timer_setCaptureCompareValue(PWM_INST,pwmR,GPIO_PWM_C1_IDX);
     }
-    else
+    else if(pwmR<0)
     {
 		    DL_GPIO_setPins(BIN_PORT,BIN_BIN2_PIN);
         DL_GPIO_clearPins(BIN_PORT,BIN_BIN1_PIN);
-		    DL_Timer_setCaptureCompareValue(PWM_INST,abs(pwmR),GPIO_PWM_C1_IDX);
+		    DL_Timer_setCaptureCompareValue(PWM_INST,-pwmR,GPIO_PWM_C1_IDX);
+    }
+    else 
+    {
+        DL_Timer_setCaptureCompareValue(PWM_INST,0,GPIO_PWM_C1_IDX);
     }
 }

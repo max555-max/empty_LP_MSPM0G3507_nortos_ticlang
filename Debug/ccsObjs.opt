@@ -2,6 +2,8 @@
 "./ti_msp_dl_config.o"
 "./startup_mspm0g350x_ticlang.o"
 "./Src/delay.o"
+"./Src/motor.o"
+"./Src/vofa.o"
 -l"./device_linker.cmd"
 -ldevice.cmd.genlibs
 -llibc.a

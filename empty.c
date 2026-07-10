@@ -32,13 +32,17 @@
 
 #include "ti_msp_dl_config.h"
 #include "delay.h"
+#include "motor.h"
+#include "vofa.h"
 
 int main(void)
 {
     SYSCFG_DL_init();
 
     while (1) {
-        
+        // uart0_send_string("hello\r\n");
+        // delay_ms(1000);
+        // motor_set_pwm(1000, 1000);
     }
 }
 
