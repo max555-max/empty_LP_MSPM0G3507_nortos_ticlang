@@ -5,5 +5,6 @@
 
 void uart0_send_byte(uint8_t data);
 void uart0_send_string(char *str);
+void uart0_send_int(int32_t num);
 
 #endif

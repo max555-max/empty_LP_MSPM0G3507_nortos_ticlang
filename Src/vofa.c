@@ -72,7 +72,7 @@ void uart0_send_int(int32_t num)
 
     while(num > 0)
     {
-        buf[i++] = (num % 10) + '0';
+        buf[i++] = num % 10 + '0';
 
         num /= 10;
     }

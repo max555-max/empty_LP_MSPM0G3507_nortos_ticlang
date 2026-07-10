@@ -150,6 +150,28 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 /* Defines for BIN2: GPIOB.24 with pinCMx 52 on package pin 23 */
 #define BIN_BIN2_PIN                                            (DL_GPIO_PIN_24)
 #define BIN_BIN2_IOMUX                                           (IOMUX_PINCM52)
+/* Port definition for Pin Group ENCODER */
+#define ENCODER_PORT                                                     (GPIOA)
+
+/* Defines for E1A: GPIOA.14 with pinCMx 36 on package pin 7 */
+// pins affected by this interrupt request:["E1A","E1B","E2A","E2B"]
+#define ENCODER_INT_IRQN                                        (GPIOA_INT_IRQn)
+#define ENCODER_INT_IIDX                        (DL_INTERRUPT_GROUP1_IIDX_GPIOA)
+#define ENCODER_E1A_IIDX                                    (DL_GPIO_IIDX_DIO14)
+#define ENCODER_E1A_PIN                                         (DL_GPIO_PIN_14)
+#define ENCODER_E1A_IOMUX                                        (IOMUX_PINCM36)
+/* Defines for E1B: GPIOA.15 with pinCMx 37 on package pin 8 */
+#define ENCODER_E1B_IIDX                                    (DL_GPIO_IIDX_DIO15)
+#define ENCODER_E1B_PIN                                         (DL_GPIO_PIN_15)
+#define ENCODER_E1B_IOMUX                                        (IOMUX_PINCM37)
+/* Defines for E2A: GPIOA.16 with pinCMx 38 on package pin 9 */
+#define ENCODER_E2A_IIDX                                    (DL_GPIO_IIDX_DIO16)
+#define ENCODER_E2A_PIN                                         (DL_GPIO_PIN_16)
+#define ENCODER_E2A_IOMUX                                        (IOMUX_PINCM38)
+/* Defines for E2B: GPIOA.17 with pinCMx 39 on package pin 10 */
+#define ENCODER_E2B_IIDX                                    (DL_GPIO_IIDX_DIO17)
+#define ENCODER_E2B_PIN                                         (DL_GPIO_PIN_17)
+#define ENCODER_E2B_IOMUX                                        (IOMUX_PINCM39)
 
 
 
