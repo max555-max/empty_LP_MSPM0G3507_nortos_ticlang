@@ -28,7 +28,7 @@ void uart0_send_byte(uint8_t data)
 /**
  * @brief UART0发送字符串
  */
-void uart0_send_string(char *str)
+void uart0_send_string(const char *str)
 {
     while (*str)
     {
@@ -52,6 +52,7 @@ void uart0_send_string(char *str)
 void uart0_send_int(int32_t num)
 {
     char buf[12];
+    uint32_t value;
 
     int i = 0;
 
@@ -66,15 +67,19 @@ void uart0_send_int(int32_t num)
     if(num < 0)
     {
         uart0_send_byte('-');
-        num = -num;
+        value = (uint32_t)(-(num + 1)) + 1U;
+    }
+    else
+    {
+        value = (uint32_t)num;
     }
 
 
-    while(num > 0)
+    while(value > 0U)
     {
-        buf[i++] = num % 10 + '0';
+        buf[i++] = (char)(value % 10U + '0');
 
-        num /= 10;
+        value /= 10U;
     }
 
 
@@ -82,4 +87,35 @@ void uart0_send_int(int32_t num)
     {
         uart0_send_byte(buf[--i]);
     }
+}
+
+void vofa_send_two_int(int32_t ch0, int32_t ch1)
+{
+    uart0_send_string("samples:");
+    uart0_send_int(ch0);
+    uart0_send_byte(',');
+    uart0_send_int(ch1);
+    uart0_send_byte('\n');
+}
+
+void vofa_send_six_int(int32_t ch0,
+                       int32_t ch1,
+                       int32_t ch2,
+                       int32_t ch3,
+                       int32_t ch4,
+                       int32_t ch5)
+{
+    uart0_send_string("samples:");
+    uart0_send_int(ch0);
+    uart0_send_byte(',');
+    uart0_send_int(ch1);
+    uart0_send_byte(',');
+    uart0_send_int(ch2);
+    uart0_send_byte(',');
+    uart0_send_int(ch3);
+    uart0_send_byte(',');
+    uart0_send_int(ch4);
+    uart0_send_byte(',');
+    uart0_send_int(ch5);
+    uart0_send_byte('\n');
 }

@@ -4,6 +4,7 @@
 "./Src/delay.o"
 "./Src/encoder.o"
 "./Src/motor.o"
+"./Src/pid.o"
 "./Src/vofa.o"
 -l"./device_linker.cmd"
 -ldevice.cmd.genlibs

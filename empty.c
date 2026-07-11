@@ -32,32 +32,18 @@
 
 #include "ti_msp_dl_config.h"
 #include "delay.h"
-#include "motor.h"
 #include "encoder.h"
-#include "vofa.h"
+#include "motor.h"
+#include "pid.h"
 
 int main(void)
 {
     SYSCFG_DL_init();
     encoder_init();
-
+    speed_pid_init();
     while (1) {
-        int32_t leftCount;
-        int32_t rightCount;
-
-        leftCount = encoder_get_left_count();
-        rightCount = encoder_get_right_count();
-
-        uart0_send_string("L:");
-        uart0_send_int(leftCount);
-        uart0_send_string(" R:");
-        uart0_send_int(rightCount);
-        uart0_send_string("\r\n");
-
-        delay_ms(100);
-        // uart0_send_string("hello\r\n");
-        // delay_ms(1000);
-        // motor_set_pwm(1000, 1000);
+        speed_pid_control_update();
+        delay_ms(SPEED_PID_CONTROL_PERIOD_MS);
     }
 }
 
@@ -67,4 +53,5 @@ int main(void)
 void SysTick_Handler(void)
 {
     delay_tick();
+    encoder_tick_1ms();
 }
