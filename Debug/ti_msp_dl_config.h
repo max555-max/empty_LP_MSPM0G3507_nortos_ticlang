@@ -125,6 +125,25 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 
 
 
+/* Defines for SPI_ICM42688 */
+#define SPI_ICM42688_INST                                                  SPI1
+#define SPI_ICM42688_INST_IRQHandler                            SPI1_IRQHandler
+#define SPI_ICM42688_INST_INT_IRQN                                SPI1_INT_IRQn
+#define GPIO_SPI_ICM42688_PICO_PORT                                       GPIOB
+#define GPIO_SPI_ICM42688_PICO_PIN                                DL_GPIO_PIN_8
+#define GPIO_SPI_ICM42688_IOMUX_PICO                            (IOMUX_PINCM25)
+#define GPIO_SPI_ICM42688_IOMUX_PICO_FUNC            IOMUX_PINCM25_PF_SPI1_PICO
+#define GPIO_SPI_ICM42688_POCI_PORT                                       GPIOB
+#define GPIO_SPI_ICM42688_POCI_PIN                                DL_GPIO_PIN_7
+#define GPIO_SPI_ICM42688_IOMUX_POCI                            (IOMUX_PINCM24)
+#define GPIO_SPI_ICM42688_IOMUX_POCI_FUNC            IOMUX_PINCM24_PF_SPI1_POCI
+/* GPIO configuration for SPI_ICM42688 */
+#define GPIO_SPI_ICM42688_SCLK_PORT                                       GPIOB
+#define GPIO_SPI_ICM42688_SCLK_PIN                                DL_GPIO_PIN_9
+#define GPIO_SPI_ICM42688_IOMUX_SCLK                            (IOMUX_PINCM26)
+#define GPIO_SPI_ICM42688_IOMUX_SCLK_FUNC            IOMUX_PINCM26_PF_SPI1_SCLK
+
+
 
 /* Port definition for Pin Group LED */
 #define LED_PORT                                                         (GPIOB)
@@ -132,6 +151,12 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 /* Defines for LED1: GPIOB.22 with pinCMx 50 on package pin 21 */
 #define LED_LED1_PIN                                            (DL_GPIO_PIN_22)
 #define LED_LED1_IOMUX                                           (IOMUX_PINCM50)
+/* Port definition for Pin Group ICM42688_CS */
+#define ICM42688_CS_PORT                                                 (GPIOB)
+
+/* Defines for CS: GPIOB.6 with pinCMx 23 on package pin 58 */
+#define ICM42688_CS_CS_PIN                                       (DL_GPIO_PIN_6)
+#define ICM42688_CS_CS_IOMUX                                     (IOMUX_PINCM23)
 /* Port definition for Pin Group AIN */
 #define AIN_PORT                                                         (GPIOA)
 
@@ -172,6 +197,14 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 #define ENCODER_E2B_IIDX                                    (DL_GPIO_IIDX_DIO17)
 #define ENCODER_E2B_PIN                                         (DL_GPIO_PIN_17)
 #define ENCODER_E2B_IOMUX                                        (IOMUX_PINCM39)
+/* Defines for DAT: GPIOA.22 with pinCMx 47 on package pin 18 */
+#define GRAY_SERIAL_DAT_PORT                                             (GPIOA)
+#define GRAY_SERIAL_DAT_PIN                                     (DL_GPIO_PIN_22)
+#define GRAY_SERIAL_DAT_IOMUX                                    (IOMUX_PINCM47)
+/* Defines for CLK: GPIOB.20 with pinCMx 48 on package pin 19 */
+#define GRAY_SERIAL_CLK_PORT                                             (GPIOB)
+#define GRAY_SERIAL_CLK_PIN                                     (DL_GPIO_PIN_20)
+#define GRAY_SERIAL_CLK_IOMUX                                    (IOMUX_PINCM48)
 
 
 
@@ -186,6 +219,7 @@ void SYSCFG_DL_SYSCTL_init(void);
 bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 void SYSCFG_DL_PWM_init(void);
 void SYSCFG_DL_UART0_init(void);
+void SYSCFG_DL_SPI_ICM42688_init(void);
 
 void SYSCFG_DL_SYSTICK_init(void);
 

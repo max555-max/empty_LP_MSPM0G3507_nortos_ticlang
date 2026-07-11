@@ -115,6 +115,26 @@ void speed_pid_set_target(int32_t leftTargetMmS, int32_t rightTargetMmS)
     g_rightTargetMmS = rightTargetMmS;
 }
 
+void speed_pid_set_speed(int32_t leftSpeedMmS, int32_t rightSpeedMmS)
+{
+    speed_pid_set_target(leftSpeedMmS, rightSpeedMmS);
+}
+
+void speed_pid_set_left_speed(int32_t leftSpeedMmS)
+{
+    speed_pid_set_target(leftSpeedMmS, g_rightTargetMmS);
+}
+
+void speed_pid_set_right_speed(int32_t rightSpeedMmS)
+{
+    speed_pid_set_target(g_leftTargetMmS, rightSpeedMmS);
+}
+
+void speed_pid_stop(void)
+{
+    speed_pid_set_target(0, 0);
+}
+
 void speed_pid_set_left_gains(int32_t kp, int32_t ki, int32_t kd)
 {
     g_leftSpeedPid.kp = kp;

@@ -31,19 +31,30 @@
  */
 
 #include "ti_msp_dl_config.h"
+#include "attitude.h"
 #include "delay.h"
-#include "encoder.h"
+#include "icm42688.h"
 #include "motor.h"
-#include "pid.h"
+
+#define ATTITUDE_UPDATE_PERIOD_MS  (10U)
+#define ATTITUDE_UPDATE_DT_S       (0.01f)
 
 int main(void)
 {
+    icm42688_raw_t imuRaw;
+    attitude_euler_t euler;
+
     SYSCFG_DL_init();
-    encoder_init();
-    speed_pid_init();
+    motor_set_pwm(0, 0);
+    (void) icm42688_init();
+    attitude_init();
+
     while (1) {
-        speed_pid_control_update();
-        delay_ms(SPEED_PID_CONTROL_PERIOD_MS);
+        icm42688_read_raw(&imuRaw);
+        (void) attitude_update_from_icm42688(&imuRaw, ATTITUDE_UPDATE_DT_S);
+        attitude_get_euler(&euler);
+        attitude_print_euler(&euler);
+        delay_ms(ATTITUDE_UPDATE_PERIOD_MS);
     }
 }
 
@@ -53,5 +64,4 @@ int main(void)
 void SysTick_Handler(void)
 {
     delay_tick();
-    encoder_tick_1ms();
 }

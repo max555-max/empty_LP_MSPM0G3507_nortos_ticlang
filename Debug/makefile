@@ -13,10 +13,14 @@ ORDERED_OBJS += \
 "./empty.o" \
 "./ti_msp_dl_config.o" \
 "./startup_mspm0g350x_ticlang.o" \
+"./Src/attitude.o" \
 "./Src/delay.o" \
 "./Src/encoder.o" \
+"./Src/gray_serial.o" \
+"./Src/icm42688.o" \
 "./Src/motor.o" \
 "./Src/pid.o" \
+"./Src/uart_cmd.o" \
 "./Src/vofa.o" \
 $(GEN_CMDS__FLAG) \
 -Wl,-ldevice.cmd.genlibs \
@@ -143,8 +147,8 @@ empty_LP_MSPM0G3507_nortos_ticlang.out: $(OBJS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(GEN_MISC_FILES__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "Src\delay.o" "Src\encoder.o" "Src\motor.o" "Src\pid.o" "Src\vofa.o" 
-	-$(RM) "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "Src\delay.d" "Src\encoder.d" "Src\motor.d" "Src\pid.d" "Src\vofa.d" 
+	-$(RM) "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "Src\attitude.o" "Src\delay.o" "Src\encoder.o" "Src\gray_serial.o" "Src\icm42688.o" "Src\motor.o" "Src\pid.o" "Src\uart_cmd.o" "Src\vofa.o" 
+	-$(RM) "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "Src\attitude.d" "Src\delay.d" "Src\encoder.d" "Src\gray_serial.d" "Src\icm42688.d" "Src\motor.d" "Src\pid.d" "Src\uart_cmd.d" "Src\vofa.d" 
 	-@echo ' '
 
 .PHONY: all clean dependents

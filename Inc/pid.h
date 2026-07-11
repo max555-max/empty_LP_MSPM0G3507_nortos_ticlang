@@ -28,14 +28,14 @@ typedef struct {
  * Fixed-point gains scaled by PID_GAIN_SCALE.
  * Example: 2500 means 2.500.
  */
-#define SPEED_PID_LEFT_KP               (2000)
-#define SPEED_PID_LEFT_KI               (80)
+#define SPEED_PID_LEFT_KP               (2200)
+#define SPEED_PID_LEFT_KI               (110)
 #define SPEED_PID_LEFT_KD               (0)
 #define SPEED_PID_LEFT_INTEGRAL_LIMIT   (20000)
 #define SPEED_PID_LEFT_MIN_START_PWM    (500)
 
-#define SPEED_PID_RIGHT_KP              (1500)
-#define SPEED_PID_RIGHT_KI              (0)
+#define SPEED_PID_RIGHT_KP              (2800)
+#define SPEED_PID_RIGHT_KI              (110)
 #define SPEED_PID_RIGHT_KD              (0)
 #define SPEED_PID_RIGHT_INTEGRAL_LIMIT  (20000)
 #define SPEED_PID_RIGHT_MIN_START_PWM   (500)
@@ -50,7 +50,17 @@ void pid_reset(pid_t *pid);
 int32_t pid_calculate(pid_t *pid, int32_t target, int32_t feedback);
 
 void speed_pid_init(void);
+
+/*
+ * Speed target APIs for upper-level motion control, such as line tracking.
+ * Unit: mm/s. Positive and negative values represent opposite wheel direction.
+ */
 void speed_pid_set_target(int32_t leftTargetMmS, int32_t rightTargetMmS);
+void speed_pid_set_speed(int32_t leftSpeedMmS, int32_t rightSpeedMmS);
+void speed_pid_set_left_speed(int32_t leftSpeedMmS);
+void speed_pid_set_right_speed(int32_t rightSpeedMmS);
+void speed_pid_stop(void);
+
 void speed_pid_set_left_gains(int32_t kp, int32_t ki, int32_t kd);
 void speed_pid_set_right_gains(int32_t kp, int32_t ki, int32_t kd);
 void speed_pid_set_left_integral_limit(int32_t integralLimit);

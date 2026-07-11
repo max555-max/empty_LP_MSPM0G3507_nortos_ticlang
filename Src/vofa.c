@@ -89,6 +89,36 @@ void uart0_send_int(int32_t num)
     }
 }
 
+void uart0_send_float(float num, uint8_t decimals)
+{
+    int32_t integerPart;
+    float fractionPart;
+
+    if (num < 0.0f) {
+        uart0_send_byte('-');
+        num = -num;
+    }
+
+    integerPart = (int32_t) num;
+    fractionPart = num - (float) integerPart;
+
+    uart0_send_int(integerPart);
+
+    if (decimals == 0U) {
+        return;
+    }
+
+    uart0_send_byte('.');
+    for (uint8_t i = 0U; i < decimals; i++) {
+        uint8_t digit;
+
+        fractionPart *= 10.0f;
+        digit = (uint8_t) fractionPart;
+        uart0_send_byte((uint8_t) ('0' + digit));
+        fractionPart -= (float) digit;
+    }
+}
+
 void vofa_send_two_int(int32_t ch0, int32_t ch1)
 {
     uart0_send_string("samples:");
