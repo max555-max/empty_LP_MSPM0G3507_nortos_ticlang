@@ -11,6 +11,7 @@ C_SRCS += \
 ../Src/encoder.c \
 ../Src/gray_serial.c \
 ../Src/icm42688.c \
+../Src/line_track.c \
 ../Src/motor.c \
 ../Src/pid.c \
 ../Src/uart_cmd.c \
@@ -22,6 +23,7 @@ C_DEPS += \
 ./Src/encoder.d \
 ./Src/gray_serial.d \
 ./Src/icm42688.d \
+./Src/line_track.d \
 ./Src/motor.d \
 ./Src/pid.d \
 ./Src/uart_cmd.d \
@@ -33,6 +35,7 @@ OBJS += \
 ./Src/encoder.o \
 ./Src/gray_serial.o \
 ./Src/icm42688.o \
+./Src/line_track.o \
 ./Src/motor.o \
 ./Src/pid.o \
 ./Src/uart_cmd.o \
@@ -44,6 +47,7 @@ OBJS__QUOTED += \
 "Src\encoder.o" \
 "Src\gray_serial.o" \
 "Src\icm42688.o" \
+"Src\line_track.o" \
 "Src\motor.o" \
 "Src\pid.o" \
 "Src\uart_cmd.o" \
@@ -55,6 +59,7 @@ C_DEPS__QUOTED += \
 "Src\encoder.d" \
 "Src\gray_serial.d" \
 "Src\icm42688.d" \
+"Src\line_track.d" \
 "Src\motor.d" \
 "Src\pid.d" \
 "Src\uart_cmd.d" \
@@ -66,6 +71,7 @@ C_SRCS__QUOTED += \
 "../Src/encoder.c" \
 "../Src/gray_serial.c" \
 "../Src/icm42688.c" \
+"../Src/line_track.c" \
 "../Src/motor.c" \
 "../Src/pid.c" \
 "../Src/uart_cmd.c" \

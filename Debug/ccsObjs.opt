@@ -6,6 +6,7 @@
 "./Src/encoder.o"
 "./Src/gray_serial.o"
 "./Src/icm42688.o"
+"./Src/line_track.o"
 "./Src/motor.o"
 "./Src/pid.o"
 "./Src/uart_cmd.o"

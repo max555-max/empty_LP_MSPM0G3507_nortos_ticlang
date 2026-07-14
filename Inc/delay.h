@@ -6,5 +6,6 @@
 
 void delay_ms(uint32_t ms);
 void delay_tick(void);
+uint32_t delay_get_ms(void);
 
 #endif
