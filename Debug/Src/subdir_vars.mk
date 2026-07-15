@@ -14,6 +14,7 @@ C_SRCS += \
 ../Src/line_track.c \
 ../Src/motor.c \
 ../Src/pid.c \
+../Src/square_track.c \
 ../Src/uart_cmd.c \
 ../Src/vofa.c 
 
@@ -26,6 +27,7 @@ C_DEPS += \
 ./Src/line_track.d \
 ./Src/motor.d \
 ./Src/pid.d \
+./Src/square_track.d \
 ./Src/uart_cmd.d \
 ./Src/vofa.d 
 
@@ -38,6 +40,7 @@ OBJS += \
 ./Src/line_track.o \
 ./Src/motor.o \
 ./Src/pid.o \
+./Src/square_track.o \
 ./Src/uart_cmd.o \
 ./Src/vofa.o 
 
@@ -50,6 +53,7 @@ OBJS__QUOTED += \
 "Src\line_track.o" \
 "Src\motor.o" \
 "Src\pid.o" \
+"Src\square_track.o" \
 "Src\uart_cmd.o" \
 "Src\vofa.o" 
 
@@ -62,6 +66,7 @@ C_DEPS__QUOTED += \
 "Src\line_track.d" \
 "Src\motor.d" \
 "Src\pid.d" \
+"Src\square_track.d" \
 "Src\uart_cmd.d" \
 "Src\vofa.d" 
 
@@ -74,6 +79,7 @@ C_SRCS__QUOTED += \
 "../Src/line_track.c" \
 "../Src/motor.c" \
 "../Src/pid.c" \
+"../Src/square_track.c" \
 "../Src/uart_cmd.c" \
 "../Src/vofa.c" 
 
