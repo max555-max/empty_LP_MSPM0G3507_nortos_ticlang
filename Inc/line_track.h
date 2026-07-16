@@ -25,7 +25,7 @@ typedef struct {
 #define LINE_TRACK_ACTIVE_LEVEL          (1U)
 #define LINE_TRACK_BASE_SPEED_MM_S       (300)
 #define LINE_TRACK_TURN_KP               (250)
-#define LINE_TRACK_TURN_KD               (80)
+#define LINE_TRACK_TURN_KD               (120)
 #define LINE_TRACK_MAX_CORRECTION_MM_S   (280)
 #define LINE_TRACK_LOST_SEARCH_SPEED_MM_S (180)
 

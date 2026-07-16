@@ -10,6 +10,11 @@ static int32_t WEIFEN = 0;
 static bool g_hasPreviousError = false;
 static int32_t g_previousError = 0;
 
+#define LINE_TRACK_P_TERM_LIMIT_MM_S \
+    ((LINE_TRACK_MAX_CORRECTION_MM_S * 3) / 4)
+#define LINE_TRACK_D_TERM_LIMIT_MM_S \
+    (LINE_TRACK_MAX_CORRECTION_MM_S - LINE_TRACK_P_TERM_LIMIT_MM_S)
+
 static int32_t line_track_limit(int32_t value, int32_t limit)//输出限幅
 {
     if (value > limit) {
@@ -95,7 +100,8 @@ void line_track_update(void)
     int32_t rightTarget;
 
     if (lineDetected) {
-        int64_t pdOutput;
+        int32_t pTerm;
+        int32_t dTerm;
 
         /*
          * 第一次识线或丢线后重新识线时，
@@ -112,12 +118,13 @@ void line_track_update(void)
         g_previousError = error;
         g_lastError = error;
 
-        pdOutput =
-            (int64_t)error * LINE_TRACK_TURN_KP +
-            (int64_t)WEIFEN * LINE_TRACK_TURN_KD;
+        pTerm = (int32_t) (((int64_t) error * LINE_TRACK_TURN_KP) / 1000);
+        dTerm = (int32_t) (((int64_t) WEIFEN * LINE_TRACK_TURN_KD) / 1000);
 
-        correction = (int32_t)(pdOutput / 1000);
+        pTerm = line_track_limit(pTerm, LINE_TRACK_P_TERM_LIMIT_MM_S);
+        dTerm = line_track_limit(dTerm, LINE_TRACK_D_TERM_LIMIT_MM_S);
 
+        correction = pTerm + dTerm;
         correction = line_track_limit(
             correction,
             LINE_TRACK_MAX_CORRECTION_MM_S);
