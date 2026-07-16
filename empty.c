@@ -33,24 +33,14 @@
 #include "ti_msp_dl_config.h"
 #include "delay.h"
 #include "encoder.h"
-#include "gray_serial.h"
-#include "line_track.h"
-#include "pid.h"
-
-#define LINE_TRACK_CONTROL_PERIOD_MS  (10U)
+#include "square_track.h"
 
 int main(void)
 {
     SYSCFG_DL_init();
-    encoder_init();
-    gray_serial_init();
-    speed_pid_init();
-    line_track_init();
+    square_track_run();
 
     while (1) {
-        line_track_update();
-        speed_pid_control_update();
-        delay_ms(LINE_TRACK_CONTROL_PERIOD_MS);
     }
 }
 
