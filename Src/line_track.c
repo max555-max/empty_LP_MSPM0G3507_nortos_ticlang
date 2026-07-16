@@ -6,8 +6,11 @@
 static line_track_status_t g_lineTrackStatus;
 static int32_t g_baseSpeedMmS = LINE_TRACK_BASE_SPEED_MM_S;
 static int32_t g_lastError = 0;
+static int32_t WEIFEN = 0;
+static bool g_hasPreviousError = false;
+static int32_t g_previousError = 0;
 
-static int32_t line_track_limit(int32_t value, int32_t limit)
+static int32_t line_track_limit(int32_t value, int32_t limit)//输出限幅
 {
     if (value > limit) {
         return limit;
@@ -67,8 +70,13 @@ void line_track_init(void)
     g_lineTrackStatus.correction = 0;
     g_lineTrackStatus.leftTargetMmS = 0;
     g_lineTrackStatus.rightTargetMmS = 0;
+
     g_baseSpeedMmS = LINE_TRACK_BASE_SPEED_MM_S;
+
     g_lastError = 0;
+    g_previousError = 0;
+    WEIFEN = 0;
+    g_hasPreviousError = false;
 }
 
 void line_track_set_base_speed(int32_t baseSpeedMmS)
@@ -80,29 +88,52 @@ void line_track_update(void)
 {
     uint8_t raw = gray_serial_read();
     bool lineDetected;
+
     int32_t error = line_track_calculate_error(raw, &lineDetected);
     int32_t correction;
     int32_t leftTarget;
     int32_t rightTarget;
 
     if (lineDetected) {
-        g_lastError = error;
-        correction = (error * LINE_TRACK_TURN_KP) / 1000;
-        correction =
-            line_track_limit(correction, LINE_TRACK_MAX_CORRECTION_MM_S);
+        int64_t pdOutput;
 
         /*
-         * error < 0 表示线偏左：左轮减速，右轮加速，向左修正。
-         * error > 0 表示线偏右：左轮加速，右轮减速，向右修正。
+         * 第一次识线或丢线后重新识线时，
+         * 不计算微分项，避免微分冲击。
          */
+        if (g_hasPreviousError) {
+            WEIFEN = error - g_previousError;
+            WEIFEN = line_track_limit(WEIFEN, 1600);
+        } else {
+            WEIFEN = 0;
+            g_hasPreviousError = true;
+        }
+
+        g_previousError = error;
+        g_lastError = error;
+
+        pdOutput =
+            (int64_t)error * LINE_TRACK_TURN_KP +
+            (int64_t)WEIFEN * LINE_TRACK_TURN_KD;
+
+        correction = (int32_t)(pdOutput / 1000);
+
+        correction = line_track_limit(
+            correction,
+            LINE_TRACK_MAX_CORRECTION_MM_S);
+
         leftTarget = g_baseSpeedMmS + correction;
         rightTarget = g_baseSpeedMmS - correction;
     } else {
         correction = 0;
 
         /*
-         * 丢线后按最后一次偏差方向原地/小半径搜索。
+         * 丢线后清除微分历史。
+         * 下一次重新识线时，第一次 D 项为 0。
          */
+        WEIFEN = 0;
+        g_hasPreviousError = false;
+
         if (g_lastError < 0) {
             leftTarget = -LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
             rightTarget = LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
