@@ -9,6 +9,7 @@
 "./Src/line_track.o"
 "./Src/motor.o"
 "./Src/pid.o"
+"./Src/square_track.o"
 "./Src/uart_cmd.o"
 "./Src/vofa.o"
 -l"./device_linker.cmd"

@@ -23,8 +23,8 @@ typedef struct {
  * 如果实测小车反着找线，优先改这个宏。
  */
 #define LINE_TRACK_ACTIVE_LEVEL          (1U)
-#define LINE_TRACK_BASE_SPEED_MM_S       (400)
-#define LINE_TRACK_TURN_KP               (120)
+#define LINE_TRACK_BASE_SPEED_MM_S       (300)
+#define LINE_TRACK_TURN_KP               (200)
 #define LINE_TRACK_MAX_CORRECTION_MM_S   (350)
 #define LINE_TRACK_LOST_SEARCH_SPEED_MM_S (180)
 

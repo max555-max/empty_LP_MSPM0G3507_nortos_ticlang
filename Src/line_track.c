@@ -37,7 +37,7 @@ static int32_t line_track_calculate_error(uint8_t raw, bool *lineDetected)
         1U, 2U, 3U, 4U, 5U, 6U, 7U, 0U
     };
     static const int16_t channelWeight[8] = {
-        -3500, -2500, -1500, -500, 500, 1500, 2500, 3500
+        4250, 3036, 1821, 607, -607, -1821, -3036, -4250
     };
 
     int32_t weightedSum = 0;
