@@ -32,24 +32,28 @@
 
 #include "ti_msp_dl_config.h"
 #include "delay.h"
+#include "angle_control.h"
 #include "attitude.h"
+#include "encoder.h"
 #include "icm42688.h"
-#include "vofa.h"
+#include "pid.h"
 
-#define IMU_DEBUG_PERIOD_MS           (10U)
+#define ANGLE_CONTROL_PERIOD_MS       (10U)
+#define STRAIGHT_BASE_SPEED_MM_S      (300)
 #define IMU_GYRO_CALIB_SAMPLE_COUNT   (1000U)
-#define IMU_GYRO_DPS_PER_LSB          (2000.0f / 32768.0f)
 
 int main(void)
 {
     icm42688_raw_t raw;
-    attitude_euler_t euler;
     bool imuOk;
     uint32_t lastUpdateMs;
     uint32_t nowMs;
     float dt;
 
     SYSCFG_DL_init();
+    encoder_init();
+    speed_pid_init();
+    angle_control_init();
     attitude_init();
     imuOk = icm42688_init();
 
@@ -61,6 +65,18 @@ int main(void)
          */
         delay_ms(200U);
         attitude_calibrate_gyro(IMU_GYRO_CALIB_SAMPLE_COUNT);
+
+        /*
+         * ICM42688 and attitude zero point are ready now.
+         * Wait 1s before giving the car speed, then lock current yaw as the
+         * straight-line heading target.
+         */
+        delay_ms(1000U);
+        angle_control_set_base_speed(STRAIGHT_BASE_SPEED_MM_S);
+        angle_control_lock_current_yaw();
+        angle_control_enable(true);
+    } else {
+        speed_pid_stop();
     }
 
     lastUpdateMs = delay_get_ms();
@@ -73,34 +89,13 @@ int main(void)
 
         if (imuOk) {
             attitude_update_from_icm42688(&raw, dt);
-            attitude_get_euler(&euler);
-
-            /*
-             * FireWater:
-             * ch0 roll, ch1 pitch, ch2 yaw,
-             * ch3 gyroX dps, ch4 gyroY dps, ch5 gyroZ dps.
-             */
-            vofa_send_six_float(euler.roll,
-                                euler.pitch,
-                                euler.yaw,
-                                (float) raw.gyroX * IMU_GYRO_DPS_PER_LSB,
-                                (float) raw.gyroY * IMU_GYRO_DPS_PER_LSB,
-                                (float) raw.gyroZ * IMU_GYRO_DPS_PER_LSB,
-                                2U);
+            angle_control_update(dt);
         } else {
-            /*
-             * If communication fails, ch5 shows WHO_AM_I for diagnosis.
-             */
-            vofa_send_six_float(0.0f,
-                                0.0f,
-                                0.0f,
-                                0.0f,
-                                0.0f,
-                                (float) raw.whoAmI,
-                                2U);
+            speed_pid_stop();
         }
 
-        delay_ms(IMU_DEBUG_PERIOD_MS);
+        speed_pid_control_update();
+        delay_ms(ANGLE_CONTROL_PERIOD_MS);
     }
 }
 
@@ -110,4 +105,5 @@ int main(void)
 void SysTick_Handler(void)
 {
     delay_tick();
+    encoder_tick_1ms();
 }

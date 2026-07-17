@@ -27,7 +27,7 @@
 #define ATTITUDE_DT_MIN_S                  (0.001f)
 #define ATTITUDE_DT_MAX_S                  (0.050f)
 #define ATTITUDE_GYRO_DEADBAND_DPS         (0.15f)
-#define ATTITUDE_YAW_DEADBAND_DPS          (0.30f)
+#define ATTITUDE_YAW_DEADBAND_DPS          (0.20f)
 #define ATTITUDE_STATIONARY_GYRO_DPS       (0.80f)
 #define ATTITUDE_GYRO_BIAS_LEARN_ALPHA     (0.002f)
 #define ATTITUDE_PITCH_LIMIT_DEG           (89.0f)
