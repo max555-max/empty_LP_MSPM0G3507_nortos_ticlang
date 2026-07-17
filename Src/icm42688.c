@@ -31,6 +31,17 @@ bool icm42688_init(void)
     uint8_t who = 0U;
     bool detected = false;
 
+    /*
+     * Debug-friendly SPI speed:
+     * 80MHz / ((199 + 1) * 2) = 200kHz.
+     * Slow down first to make wiring and signal-integrity issues easier to
+     * diagnose. It can be raised again after WHO_AM_I is stable.
+     */
+    DL_SPI_disable(SPI_ICM42688_INST);
+    DL_SPI_setFrameFormat(SPI_ICM42688_INST, DL_SPI_FRAME_FORMAT_MOTO3_POL0_PHA1);
+    DL_SPI_setBitRateSerialClockDivider(SPI_ICM42688_INST, 199U);
+    DL_SPI_enable(SPI_ICM42688_INST);
+
     icm42688_cs_high();
     delay_cycles(CPUCLK_FREQ / 50U);
 
@@ -52,7 +63,7 @@ bool icm42688_init(void)
     icm42688_write_reg(ICM42688_ACCEL_CONFIG0, ICM42688_ACCEL_16G_1KHZ);
     icm42688_write_reg(ICM42688_GYRO_CONFIG0, ICM42688_GYRO_2000_1KHZ);
     icm42688_write_reg(ICM42688_PWR_MGMT0, ICM42688_ACCEL_GYRO_LN);
-    delay_cycles(CPUCLK_FREQ / 100U);
+    delay_cycles(CPUCLK_FREQ / 10U);
 
     return detected;
 }

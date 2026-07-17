@@ -32,25 +32,75 @@
 
 #include "ti_msp_dl_config.h"
 #include "delay.h"
-#include "encoder.h"
-#include "gray_serial.h"
-#include "line_track.h"
-#include "pid.h"
+#include "attitude.h"
+#include "icm42688.h"
+#include "vofa.h"
 
-#define LINE_TRACK_CONTROL_PERIOD_MS  (10U)
+#define IMU_DEBUG_PERIOD_MS           (10U)
+#define IMU_GYRO_CALIB_SAMPLE_COUNT   (1000U)
+#define IMU_GYRO_DPS_PER_LSB          (2000.0f / 32768.0f)
 
 int main(void)
 {
+    icm42688_raw_t raw;
+    attitude_euler_t euler;
+    bool imuOk;
+    uint32_t lastUpdateMs;
+    uint32_t nowMs;
+    float dt;
+
     SYSCFG_DL_init();
-    encoder_init();
-    gray_serial_init();
-    speed_pid_init();
-    line_track_init();
+    attitude_init();
+    imuOk = icm42688_init();
+
+    if (imuOk) {
+        /*
+         * Keep the board still during calibration.
+         * Wait for the sensor output to settle first.
+         * 1000 samples * 2ms = about 2s.
+         */
+        delay_ms(200U);
+        attitude_calibrate_gyro(IMU_GYRO_CALIB_SAMPLE_COUNT);
+    }
+
+    lastUpdateMs = delay_get_ms();
 
     while (1) {
-        line_track_update();
-        speed_pid_control_update();
-        delay_ms(LINE_TRACK_CONTROL_PERIOD_MS);
+        icm42688_read_raw(&raw);
+        nowMs = delay_get_ms();
+        dt = (float) (nowMs - lastUpdateMs) / 1000.0f;
+        lastUpdateMs = nowMs;
+
+        if (imuOk) {
+            attitude_update_from_icm42688(&raw, dt);
+            attitude_get_euler(&euler);
+
+            /*
+             * FireWater:
+             * ch0 roll, ch1 pitch, ch2 yaw,
+             * ch3 gyroX dps, ch4 gyroY dps, ch5 gyroZ dps.
+             */
+            vofa_send_six_float(euler.roll,
+                                euler.pitch,
+                                euler.yaw,
+                                (float) raw.gyroX * IMU_GYRO_DPS_PER_LSB,
+                                (float) raw.gyroY * IMU_GYRO_DPS_PER_LSB,
+                                (float) raw.gyroZ * IMU_GYRO_DPS_PER_LSB,
+                                2U);
+        } else {
+            /*
+             * If communication fails, ch5 shows WHO_AM_I for diagnosis.
+             */
+            vofa_send_six_float(0.0f,
+                                0.0f,
+                                0.0f,
+                                0.0f,
+                                0.0f,
+                                (float) raw.whoAmI,
+                                2U);
+        }
+
+        delay_ms(IMU_DEBUG_PERIOD_MS);
     }
 }
 
@@ -60,5 +110,4 @@ int main(void)
 void SysTick_Handler(void)
 {
     delay_tick();
-    encoder_tick_1ms();
 }

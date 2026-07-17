@@ -14,5 +14,12 @@ void vofa_send_six_int(int32_t ch0,
                        int32_t ch3,
                        int32_t ch4,
                        int32_t ch5);
+void vofa_send_six_float(float ch0,
+                         float ch1,
+                         float ch2,
+                         float ch3,
+                         float ch4,
+                         float ch5,
+                         uint8_t decimals);
 
 #endif

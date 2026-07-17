@@ -149,3 +149,26 @@ void vofa_send_six_int(int32_t ch0,
     uart0_send_int(ch5);
     uart0_send_byte('\n');
 }
+
+void vofa_send_six_float(float ch0,
+                         float ch1,
+                         float ch2,
+                         float ch3,
+                         float ch4,
+                         float ch5,
+                         uint8_t decimals)
+{
+    uart0_send_string("samples:");
+    uart0_send_float(ch0, decimals);
+    uart0_send_byte(',');
+    uart0_send_float(ch1, decimals);
+    uart0_send_byte(',');
+    uart0_send_float(ch2, decimals);
+    uart0_send_byte(',');
+    uart0_send_float(ch3, decimals);
+    uart0_send_byte(',');
+    uart0_send_float(ch4, decimals);
+    uart0_send_byte(',');
+    uart0_send_float(ch5, decimals);
+    uart0_send_byte('\n');
+}
