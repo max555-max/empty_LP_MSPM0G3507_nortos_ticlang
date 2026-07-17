@@ -32,70 +32,15 @@
 
 #include "ti_msp_dl_config.h"
 #include "delay.h"
-#include "angle_control.h"
-#include "attitude.h"
 #include "encoder.h"
-#include "icm42688.h"
-#include "pid.h"
-
-#define ANGLE_CONTROL_PERIOD_MS       (10U)
-#define STRAIGHT_BASE_SPEED_MM_S      (300)
-#define IMU_GYRO_CALIB_SAMPLE_COUNT   (1000U)
+#include "task2_abcd.h"
 
 int main(void)
 {
-    icm42688_raw_t raw;
-    bool imuOk;
-    uint32_t lastUpdateMs;
-    uint32_t nowMs;
-    float dt;
-
     SYSCFG_DL_init();
-    encoder_init();
-    speed_pid_init();
-    angle_control_init();
-    attitude_init();
-    imuOk = icm42688_init();
-
-    if (imuOk) {
-        /*
-         * Keep the board still during calibration.
-         * Wait for the sensor output to settle first.
-         * 1000 samples * 2ms = about 2s.
-         */
-        delay_ms(200U);
-        attitude_calibrate_gyro(IMU_GYRO_CALIB_SAMPLE_COUNT);
-
-        /*
-         * ICM42688 and attitude zero point are ready now.
-         * Wait 1s before giving the car speed, then lock current yaw as the
-         * straight-line heading target.
-         */
-        delay_ms(1000U);
-        angle_control_set_base_speed(STRAIGHT_BASE_SPEED_MM_S);
-        angle_control_lock_current_yaw();
-        angle_control_enable(true);
-    } else {
-        speed_pid_stop();
-    }
-
-    lastUpdateMs = delay_get_ms();
+    task2_abcd_run();
 
     while (1) {
-        icm42688_read_raw(&raw);
-        nowMs = delay_get_ms();
-        dt = (float) (nowMs - lastUpdateMs) / 1000.0f;
-        lastUpdateMs = nowMs;
-
-        if (imuOk) {
-            attitude_update_from_icm42688(&raw, dt);
-            angle_control_update(dt);
-        } else {
-            speed_pid_stop();
-        }
-
-        speed_pid_control_update();
-        delay_ms(ANGLE_CONTROL_PERIOD_MS);
     }
 }
 

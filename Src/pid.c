@@ -133,6 +133,11 @@ void speed_pid_set_right_speed(int32_t rightSpeedMmS)
 void speed_pid_stop(void)
 {
     speed_pid_set_target(0, 0);
+    pid_reset(&g_leftSpeedPid);
+    pid_reset(&g_rightSpeedPid);
+    g_leftPwm = 0;
+    g_rightPwm = 0;
+    motor_set_pwm(0, 0);
 }
 
 void speed_pid_set_left_gains(int32_t kp, int32_t ki, int32_t kd)
@@ -168,6 +173,29 @@ void speed_pid_control_update(void)
 {
     int32_t leftSpeed = encoder_get_left_speed_mm_s();
     int32_t rightSpeed = encoder_get_right_speed_mm_s();
+
+    /*
+     * When the upper-level controller asks both wheels to stop, really stop.
+     *
+     * Otherwise, if the car is still rolling a little, target=0 and
+     * feedback!=0 would make the PID calculate a reverse/braking PWM. On this
+     * chassis that can look like "still slowly moving at the stop point".
+     */
+    if ((g_leftTargetMmS == 0) && (g_rightTargetMmS == 0)) {
+        pid_reset(&g_leftSpeedPid);
+        pid_reset(&g_rightSpeedPid);
+        g_leftPwm = 0;
+        g_rightPwm = 0;
+        motor_set_pwm(0, 0);
+
+        vofa_send_six_int(g_leftTargetMmS,
+                          leftSpeed,
+                          g_leftPwm,
+                          g_rightTargetMmS,
+                          rightSpeed,
+                          g_rightPwm);
+        return;
+    }
 
     g_leftPwm = pid_calculate(&g_leftSpeedPid, g_leftTargetMmS, leftSpeed);
     g_rightPwm = pid_calculate(&g_rightSpeedPid, g_rightTargetMmS, rightSpeed);

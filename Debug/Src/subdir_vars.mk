@@ -8,6 +8,7 @@ SHELL = cmd.exe
 C_SRCS += \
 ../Src/angle_control.c \
 ../Src/attitude.c \
+../Src/board_notify.c \
 ../Src/delay.c \
 ../Src/encoder.c \
 ../Src/gray_serial.c \
@@ -16,12 +17,15 @@ C_SRCS += \
 ../Src/motor.c \
 ../Src/pid.c \
 ../Src/square_track.c \
+../Src/task1_ab.c \
+../Src/task2_abcd.c \
 ../Src/uart_cmd.c \
 ../Src/vofa.c 
 
 C_DEPS += \
 ./Src/angle_control.d \
 ./Src/attitude.d \
+./Src/board_notify.d \
 ./Src/delay.d \
 ./Src/encoder.d \
 ./Src/gray_serial.d \
@@ -30,12 +34,15 @@ C_DEPS += \
 ./Src/motor.d \
 ./Src/pid.d \
 ./Src/square_track.d \
+./Src/task1_ab.d \
+./Src/task2_abcd.d \
 ./Src/uart_cmd.d \
 ./Src/vofa.d 
 
 OBJS += \
 ./Src/angle_control.o \
 ./Src/attitude.o \
+./Src/board_notify.o \
 ./Src/delay.o \
 ./Src/encoder.o \
 ./Src/gray_serial.o \
@@ -44,12 +51,15 @@ OBJS += \
 ./Src/motor.o \
 ./Src/pid.o \
 ./Src/square_track.o \
+./Src/task1_ab.o \
+./Src/task2_abcd.o \
 ./Src/uart_cmd.o \
 ./Src/vofa.o 
 
 OBJS__QUOTED += \
 "Src\angle_control.o" \
 "Src\attitude.o" \
+"Src\board_notify.o" \
 "Src\delay.o" \
 "Src\encoder.o" \
 "Src\gray_serial.o" \
@@ -58,12 +68,15 @@ OBJS__QUOTED += \
 "Src\motor.o" \
 "Src\pid.o" \
 "Src\square_track.o" \
+"Src\task1_ab.o" \
+"Src\task2_abcd.o" \
 "Src\uart_cmd.o" \
 "Src\vofa.o" 
 
 C_DEPS__QUOTED += \
 "Src\angle_control.d" \
 "Src\attitude.d" \
+"Src\board_notify.d" \
 "Src\delay.d" \
 "Src\encoder.d" \
 "Src\gray_serial.d" \
@@ -72,12 +85,15 @@ C_DEPS__QUOTED += \
 "Src\motor.d" \
 "Src\pid.d" \
 "Src\square_track.d" \
+"Src\task1_ab.d" \
+"Src\task2_abcd.d" \
 "Src\uart_cmd.d" \
 "Src\vofa.d" 
 
 C_SRCS__QUOTED += \
 "../Src/angle_control.c" \
 "../Src/attitude.c" \
+"../Src/board_notify.c" \
 "../Src/delay.c" \
 "../Src/encoder.c" \
 "../Src/gray_serial.c" \
@@ -86,6 +102,8 @@ C_SRCS__QUOTED += \
 "../Src/motor.c" \
 "../Src/pid.c" \
 "../Src/square_track.c" \
+"../Src/task1_ab.c" \
+"../Src/task2_abcd.c" \
 "../Src/uart_cmd.c" \
 "../Src/vofa.c" 
 

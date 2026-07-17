@@ -157,6 +157,12 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 /* Defines for CS: GPIOB.6 with pinCMx 23 on package pin 58 */
 #define ICM42688_CS_CS_PIN                                       (DL_GPIO_PIN_6)
 #define ICM42688_CS_CS_IOMUX                                     (IOMUX_PINCM23)
+/* Port definition for Pin Group BUZZER */
+#define BUZZER_PORT                                                      (GPIOB)
+
+/* Defines for BZ: GPIOB.5 with pinCMx 18 on package pin 53 */
+#define BUZZER_BZ_PIN                                            (DL_GPIO_PIN_5)
+#define BUZZER_BZ_IOMUX                                          (IOMUX_PINCM18)
 /* Port definition for Pin Group AIN */
 #define AIN_PORT                                                         (GPIOA)
 
