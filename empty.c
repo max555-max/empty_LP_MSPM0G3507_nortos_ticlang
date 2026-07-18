@@ -33,12 +33,12 @@
 #include "ti_msp_dl_config.h"
 #include "delay.h"
 #include "encoder.h"
-#include "task2_abcd.h"
+#include "task3_acbd.h"
 
 int main(void)
 {
     SYSCFG_DL_init();
-    task2_abcd_run();
+    task3_acbd_run();
 
     while (1) {
     }

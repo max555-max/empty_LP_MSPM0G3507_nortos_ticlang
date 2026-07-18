@@ -32,6 +32,8 @@ typedef struct {
 void line_track_init(void);
 void line_track_set_base_speed(int32_t baseSpeedMmS);
 void line_track_update(void);
+void line_track_update_with_raw(uint8_t raw);
+void line_track_update_with_raw_search_on_lost(uint8_t raw);
 void line_track_get_status(line_track_status_t *status);
 
 #endif

@@ -19,6 +19,7 @@ C_SRCS += \
 ../Src/square_track.c \
 ../Src/task1_ab.c \
 ../Src/task2_abcd.c \
+../Src/task3_acbd.c \
 ../Src/uart_cmd.c \
 ../Src/vofa.c 
 
@@ -36,6 +37,7 @@ C_DEPS += \
 ./Src/square_track.d \
 ./Src/task1_ab.d \
 ./Src/task2_abcd.d \
+./Src/task3_acbd.d \
 ./Src/uart_cmd.d \
 ./Src/vofa.d 
 
@@ -53,6 +55,7 @@ OBJS += \
 ./Src/square_track.o \
 ./Src/task1_ab.o \
 ./Src/task2_abcd.o \
+./Src/task3_acbd.o \
 ./Src/uart_cmd.o \
 ./Src/vofa.o 
 
@@ -70,6 +73,7 @@ OBJS__QUOTED += \
 "Src\square_track.o" \
 "Src\task1_ab.o" \
 "Src\task2_abcd.o" \
+"Src\task3_acbd.o" \
 "Src\uart_cmd.o" \
 "Src\vofa.o" 
 
@@ -87,6 +91,7 @@ C_DEPS__QUOTED += \
 "Src\square_track.d" \
 "Src\task1_ab.d" \
 "Src\task2_abcd.d" \
+"Src\task3_acbd.d" \
 "Src\uart_cmd.d" \
 "Src\vofa.d" 
 
@@ -104,6 +109,7 @@ C_SRCS__QUOTED += \
 "../Src/square_track.c" \
 "../Src/task1_ab.c" \
 "../Src/task2_abcd.c" \
+"../Src/task3_acbd.c" \
 "../Src/uart_cmd.c" \
 "../Src/vofa.c" 
 

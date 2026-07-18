@@ -15,6 +15,8 @@ static int32_t g_previousError = 0;
 #define LINE_TRACK_D_TERM_LIMIT_MM_S \
     (LINE_TRACK_MAX_CORRECTION_MM_S - LINE_TRACK_P_TERM_LIMIT_MM_S)
 
+static void line_track_update_with_raw_impl(uint8_t raw, bool stopOnLost);
+
 static int32_t line_track_limit(int32_t value, int32_t limit)//输出限幅
 {
     if (value > limit) {
@@ -92,6 +94,12 @@ void line_track_set_base_speed(int32_t baseSpeedMmS)
 void line_track_update(void)
 {
     uint8_t raw = gray_serial_read();
+
+    line_track_update_with_raw_search_on_lost(raw);
+}
+
+static void line_track_update_with_raw_impl(uint8_t raw, bool stopOnLost)
+{
     bool lineDetected;
 
     int32_t error = line_track_calculate_error(raw, &lineDetected);
@@ -141,7 +149,10 @@ void line_track_update(void)
         WEIFEN = 0;
         g_hasPreviousError = false;
 
-        if (g_lastError < 0) {
+        if (stopOnLost) {
+            leftTarget = 0;
+            rightTarget = 0;
+        } else if (g_lastError < 0) {
             leftTarget = -LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
             rightTarget = LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
         } else if (g_lastError > 0) {
@@ -161,6 +172,16 @@ void line_track_update(void)
     g_lineTrackStatus.correction = correction;
     g_lineTrackStatus.leftTargetMmS = leftTarget;
     g_lineTrackStatus.rightTargetMmS = rightTarget;
+}
+
+void line_track_update_with_raw(uint8_t raw)
+{
+    line_track_update_with_raw_impl(raw, true);
+}
+
+void line_track_update_with_raw_search_on_lost(uint8_t raw)
+{
+    line_track_update_with_raw_impl(raw, false);
 }
 
 void line_track_get_status(line_track_status_t *status)
