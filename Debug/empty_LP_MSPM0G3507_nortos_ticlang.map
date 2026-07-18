@@ -1,7 +1,7 @@
 ******************************************************************************
             TI ARM Clang Linker PC v4.0.4                      
 ******************************************************************************
->> Linked Fri Jul 17 15:31:07 2026
+>> Linked Sat Jul 18 10:28:39 2026
 
 OUTPUT FILE NAME:   <empty_LP_MSPM0G3507_nortos_ticlang.out>
 ENTRY POINT SYMBOL: "_c_int00_noargs"  address: 000052cd
