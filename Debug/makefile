@@ -13,6 +13,26 @@ ORDERED_OBJS += \
 "./empty.o" \
 "./ti_msp_dl_config.o" \
 "./startup_mspm0g350x_ticlang.o" \
+"../Debug - 副本/Src/angle_control.o" \
+"../Debug - 副本/Src/attitude.o" \
+"../Debug - 副本/Src/board_notify.o" \
+"../Debug - 副本/Src/delay.o" \
+"../Debug - 副本/Src/encoder.o" \
+"../Debug - 副本/Src/gray_serial.o" \
+"../Debug - 副本/Src/icm42688.o" \
+"../Debug - 副本/Src/line_track.o" \
+"../Debug - 副本/Src/motor.o" \
+"../Debug - 副本/Src/pid.o" \
+"../Debug - 副本/Src/square_track.o" \
+"../Debug - 副本/Src/task1_ab.o" \
+"../Debug - 副本/Src/task2_abcd.o" \
+"../Debug - 副本/Src/task3_acbd.o" \
+"../Debug - 副本/Src/uart_cmd.o" \
+"../Debug - 副本/Src/vofa.o" \
+"../Debug - 副本/empty.o" \
+"../Debug - 副本/startup_mspm0g350x_ticlang.o" \
+"./Debug - 副本/ti_msp_dl_config.o" \
+"../Debug - 副本/ti_msp_dl_config.o" \
 "./Src/angle_control.o" \
 "./Src/attitude.o" \
 "./Src/board_notify.o" \
@@ -29,6 +49,7 @@ ORDERED_OBJS += \
 "./Src/task3_acbd.o" \
 "./Src/uart_cmd.o" \
 "./Src/vofa.o" \
+"../Debug - 副本/device_linker.cmd" \
 $(GEN_CMDS__FLAG) \
 -Wl,-ldevice.cmd.genlibs \
 -Wl,-llibc.a \
@@ -41,8 +62,12 @@ RMDIR := RMDIR /S/Q
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include subdir_vars.mk
+-include Debug\ -\ 副本/Src/subdir_vars.mk
+-include Debug\ -\ 副本/subdir_vars.mk
 -include Src/subdir_vars.mk
 -include subdir_rules.mk
+-include Debug\ -\ 副本/Src/subdir_rules.mk
+-include Debug\ -\ 副本/subdir_rules.mk
 -include Src/subdir_rules.mk
 -include objects.mk
 
@@ -134,28 +159,28 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXE_OUTPUTS += \
-empty_LP_MSPM0G3507_nortos_ticlang.out 
+C07A.out 
 
 EXE_OUTPUTS__QUOTED += \
-"empty_LP_MSPM0G3507_nortos_ticlang.out" 
+"C07A.out" 
 
 
 # All Target
-all: $(OBJS) $(GEN_CMDS)
-	@$(MAKE) --no-print-directory -Onone "empty_LP_MSPM0G3507_nortos_ticlang.out"
+all: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
+	@$(MAKE) --no-print-directory -Onone "C07A.out"
 
 # Tool invocations
-empty_LP_MSPM0G3507_nortos_ticlang.out: $(OBJS) $(GEN_CMDS)
+C07A.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Arm Linker - building target: "$@"'
-	"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/bin/tiarmclang.exe" @"device.opt"  -march=thumbv6m -mcpu=cortex-m0plus -mfloat-abi=soft -mlittle-endian -mthumb -O2 -gdwarf-3 -Wl,-m"empty_LP_MSPM0G3507_nortos_ticlang.map" -Wl,-i"C:/TI/mspm0_sdk_2_10_00_04/source" -Wl,-i"C:/Users/gaofu/workspace_ccstheia/empty_LP_MSPM0G3507_nortos_ticlang" -Wl,-i"C:/Users/gaofu/workspace_ccstheia/empty_LP_MSPM0G3507_nortos_ticlang/Debug/syscfg" -Wl,-i"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib" -Wl,--diag_wrap=off -Wl,--display_error_number -Wl,--warn_sections -Wl,--xml_link_info="empty_LP_MSPM0G3507_nortos_ticlang_linkInfo.xml" -Wl,--rom_model -o "empty_LP_MSPM0G3507_nortos_ticlang.out" $(ORDERED_OBJS)
+	"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/bin/tiarmclang.exe" @"device.opt"  -march=thumbv6m -mcpu=cortex-m0plus -mfloat-abi=soft -mlittle-endian -mthumb -O2 -gdwarf-3 -Wl,-m"C07A.map" -Wl,-i"C:/TI/mspm0_sdk_2_10_00_04/source" -Wl,-i"C:/Users/gaofu/workspace_ccstheia/C07A" -Wl,-i"C:/Users/gaofu/workspace_ccstheia/C07A/Debug/syscfg" -Wl,-i"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib" -Wl,--diag_wrap=off -Wl,--display_error_number -Wl,--warn_sections -Wl,--xml_link_info="C07A_linkInfo.xml" -Wl,--rom_model -o "C07A.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: "$@"'
 	@echo ' '
 
 # Other Targets
 clean:
 	-$(RM) $(GEN_MISC_FILES__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "Src\angle_control.o" "Src\attitude.o" "Src\board_notify.o" "Src\delay.o" "Src\encoder.o" "Src\gray_serial.o" "Src\icm42688.o" "Src\line_track.o" "Src\motor.o" "Src\pid.o" "Src\square_track.o" "Src\task1_ab.o" "Src\task2_abcd.o" "Src\task3_acbd.o" "Src\uart_cmd.o" "Src\vofa.o" 
-	-$(RM) "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "Src\angle_control.d" "Src\attitude.d" "Src\board_notify.d" "Src\delay.d" "Src\encoder.d" "Src\gray_serial.d" "Src\icm42688.d" "Src\line_track.d" "Src\motor.d" "Src\pid.d" "Src\square_track.d" "Src\task1_ab.d" "Src\task2_abcd.d" "Src\task3_acbd.d" "Src\uart_cmd.d" "Src\vofa.d" 
+	-$(RM) "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "Debug - 副本\ti_msp_dl_config.o" "Src\angle_control.o" "Src\attitude.o" "Src\board_notify.o" "Src\delay.o" "Src\encoder.o" "Src\gray_serial.o" "Src\icm42688.o" "Src\line_track.o" "Src\motor.o" "Src\pid.o" "Src\square_track.o" "Src\task1_ab.o" "Src\task2_abcd.o" "Src\task3_acbd.o" "Src\uart_cmd.o" "Src\vofa.o" 
+	-$(RM) "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "Debug - 副本\ti_msp_dl_config.d" "Src\angle_control.d" "Src\attitude.d" "Src\board_notify.d" "Src\delay.d" "Src\encoder.d" "Src\gray_serial.d" "Src\icm42688.d" "Src\line_track.d" "Src\motor.d" "Src\pid.d" "Src\square_track.d" "Src\task1_ab.d" "Src\task2_abcd.d" "Src\task3_acbd.d" "Src\uart_cmd.d" "Src\vofa.d" 
 	-@echo ' '
 
 .PHONY: all clean dependents

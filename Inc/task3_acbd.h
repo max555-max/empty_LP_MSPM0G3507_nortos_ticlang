@@ -2,13 +2,16 @@
 #define __TASK3_ACBD_H_
 
 /*
- * Task 3:
- *   A -> C: gyro heading loop + encoder distance, diagonal straight segment.
- *   C -> B: gray sensor line tracking on the right semicircle.
- *   B -> D: gyro heading loop + encoder distance, diagonal straight segment.
- *   D -> A: gray sensor line tracking on the left semicircle, stop after line lost.
+ * 第三问任务入口
  *
- * main() only needs to call task3_acbd_run().
+ * 当前采用的策略：
+ *   上电前手动把小车从 A 点对准 C 点；
+ *   A -> C：锁定初始 yaw，编码器定距直行；
+ *   C -> B：八路灰度循迹右半圆；
+ *   B -> D：转向对准 D 后，编码器定距直行；
+ *   D -> A：八路灰度循迹左半圆，到 A 后丢线停车。
+ *
+ * main() 中只需要调用 task3_acbd_run()。
  */
 void task3_acbd_run(void);
 

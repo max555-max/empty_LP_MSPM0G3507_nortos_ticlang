@@ -5,39 +5,47 @@
 #include "gray_serial.h"
 #include "pid.h"
 
+/*
+ * square_track.c
+ *
+ * 早期正方形循迹方案。
+ *
+ * 状态机：
+ *   TRACKING             ：正常 PD 循迹；
+ *   FORWARD_AFTER_CORNER ：检测到直角弯后继续直行 70mm；
+ *   TURN_LEFT            ：左转，直到中间两个通道重新检测到黑线。
+ */
+
 #define SQUARE_TRACK_CONTROL_PERIOD_MS          (10U)
 
 /*
- * Set to 1 if the gray sensor outputs high level on black line.
- * Set to 0 if the gray sensor outputs low level on black line.
+ * 灰度有效电平：
+ *   1：黑线时输出高电平；
+ *   0：黑线时输出低电平。
  */
 #define SQUARE_TRACK_ACTIVE_LEVEL               (1U)
 
 /*
- * Normal line tracking parameters.
+ * 正常循迹参数。
  *
- * Sensor layout:
+ * 传感器布局：
  *   ch1 ch2 ch3 ch4 ch5 ch6 ch7 ch8
- *    L                       center                       R
+ *    左                       中间                         右
  *
- * Error definition:
- *   center = 0
- *   left   = positive
- *   right  = negative
+ * 偏差定义：
+ *   中间 = 0；
+ *   左侧 = 正；
+ *   右侧 = 负。
  *
- * PID output definition:
- *   correction > 0 means turn left:
- *       left wheel target  = base - correction
- *       right wheel target = base + correction
+ * 输出定义：
+ *   correction > 0 表示向左修正。
  */
 #define SQUARE_TRACK_BASE_SPEED_MM_S            (400)
 #define SQUARE_TRACK_LINE_KP                    (100)
 #define SQUARE_TRACK_MAX_CORRECTION_MM_S        (350)
 #define SQUARE_TRACK_LOST_SEARCH_SPEED_MM_S     (160)
 
-/*
- * Right-angle corner handling parameters.
- */
+/* 直角弯处理参数。 */
 #define SQUARE_TRACK_FORWARD_DISTANCE_MM        (70)
 #define SQUARE_TRACK_TURN_RIGHT_WHEEL_MM_S      (280)
 #define SQUARE_TRACK_CORNER_DEBOUNCE_COUNT      (3U)

@@ -41,7 +41,6 @@
 #include "ti_msp_dl_config.h"
 
 DL_TimerG_backupConfig gPWMBackup;
-DL_SPI_backupConfig gSPI_ICM42688Backup;
 
 /*
  *  ======== SYSCFG_DL_init ========
@@ -55,12 +54,10 @@ SYSCONFIG_WEAK void SYSCFG_DL_init(void)
     SYSCFG_DL_SYSCTL_init();
     SYSCFG_DL_PWM_init();
     SYSCFG_DL_UART0_init();
-    SYSCFG_DL_SPI_ICM42688_init();
     SYSCFG_DL_SYSTICK_init();
     /* Ensure backup structures have no valid state */
 	gPWMBackup.backupRdy 	= false;
 
-	gSPI_ICM42688Backup.backupRdy 	= false;
 
 }
 /*
@@ -72,7 +69,6 @@ SYSCONFIG_WEAK bool SYSCFG_DL_saveConfiguration(void)
     bool retStatus = true;
 
 	retStatus &= DL_TimerG_saveConfiguration(PWM_INST, &gPWMBackup);
-	retStatus &= DL_SPI_saveConfiguration(SPI_ICM42688_INST, &gSPI_ICM42688Backup);
 
     return retStatus;
 }
@@ -83,7 +79,6 @@ SYSCONFIG_WEAK bool SYSCFG_DL_restoreConfiguration(void)
     bool retStatus = true;
 
 	retStatus &= DL_TimerG_restoreConfiguration(PWM_INST, &gPWMBackup, false);
-	retStatus &= DL_SPI_restoreConfiguration(SPI_ICM42688_INST, &gSPI_ICM42688Backup);
 
     return retStatus;
 }
@@ -94,14 +89,12 @@ SYSCONFIG_WEAK void SYSCFG_DL_initPower(void)
     DL_GPIO_reset(GPIOB);
     DL_TimerG_reset(PWM_INST);
     DL_UART_Main_reset(UART0_INST);
-    DL_SPI_reset(SPI_ICM42688_INST);
 
 
     DL_GPIO_enablePower(GPIOA);
     DL_GPIO_enablePower(GPIOB);
     DL_TimerG_enablePower(PWM_INST);
     DL_UART_Main_enablePower(UART0_INST);
-    DL_SPI_enablePower(SPI_ICM42688_INST);
 
     delay_cycles(POWER_STARTUP_DELAY);
 }
@@ -119,18 +112,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
     DL_GPIO_initPeripheralInputFunction(
         GPIO_UART0_IOMUX_RX, GPIO_UART0_IOMUX_RX_FUNC);
 
-    DL_GPIO_initPeripheralOutputFunction(
-        GPIO_SPI_ICM42688_IOMUX_SCLK, GPIO_SPI_ICM42688_IOMUX_SCLK_FUNC);
-    DL_GPIO_initPeripheralOutputFunction(
-        GPIO_SPI_ICM42688_IOMUX_PICO, GPIO_SPI_ICM42688_IOMUX_PICO_FUNC);
-    DL_GPIO_initPeripheralInputFunction(
-        GPIO_SPI_ICM42688_IOMUX_POCI, GPIO_SPI_ICM42688_IOMUX_POCI_FUNC);
-
     DL_GPIO_initDigitalOutput(LED_LED1_IOMUX);
-
-    DL_GPIO_initDigitalOutput(ICM42688_CS_CS_IOMUX);
-
-    DL_GPIO_initDigitalOutput(BUZZER_BZ_IOMUX);
 
     DL_GPIO_initDigitalOutput(AIN_AIN1_IOMUX);
 
@@ -166,10 +148,10 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 		AIN_AIN2_PIN);
     DL_GPIO_enableOutput(GPIOA, AIN_AIN1_PIN |
 		AIN_AIN2_PIN);
-    DL_GPIO_setLowerPinsPolarity(GPIOA, DL_GPIO_PIN_14_EDGE_RISE_FALL |
-		DL_GPIO_PIN_15_EDGE_RISE_FALL);
-    DL_GPIO_setUpperPinsPolarity(GPIOA, DL_GPIO_PIN_16_EDGE_RISE_FALL |
-		DL_GPIO_PIN_17_EDGE_RISE_FALL);
+    DL_GPIO_setLowerPinsPolarity(GPIOA, DL_GPIO_PIN_13_EDGE_RISE_FALL |
+		DL_GPIO_PIN_14_EDGE_RISE_FALL);
+    DL_GPIO_setUpperPinsPolarity(GPIOA, DL_GPIO_PIN_17_EDGE_RISE_FALL |
+		DL_GPIO_PIN_16_EDGE_RISE_FALL);
     DL_GPIO_clearInterruptStatus(GPIOA, ENCODER_E1A_PIN |
 		ENCODER_E1B_PIN |
 		ENCODER_E2A_PIN |
@@ -179,14 +161,10 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 		ENCODER_E2A_PIN |
 		ENCODER_E2B_PIN);
     DL_GPIO_setPins(GPIOB, LED_LED1_PIN |
-		ICM42688_CS_CS_PIN |
-		BUZZER_BZ_PIN |
 		BIN_BIN1_PIN |
 		BIN_BIN2_PIN |
 		GRAY_SERIAL_CLK_PIN);
     DL_GPIO_enableOutput(GPIOB, LED_LED1_PIN |
-		ICM42688_CS_CS_PIN |
-		BUZZER_BZ_PIN |
 		BIN_BIN1_PIN |
 		BIN_BIN2_PIN |
 		GRAY_SERIAL_CLK_PIN);
@@ -387,38 +365,6 @@ SYSCONFIG_WEAK void SYSCFG_DL_UART0_init(void)
 
 
     DL_UART_Main_enable(UART0_INST);
-}
-
-static const DL_SPI_Config gSPI_ICM42688_config = {
-    .mode        = DL_SPI_MODE_CONTROLLER,
-    .frameFormat = DL_SPI_FRAME_FORMAT_MOTO3_POL0_PHA0,
-    .parity      = DL_SPI_PARITY_NONE,
-    .dataSize    = DL_SPI_DATA_SIZE_8,
-    .bitOrder    = DL_SPI_BIT_ORDER_MSB_FIRST,
-};
-
-static const DL_SPI_ClockConfig gSPI_ICM42688_clockConfig = {
-    .clockSel    = DL_SPI_CLOCK_BUSCLK,
-    .divideRatio = DL_SPI_CLOCK_DIVIDE_RATIO_1
-};
-
-SYSCONFIG_WEAK void SYSCFG_DL_SPI_ICM42688_init(void) {
-    DL_SPI_setClockConfig(SPI_ICM42688_INST, (DL_SPI_ClockConfig *) &gSPI_ICM42688_clockConfig);
-
-    DL_SPI_init(SPI_ICM42688_INST, (DL_SPI_Config *) &gSPI_ICM42688_config);
-
-    /* Configure Controller mode */
-    /*
-     * Set the bit rate clock divider to generate the serial output clock
-     *     outputBitRate = (spiInputClock) / ((1 + SCR) * 2)
-     *     1000000 = (80000000)/((1 + 39) * 2)
-     */
-    DL_SPI_setBitRateSerialClockDivider(SPI_ICM42688_INST, 39);
-    /* Set RX and TX FIFO threshold levels */
-    DL_SPI_setFIFOThreshold(SPI_ICM42688_INST, DL_SPI_RX_FIFO_LEVEL_1_2_FULL, DL_SPI_TX_FIFO_LEVEL_1_2_EMPTY);
-
-    /* Enable module */
-    DL_SPI_enable(SPI_ICM42688_INST);
 }
 
 SYSCONFIG_WEAK void SYSCFG_DL_SYSTICK_init(void)

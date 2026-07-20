@@ -2,13 +2,15 @@
 #define __TASK2_ABCD_H_
 
 /*
- * Task 2:
- *   A -> B: drive straight by encoder distance + gyro heading hold
- *   B -> C: follow the right semicircle black line
- *   C -> D: drive straight by encoder distance + gyro heading hold
- *   D -> A: follow the left semicircle black line
+ * 第二问任务入口
  *
- * main() only needs to call task2_abcd_run().
+ * 路线：
+ *   A -> B：编码器定距直行 + 陀螺仪角度保持；
+ *   B -> C：八路灰度循迹右半圆；
+ *   C -> D：编码器定距直行 + 陀螺仪角度保持；
+ *   D -> A：八路灰度循迹左半圆，到 A 后丢线停车。
+ *
+ * main() 中只需要调用 task2_abcd_run()。
  */
 void task2_abcd_run(void);
 

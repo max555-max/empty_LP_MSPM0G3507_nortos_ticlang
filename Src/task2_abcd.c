@@ -13,6 +13,21 @@
 #include "line_track.h"
 #include "pid.h"
 
+/*
+ * task2_abcd.c
+ *
+ * 第二问完整路线任务。
+ *
+ * 核心思想：
+ *   直线段用“编码器定距 + 陀螺仪角度环”；
+ *   半圆段用“八路灰度循迹”；
+ *   每经过一个点用蜂鸣器/LED 提示。
+ *
+ * 注意：
+ *   本文件中的 TASK2_NO_LINE_LEVEL 只用于“是否完全丢线”的判断；
+ *   line_track.h 中的 LINE_TRACK_ACTIVE_LEVEL 用于“哪个通道检测到黑线”。
+ */
+
 #define TASK2_CONTROL_PERIOD_MS             (10U)
 
 /*
@@ -22,22 +37,22 @@
  *   C -> D：先用陀螺仪把方向拉到与出发方向平行但反向，再直行到 D。
  *   D -> A：八路灰度循迹左半圆，连续丢线后停车。
  */
-#define TASK2_STRAIGHT_DISTANCE_MM          (1000)
+#define TASK2_STRAIGHT_DISTANCE_MM          (800)
 #define TASK2_STRAIGHT_LINE_ENABLE_MM       \
     ((TASK2_STRAIGHT_DISTANCE_MM * 65) / 100)
 #define TASK2_STRAIGHT_MAX_DISTANCE_MM      \
     (TASK2_STRAIGHT_DISTANCE_MM + 150)
 
 #define TASK2_STRAIGHT_LOW_SPEED_MM_S       (350)
-#define TASK2_STRAIGHT_HIGH_SPEED_MM_S      (700)
-#define TASK2_STRAIGHT_START_LOW_MM         (50)
+#define TASK2_STRAIGHT_HIGH_SPEED_MM_S      (350)
+#define TASK2_STRAIGHT_START_LOW_MM         (100)
 #define TASK2_STRAIGHT_END_LOW_MM           (120)
 
 #define TASK2_ARC_EXPECT_DISTANCE_MM        (1260)
 #define TASK2_ARC_LOW_SPEED_MM_S            (300)
-#define TASK2_ARC_HIGH_SPEED_MM_S           (420)
-#define TASK2_ARC_START_LOW_MM              (50)
-#define TASK2_ARC_END_LOW_MM                (50)
+#define TASK2_ARC_HIGH_SPEED_MM_S           (300)
+#define TASK2_ARC_START_LOW_MM              (120)
+#define TASK2_ARC_END_LOW_MM                (120)
 #define TASK2_ARC_SEARCH_FORWARD_MM_S       (220)
 #define TASK2_ALIGN_FORWARD_SPEED_MM_S      (260)
 

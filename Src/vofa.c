@@ -1,32 +1,40 @@
 #include "vofa.h"
 #include "ti_msp_dl_config.h"
 
+/*
+ * vofa.c
+ *
+ * UART0 基础发送 + VOFA FireWater 数据输出。
+ *
+ * FireWater 常用格式：
+ *   samples:ch0,ch1,ch2,...\n
+ *
+ * VOFA 遇到换行符才会刷新一帧数据，所以每次发送完整通道后必须
+ * 以 '\n' 结尾。
+ */
 
-
-/**
- * @brief UART0发送一个字节
+/*
+ * UART0 发送一个字节。
+ *
+ * 注意：
+ *   这里是阻塞发送，会等待 UART 空闲。
  */
 void uart0_send_byte(uint8_t data)
 {
-    /*
-     * 等待发送缓冲区空
-     */
+    /* 等待发送硬件空闲。 */
     while (DL_UART_Main_isBusy(UART0_INST))
     {
 
     }
 
-
-    /*
-     * 发送数据
-     */
+    /* 发送 1 字节数据。 */
     DL_UART_Main_transmitData(UART0_INST,data);
 }
 
-
-
-/**
- * @brief UART0发送字符串
+/*
+ * UART0 发送 C 字符串。
+ *
+ * 字符串必须以 '\0' 结尾。
  */
 void uart0_send_string(const char *str)
 {
@@ -38,16 +46,13 @@ void uart0_send_string(const char *str)
     }
 }
 
-
-
-/**
- * @brief UART0发送整数
+/*
+ * UART0 发送有符号整数。
  *
- * 例如：
- * uart0_send_int(123);
- *
+ * 例：
+ *   uart0_send_int(-123);
  * 输出：
- * 123
+ *   -123
  */
 void uart0_send_int(int32_t num)
 {
@@ -56,17 +61,20 @@ void uart0_send_int(int32_t num)
 
     int i = 0;
 
-
     if(num == 0)
     {
         uart0_send_byte('0');
         return;
     }
 
-
     if(num < 0)
     {
         uart0_send_byte('-');
+
+        /*
+         * 避免直接 -INT32_MIN 溢出。
+         * 写成 -(num + 1) + 1 可以安全处理最小负数。
+         */
         value = (uint32_t)(-(num + 1)) + 1U;
     }
     else
@@ -74,7 +82,7 @@ void uart0_send_int(int32_t num)
         value = (uint32_t)num;
     }
 
-
+    /* 反向存储每一位数字。 */
     while(value > 0U)
     {
         buf[i++] = (char)(value % 10U + '0');
@@ -82,13 +90,22 @@ void uart0_send_int(int32_t num)
         value /= 10U;
     }
 
-
+    /* 再倒序发送，得到正常数字顺序。 */
     while(i > 0)
     {
         uart0_send_byte(buf[--i]);
     }
 }
 
+/*
+ * UART0 发送浮点数。
+ *
+ * decimals：
+ *   保留的小数位数。
+ *
+ * 注意：
+ *   这是轻量级打印函数，不使用 printf，减少嵌入式代码体积。
+ */
 void uart0_send_float(float num, uint8_t decimals)
 {
     int32_t integerPart;
@@ -119,6 +136,7 @@ void uart0_send_float(float num, uint8_t decimals)
     }
 }
 
+/* 按 FireWater 格式发送 2 个整数通道。 */
 void vofa_send_two_int(int32_t ch0, int32_t ch1)
 {
     uart0_send_string("samples:");
@@ -128,6 +146,7 @@ void vofa_send_two_int(int32_t ch0, int32_t ch1)
     uart0_send_byte('\n');
 }
 
+/* 按 FireWater 格式发送 6 个整数通道。 */
 void vofa_send_six_int(int32_t ch0,
                        int32_t ch1,
                        int32_t ch2,
@@ -150,6 +169,7 @@ void vofa_send_six_int(int32_t ch0,
     uart0_send_byte('\n');
 }
 
+/* 按 FireWater 格式发送 6 个浮点通道。 */
 void vofa_send_six_float(float ch0,
                          float ch1,
                          float ch2,
