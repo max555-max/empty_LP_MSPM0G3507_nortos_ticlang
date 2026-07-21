@@ -1,8 +1,7 @@
 # FIXED
 
-Src/pid.o: ../Src/pid.c \
- C:/Users/gaofu/workspace_ccstheia/empty_LP_MSPM0G3507_nortos_ticlang/Inc/pid.h \
- C:/Users/gaofu/workspace_ccstheia/empty_LP_MSPM0G3507_nortos_ticlang/Inc/encoder.h \
+Src/pid.o: ../Src/pid.c C:/Users/gaofu/workspace_ccstheia/C07A/Inc/pid.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/encoder.h \
  ti_msp_dl_config.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/DeviceFamily.h \
@@ -86,10 +85,10 @@ Src/pid.o: ../Src/pid.c \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h \
- C:/Users/gaofu/workspace_ccstheia/empty_LP_MSPM0G3507_nortos_ticlang/Inc/motor.h \
- C:/Users/gaofu/workspace_ccstheia/empty_LP_MSPM0G3507_nortos_ticlang/Inc/vofa.h
-C:/Users/gaofu/workspace_ccstheia/empty_LP_MSPM0G3507_nortos_ticlang/Inc/pid.h:
-C:/Users/gaofu/workspace_ccstheia/empty_LP_MSPM0G3507_nortos_ticlang/Inc/encoder.h:
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/motor.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/vofa.h
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/pid.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/encoder.h:
 ti_msp_dl_config.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/DeviceFamily.h:
@@ -173,5 +172,5 @@ C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_vref.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h:
-C:/Users/gaofu/workspace_ccstheia/empty_LP_MSPM0G3507_nortos_ticlang/Inc/motor.h:
-C:/Users/gaofu/workspace_ccstheia/empty_LP_MSPM0G3507_nortos_ticlang/Inc/vofa.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/motor.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/vofa.h:

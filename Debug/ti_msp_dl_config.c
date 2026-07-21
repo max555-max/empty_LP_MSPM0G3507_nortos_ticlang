@@ -53,6 +53,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_init(void)
     /* Module-Specific Initializations*/
     SYSCFG_DL_SYSCTL_init();
     SYSCFG_DL_PWM_init();
+    SYSCFG_DL_I2C_ICM42688_init();
     SYSCFG_DL_UART0_init();
     SYSCFG_DL_SYSTICK_init();
     /* Ensure backup structures have no valid state */
@@ -88,12 +89,14 @@ SYSCONFIG_WEAK void SYSCFG_DL_initPower(void)
     DL_GPIO_reset(GPIOA);
     DL_GPIO_reset(GPIOB);
     DL_TimerG_reset(PWM_INST);
+    DL_I2C_reset(I2C_ICM42688_INST);
     DL_UART_Main_reset(UART0_INST);
 
 
     DL_GPIO_enablePower(GPIOA);
     DL_GPIO_enablePower(GPIOB);
     DL_TimerG_enablePower(PWM_INST);
+    DL_I2C_enablePower(I2C_ICM42688_INST);
     DL_UART_Main_enablePower(UART0_INST);
 
     delay_cycles(POWER_STARTUP_DELAY);
@@ -107,12 +110,25 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
     DL_GPIO_initPeripheralOutputFunction(GPIO_PWM_C1_IOMUX,GPIO_PWM_C1_IOMUX_FUNC);
     DL_GPIO_enableOutput(GPIO_PWM_C1_PORT, GPIO_PWM_C1_PIN);
 
+    DL_GPIO_initPeripheralInputFunctionFeatures(GPIO_I2C_ICM42688_IOMUX_SDA,
+        GPIO_I2C_ICM42688_IOMUX_SDA_FUNC, DL_GPIO_INVERSION_DISABLE,
+        DL_GPIO_RESISTOR_NONE, DL_GPIO_HYSTERESIS_DISABLE,
+        DL_GPIO_WAKEUP_DISABLE);
+    DL_GPIO_initPeripheralInputFunctionFeatures(GPIO_I2C_ICM42688_IOMUX_SCL,
+        GPIO_I2C_ICM42688_IOMUX_SCL_FUNC, DL_GPIO_INVERSION_DISABLE,
+        DL_GPIO_RESISTOR_NONE, DL_GPIO_HYSTERESIS_DISABLE,
+        DL_GPIO_WAKEUP_DISABLE);
+    DL_GPIO_enableHiZ(GPIO_I2C_ICM42688_IOMUX_SDA);
+    DL_GPIO_enableHiZ(GPIO_I2C_ICM42688_IOMUX_SCL);
+
     DL_GPIO_initPeripheralOutputFunction(
         GPIO_UART0_IOMUX_TX, GPIO_UART0_IOMUX_TX_FUNC);
     DL_GPIO_initPeripheralInputFunction(
         GPIO_UART0_IOMUX_RX, GPIO_UART0_IOMUX_RX_FUNC);
 
     DL_GPIO_initDigitalOutput(LED_LED1_IOMUX);
+
+    DL_GPIO_initDigitalOutput(BUZZER_BZ_IOMUX);
 
     DL_GPIO_initDigitalOutput(AIN_AIN1_IOMUX);
 
@@ -145,29 +161,31 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
     DL_GPIO_initDigitalOutput(GRAY_SERIAL_CLK_IOMUX);
 
     DL_GPIO_setPins(GPIOA, AIN_AIN1_PIN |
-		AIN_AIN2_PIN);
-    DL_GPIO_enableOutput(GPIOA, AIN_AIN1_PIN |
-		AIN_AIN2_PIN);
-    DL_GPIO_setLowerPinsPolarity(GPIOA, DL_GPIO_PIN_13_EDGE_RISE_FALL |
-		DL_GPIO_PIN_14_EDGE_RISE_FALL);
-    DL_GPIO_setUpperPinsPolarity(GPIOA, DL_GPIO_PIN_17_EDGE_RISE_FALL |
-		DL_GPIO_PIN_16_EDGE_RISE_FALL);
-    DL_GPIO_clearInterruptStatus(GPIOA, ENCODER_E1A_PIN |
-		ENCODER_E1B_PIN |
-		ENCODER_E2A_PIN |
-		ENCODER_E2B_PIN);
-    DL_GPIO_enableInterrupt(GPIOA, ENCODER_E1A_PIN |
-		ENCODER_E1B_PIN |
-		ENCODER_E2A_PIN |
-		ENCODER_E2B_PIN);
-    DL_GPIO_setPins(GPIOB, LED_LED1_PIN |
+		AIN_AIN2_PIN |
 		BIN_BIN1_PIN |
-		BIN_BIN2_PIN |
+		BIN_BIN2_PIN);
+    DL_GPIO_enableOutput(GPIOA, AIN_AIN1_PIN |
+		AIN_AIN2_PIN |
+		BIN_BIN1_PIN |
+		BIN_BIN2_PIN);
+    DL_GPIO_setUpperPinsPolarity(GPIOA, DL_GPIO_PIN_25_EDGE_RISE_FALL |
+		DL_GPIO_PIN_26_EDGE_RISE_FALL);
+    DL_GPIO_clearInterruptStatus(GPIOA, ENCODER_E1A_PIN |
+		ENCODER_E1B_PIN);
+    DL_GPIO_enableInterrupt(GPIOA, ENCODER_E1A_PIN |
+		ENCODER_E1B_PIN);
+    DL_GPIO_clearPins(GPIOB, BUZZER_BZ_PIN);
+    DL_GPIO_setPins(GPIOB, LED_LED1_PIN |
 		GRAY_SERIAL_CLK_PIN);
     DL_GPIO_enableOutput(GPIOB, LED_LED1_PIN |
-		BIN_BIN1_PIN |
-		BIN_BIN2_PIN |
+		BUZZER_BZ_PIN |
 		GRAY_SERIAL_CLK_PIN);
+    DL_GPIO_setUpperPinsPolarity(GPIOB, DL_GPIO_PIN_20_EDGE_RISE_FALL |
+		DL_GPIO_PIN_24_EDGE_RISE_FALL);
+    DL_GPIO_clearInterruptStatus(GPIOB, ENCODER_E2A_PIN |
+		ENCODER_E2B_PIN);
+    DL_GPIO_enableInterrupt(GPIOB, ENCODER_E2A_PIN |
+		ENCODER_E2B_PIN);
 
 }
 
@@ -334,6 +352,34 @@ SYSCONFIG_WEAK void SYSCFG_DL_PWM_init(void) {
 
 }
 
+
+static const DL_I2C_ClockConfig gI2C_ICM42688ClockConfig = {
+    .clockSel = DL_I2C_CLOCK_BUSCLK,
+    .divideRatio = DL_I2C_CLOCK_DIVIDE_1,
+};
+
+SYSCONFIG_WEAK void SYSCFG_DL_I2C_ICM42688_init(void) {
+
+    DL_I2C_setClockConfig(I2C_ICM42688_INST,
+        (DL_I2C_ClockConfig *) &gI2C_ICM42688ClockConfig);
+    DL_I2C_setAnalogGlitchFilterPulseWidth(I2C_ICM42688_INST,
+        DL_I2C_ANALOG_GLITCH_FILTER_WIDTH_50NS);
+    DL_I2C_enableAnalogGlitchFilter(I2C_ICM42688_INST);
+
+    /* Configure Controller Mode */
+    DL_I2C_resetControllerTransfer(I2C_ICM42688_INST);
+    /* Set frequency to 400000 Hz*/
+    DL_I2C_setTimerPeriod(I2C_ICM42688_INST, 9);
+    DL_I2C_setControllerTXFIFOThreshold(I2C_ICM42688_INST, DL_I2C_TX_FIFO_LEVEL_EMPTY);
+    DL_I2C_setControllerRXFIFOThreshold(I2C_ICM42688_INST, DL_I2C_RX_FIFO_LEVEL_BYTES_1);
+    DL_I2C_enableControllerClockStretching(I2C_ICM42688_INST);
+
+
+    /* Enable module */
+    DL_I2C_enableController(I2C_ICM42688_INST);
+
+
+}
 
 static const DL_UART_Main_ClockConfig gUART0ClockConfig = {
     .clockSel    = DL_UART_MAIN_CLOCK_BUSCLK,

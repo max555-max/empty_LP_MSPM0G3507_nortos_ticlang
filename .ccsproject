@@ -13,6 +13,6 @@
 	<activeTargetConfiguration value="targetConfigs/MSPM0G3507.ccxml"/>
 	<isTargetConfigurationManual value="false"/>
 	<sourceLookupPath value="${COM_TI_MSPM0_SDK_INSTALL_DIR}/source/ti/driverlib"/>
-	<origin value="C:\Users\gaofu\Desktop\TIcar\7.10\ticlang\empty_LP_MSPM0G3507_nortos_ticlang.projectspec"/>
+	<origin value="C:/Users/gaofu/Desktop/TIcar/C07A"/>
 	<filesToOpen value="empty.syscfg,README.md"/>
 </projectOptions>

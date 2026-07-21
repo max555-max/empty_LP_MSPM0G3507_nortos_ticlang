@@ -33,38 +33,25 @@
 #include "ti_msp_dl_config.h"
 #include "delay.h"
 #include "encoder.h"
-#include "task2_abcd.h"
+#include "motor.h"
+#include "pid.h"
+#include "uart_cmd.h"
 
-/*
- * main()
- *
- * 当前工程主入口。
- * 现在运行的是第三问 task3_acbd_run()。
- *
- * 如果后面要切换任务，只需要：
- *   1. 修改 include 的任务头文件；
- *   2. 修改 main() 中调用的任务函数。
- */
 int main(void)
 {
-    /* 初始化 SysConfig 生成的时钟、GPIO、UART、SPI、PWM 等外设。 */
     SYSCFG_DL_init();
-
-    /* 运行第三问完整流程。该函数内部会一直运行，正常不会返回。 */
-    task2_abcd_run();
-
+    encoder_init();
+    speed_pid_init();
+    uart_cmd_init();
     while (1) {
+        uart_cmd_process();
+        speed_pid_control_update();
+        delay_ms(SPEED_PID_CONTROL_PERIOD_MS);
     }
 }
 
 /*
- * SysTick 1ms 中断。
- *
- * delay_tick()：
- *   提供 delay_ms() 和 delay_get_ms() 的时间基准；
- *
- * encoder_tick_1ms()：
- *   每 1ms 调用一次，内部累计到 10ms 后更新编码器速度。
+ * SysTick 1ms中断
  */
 void SysTick_Handler(void)
 {

@@ -16,8 +16,8 @@
  *
  * 绝对值会被限制到 MOTOR_PWM_MAX。
  */
-#define MOTOR_PWM_MAX       (4000)
-#define MOTOR_PWM_MIN       (-4000)
+#define MOTOR_PWM_MAX       (3800)
+#define MOTOR_PWM_MIN       (-3800)
 
 /* 设置左右电机 PWM。参数单位是 PWM 计数值，不是速度。 */
 void motor_set_pwm(int pwmL,int pwmR);

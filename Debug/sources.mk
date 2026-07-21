@@ -119,7 +119,5 @@ GEN_OPTS__QUOTED :=
 # Every subdirectory with source files must be described here
 SUBDIRS := \
 . \
-Debug\ -\ 副本/Src \
-Debug\ -\ 副本 \
 Src \
 
