@@ -53,6 +53,8 @@ bool attitude_update_from_icm42688(const icm42688_raw_t *raw, float dt);
 /* 读取当前欧拉角。 */
 void attitude_get_euler(attitude_euler_t *euler);
 
+float attitude_get_gyro_z_dps(void);
+
 /* 按 VOFA FireWater 格式打印 roll/pitch/yaw 等调试数据。 */
 void attitude_print_euler(const attitude_euler_t *euler);
 

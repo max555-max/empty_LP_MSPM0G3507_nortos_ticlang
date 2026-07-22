@@ -6,6 +6,7 @@ SHELL = cmd.exe
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../Src/angle_control.c \
 ../Src/attitude.c \
 ../Src/delay.c \
 ../Src/encoder.c \
@@ -18,6 +19,7 @@ C_SRCS += \
 ../Src/vofa.c 
 
 C_DEPS += \
+./Src/angle_control.d \
 ./Src/attitude.d \
 ./Src/delay.d \
 ./Src/encoder.d \
@@ -30,6 +32,7 @@ C_DEPS += \
 ./Src/vofa.d 
 
 OBJS += \
+./Src/angle_control.o \
 ./Src/attitude.o \
 ./Src/delay.o \
 ./Src/encoder.o \
@@ -42,6 +45,7 @@ OBJS += \
 ./Src/vofa.o 
 
 OBJS__QUOTED += \
+"Src\angle_control.o" \
 "Src\attitude.o" \
 "Src\delay.o" \
 "Src\encoder.o" \
@@ -54,6 +58,7 @@ OBJS__QUOTED += \
 "Src\vofa.o" 
 
 C_DEPS__QUOTED += \
+"Src\angle_control.d" \
 "Src\attitude.d" \
 "Src\delay.d" \
 "Src\encoder.d" \
@@ -66,6 +71,7 @@ C_DEPS__QUOTED += \
 "Src\vofa.d" 
 
 C_SRCS__QUOTED += \
+"../Src/angle_control.c" \
 "../Src/attitude.c" \
 "../Src/delay.c" \
 "../Src/encoder.c" \

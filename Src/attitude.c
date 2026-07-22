@@ -71,6 +71,11 @@ static int32_t accCalSumZ = 0;
 static float rollDeg = 0.0f;
 static float pitchDeg = 0.0f;
 static float yawDeg = 0.0f;
+/*
+ * 当前经过零偏补偿和死区处理后的 Z 轴角速度。
+ * 单位：°/s。
+ */
+static float gyroZDps = 0.0f;
 /* 上电静止时的 roll/pitch 零点，用来抵消安装倾角。 */
 static float rollZeroDeg = 0.0f;
 static float pitchZeroDeg = 0.0f;
@@ -106,6 +111,7 @@ void attitude_init(void)
     rollDeg = 0.0f;
     pitchDeg = 0.0f;
     yawDeg = 0.0f;
+    gyroZDps = 0.0f;
     rollZeroDeg = 0.0f;
     pitchZeroDeg = 0.0f;
 }
@@ -257,6 +263,11 @@ bool attitude_update_from_icm42688(const icm42688_raw_t *raw, float dt)
     gx = attitude_apply_deadband(gx, ATTITUDE_GYRO_DEADBAND_DPS);
     gy = attitude_apply_deadband(gy, ATTITUDE_GYRO_DEADBAND_DPS);
     gz = attitude_apply_deadband(gz, ATTITUDE_YAW_DEADBAND_DPS);
+    /*
+     * 保存最终有效的 Z 轴角速度，供角度控制器使用。
+     * 这里保存的是已经扣除零偏、转换为 °/s 并经过死区后的值。
+     */
+    gyroZDps = gz;
 
     /*
      * 陀螺仪积分。
@@ -344,6 +355,11 @@ void attitude_get_euler(attitude_euler_t *euler)
     euler->roll = rollDeg;
     euler->pitch = pitchDeg;
     euler->yaw = yawDeg;
+}
+
+float attitude_get_gyro_z_dps(void)
+{
+    return gyroZDps;
 }
 
 void attitude_print_euler(const attitude_euler_t *euler)
