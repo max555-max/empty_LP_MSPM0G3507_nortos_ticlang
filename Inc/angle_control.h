@@ -76,6 +76,22 @@ void angle_control_stop(void);
 void angle_control_set_base_speed(int32_t baseSpeedMmS);
 
 /*
+ * Runtime angle-loop tuning for Bluetooth/serial.
+ * Kp/Kd use /1000 scale:
+ *   10000 means 10.000 mm/s/deg
+ *   500 means 0.500 mm/s/(deg/s)
+ */
+void angle_control_set_gains_scaled(int32_t kpScaled, int32_t kdScaled);
+void angle_control_set_kp_scaled(int32_t kpScaled);
+void angle_control_set_kd_scaled(int32_t kdScaled);
+void angle_control_set_max_correction(int32_t maxCorrectionMmS);
+
+int32_t angle_control_get_base_speed(void);
+int32_t angle_control_get_kp_scaled(void);
+int32_t angle_control_get_kd_scaled(void);
+int32_t angle_control_get_max_correction(void);
+
+/*
  * 锁定当前 yaw 为目标方向。
  * 适合“当前朝向就是接下来要保持方向”的直行段。
  */

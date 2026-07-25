@@ -23,6 +23,11 @@
 
 /* 角度环当前状态，用于控制和调试。 */
 static angle_control_status_t g_angleControlStatus;
+static int32_t g_angleKpScaled =
+    (int32_t)(ANGLE_CONTROL_KP_MM_S_PER_DEG * 1000.0f);
+static int32_t g_angleKdScaled =
+    (int32_t)(ANGLE_CONTROL_KD_MM_S_PER_DPS * 1000.0f);
+static int32_t g_angleMaxCorrectionMmS = ANGLE_CONTROL_MAX_CORRECTION_MM_S;
 
 /*
  * 将角度归一化到 -180°～180°。
@@ -136,6 +141,51 @@ void angle_control_set_base_speed(int32_t baseSpeedMmS)
             ANGLE_CONTROL_MAX_TARGET_MM_S);
 }
 
+void angle_control_set_gains_scaled(int32_t kpScaled, int32_t kdScaled)
+{
+    g_angleKpScaled = kpScaled;
+    g_angleKdScaled = kdScaled;
+}
+
+void angle_control_set_kp_scaled(int32_t kpScaled)
+{
+    g_angleKpScaled = kpScaled;
+}
+
+void angle_control_set_kd_scaled(int32_t kdScaled)
+{
+    g_angleKdScaled = kdScaled;
+}
+
+void angle_control_set_max_correction(int32_t maxCorrectionMmS)
+{
+    if (maxCorrectionMmS < 0) {
+        maxCorrectionMmS = -maxCorrectionMmS;
+    }
+
+    g_angleMaxCorrectionMmS = maxCorrectionMmS;
+}
+
+int32_t angle_control_get_base_speed(void)
+{
+    return g_angleControlStatus.baseSpeedMmS;
+}
+
+int32_t angle_control_get_kp_scaled(void)
+{
+    return g_angleKpScaled;
+}
+
+int32_t angle_control_get_kd_scaled(void)
+{
+    return g_angleKdScaled;
+}
+
+int32_t angle_control_get_max_correction(void)
+{
+    return g_angleMaxCorrectionMmS;
+}
+
 void angle_control_lock_current_yaw(void)
 {
     attitude_euler_t euler;
@@ -234,8 +284,8 @@ void angle_control_update(float dt)
      */
     correctionFloat =
         ANGLE_CONTROL_DIRECTION *
-        (ANGLE_CONTROL_KP_MM_S_PER_DEG * errorDeg +
-         ANGLE_CONTROL_KD_MM_S_PER_DPS * errorRateDps);
+        (((float)g_angleKpScaled / 1000.0f) * errorDeg +
+         ((float)g_angleKdScaled / 1000.0f) * errorRateDps);
 
     correction =
         angle_control_float_to_i32(correctionFloat);
@@ -246,7 +296,7 @@ void angle_control_update(float dt)
     correction =
         angle_control_limit_i32(
             correction,
-            ANGLE_CONTROL_MAX_CORRECTION_MM_S);
+            g_angleMaxCorrectionMmS);
 
     /*
      * 差速混控：

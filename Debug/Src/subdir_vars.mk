@@ -8,12 +8,14 @@ SHELL = cmd.exe
 C_SRCS += \
 ../Src/angle_control.c \
 ../Src/attitude.c \
+../Src/bluetooth.c \
 ../Src/delay.c \
 ../Src/encoder.c \
 ../Src/gray_serial.c \
 ../Src/icm42688.c \
 ../Src/line_track.c \
 ../Src/motor.c \
+../Src/oled.c \
 ../Src/pid.c \
 ../Src/uart_cmd.c \
 ../Src/vofa.c 
@@ -21,12 +23,14 @@ C_SRCS += \
 C_DEPS += \
 ./Src/angle_control.d \
 ./Src/attitude.d \
+./Src/bluetooth.d \
 ./Src/delay.d \
 ./Src/encoder.d \
 ./Src/gray_serial.d \
 ./Src/icm42688.d \
 ./Src/line_track.d \
 ./Src/motor.d \
+./Src/oled.d \
 ./Src/pid.d \
 ./Src/uart_cmd.d \
 ./Src/vofa.d 
@@ -34,12 +38,14 @@ C_DEPS += \
 OBJS += \
 ./Src/angle_control.o \
 ./Src/attitude.o \
+./Src/bluetooth.o \
 ./Src/delay.o \
 ./Src/encoder.o \
 ./Src/gray_serial.o \
 ./Src/icm42688.o \
 ./Src/line_track.o \
 ./Src/motor.o \
+./Src/oled.o \
 ./Src/pid.o \
 ./Src/uart_cmd.o \
 ./Src/vofa.o 
@@ -47,12 +53,14 @@ OBJS += \
 OBJS__QUOTED += \
 "Src\angle_control.o" \
 "Src\attitude.o" \
+"Src\bluetooth.o" \
 "Src\delay.o" \
 "Src\encoder.o" \
 "Src\gray_serial.o" \
 "Src\icm42688.o" \
 "Src\line_track.o" \
 "Src\motor.o" \
+"Src\oled.o" \
 "Src\pid.o" \
 "Src\uart_cmd.o" \
 "Src\vofa.o" 
@@ -60,12 +68,14 @@ OBJS__QUOTED += \
 C_DEPS__QUOTED += \
 "Src\angle_control.d" \
 "Src\attitude.d" \
+"Src\bluetooth.d" \
 "Src\delay.d" \
 "Src\encoder.d" \
 "Src\gray_serial.d" \
 "Src\icm42688.d" \
 "Src\line_track.d" \
 "Src\motor.d" \
+"Src\oled.d" \
 "Src\pid.d" \
 "Src\uart_cmd.d" \
 "Src\vofa.d" 
@@ -73,12 +83,14 @@ C_DEPS__QUOTED += \
 C_SRCS__QUOTED += \
 "../Src/angle_control.c" \
 "../Src/attitude.c" \
+"../Src/bluetooth.c" \
 "../Src/delay.c" \
 "../Src/encoder.c" \
 "../Src/gray_serial.c" \
 "../Src/icm42688.c" \
 "../Src/line_track.c" \
 "../Src/motor.c" \
+"../Src/oled.c" \
 "../Src/pid.c" \
 "../Src/uart_cmd.c" \
 "../Src/vofa.c" 

@@ -1,6 +1,8 @@
 #include "vofa.h"
 #include "ti_msp_dl_config.h"
 
+#define UART0_TX_WAIT_TIMEOUT    (20000U)
+
 /*
  * vofa.c
  *
@@ -21,14 +23,19 @@
  */
 void uart0_send_byte(uint8_t data)
 {
-    /* 等待发送硬件空闲。 */
-    while (DL_UART_Main_isBusy(UART0_INST))
-    {
+    uint32_t timeout = UART0_TX_WAIT_TIMEOUT;
 
+    /* 等待 TX FIFO 有空间，避免 UART 异常时把主循环永久卡死。 */
+    while ((DL_UART_Main_isTXFIFOFull(UART0_INST) != 0) &&
+           (timeout > 0U)) {
+        timeout--;
     }
 
-    /* 发送 1 字节数据。 */
-    DL_UART_Main_transmitData(UART0_INST,data);
+    if (timeout == 0U) {
+        return;
+    }
+
+    DL_UART_Main_transmitData(UART0_INST, data);
 }
 
 /*

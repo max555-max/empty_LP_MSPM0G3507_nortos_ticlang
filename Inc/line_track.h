@@ -46,7 +46,7 @@ typedef struct {
 
 /* 循迹 PD 参数，内部按 /1000 使用，例如 250 表示 0.250。 */
 #define LINE_TRACK_TURN_KP                (250)
-#define LINE_TRACK_TURN_KD                (120)
+#define LINE_TRACK_TURN_KD                (0)
 
 /* 循迹最大差速修正量，防止偏差大时输出过猛。 */
 #define LINE_TRACK_MAX_CORRECTION_MM_S    (280)
@@ -59,6 +59,20 @@ void line_track_init(void);
 
 /* 设置循迹基础速度，单位 mm/s。 */
 void line_track_set_base_speed(int32_t baseSpeedMmS);
+
+/*
+ * Runtime tuning for Bluetooth/serial.
+ * Kp/Kd use /1000 scale: 250 means 0.250.
+ */
+void line_track_set_turn_gains(int32_t kp, int32_t kd);
+void line_track_set_turn_kp(int32_t kp);
+void line_track_set_turn_kd(int32_t kd);
+void line_track_set_max_correction(int32_t maxCorrectionMmS);
+
+int32_t line_track_get_base_speed(void);
+int32_t line_track_get_turn_kp(void);
+int32_t line_track_get_turn_kd(void);
+int32_t line_track_get_max_correction(void);
 
 /* 读取一次灰度并执行循迹控制。 */
 void line_track_update(void);

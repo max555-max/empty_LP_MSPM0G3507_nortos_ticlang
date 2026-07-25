@@ -21,6 +21,9 @@ static line_track_status_t g_lineTrackStatus;
 
 /* 循迹基础速度，上层任务可动态修改。 */
 static int32_t g_baseSpeedMmS = LINE_TRACK_BASE_SPEED_MM_S;
+static int32_t g_turnKp = LINE_TRACK_TURN_KP;
+static int32_t g_turnKd = LINE_TRACK_TURN_KD;
+static int32_t g_maxCorrectionMmS = LINE_TRACK_MAX_CORRECTION_MM_S;
 
 /* 最近一次有效误差。丢线时用于判断往哪边找线。 */
 static int32_t g_lastError = 0;
@@ -35,11 +38,6 @@ static bool g_hasPreviousError = false;
 static int32_t g_previousError = 0;
 
 /* 将 P 项和 D 项分开限幅，防止 D 项尖峰把输出打满。 */
-#define LINE_TRACK_P_TERM_LIMIT_MM_S \
-    ((LINE_TRACK_MAX_CORRECTION_MM_S * 3) / 4)
-#define LINE_TRACK_D_TERM_LIMIT_MM_S \
-    (LINE_TRACK_MAX_CORRECTION_MM_S - LINE_TRACK_P_TERM_LIMIT_MM_S)
-
 /* 内部统一实现，stopOnLost 决定丢线时停车还是旋转找线。 */
 static void line_track_update_with_raw_impl(uint8_t raw, bool stopOnLost);
 
@@ -142,6 +140,51 @@ void line_track_set_base_speed(int32_t baseSpeedMmS)
     g_baseSpeedMmS = baseSpeedMmS;
 }
 
+void line_track_set_turn_gains(int32_t kp, int32_t kd)
+{
+    g_turnKp = kp;
+    g_turnKd = kd;
+}
+
+void line_track_set_turn_kp(int32_t kp)
+{
+    g_turnKp = kp;
+}
+
+void line_track_set_turn_kd(int32_t kd)
+{
+    g_turnKd = kd;
+}
+
+void line_track_set_max_correction(int32_t maxCorrectionMmS)
+{
+    if (maxCorrectionMmS < 0) {
+        maxCorrectionMmS = -maxCorrectionMmS;
+    }
+
+    g_maxCorrectionMmS = maxCorrectionMmS;
+}
+
+int32_t line_track_get_base_speed(void)
+{
+    return g_baseSpeedMmS;
+}
+
+int32_t line_track_get_turn_kp(void)
+{
+    return g_turnKp;
+}
+
+int32_t line_track_get_turn_kd(void)
+{
+    return g_turnKd;
+}
+
+int32_t line_track_get_max_correction(void)
+{
+    return g_maxCorrectionMmS;
+}
+
 void line_track_update(void)
 {
     /* 默认接口：自己读取灰度，然后执行“丢线找线”版本。 */
@@ -162,6 +205,8 @@ static void line_track_update_with_raw_impl(uint8_t raw, bool stopOnLost)
     if (lineDetected) {
         int32_t pTerm;
         int32_t dTerm;
+        int32_t pTermLimit;
+        int32_t dTermLimit;
 
         /*
          * 第一次识线或丢线后重新识线时，
@@ -179,19 +224,19 @@ static void line_track_update_with_raw_impl(uint8_t raw, bool stopOnLost)
         g_lastError = error;
 
         /* P 项：当前位置偏差越大，差速越大。 */
-        pTerm = (int32_t) (((int64_t) error * LINE_TRACK_TURN_KP) / 1000);
+        pTerm = (int32_t) (((int64_t) error * g_turnKp) / 1000);
 
         /* D 项：偏差变化越快，给一个反向阻尼，抑制摆动。 */
-        dTerm = (int32_t) (((int64_t) WEIFEN * LINE_TRACK_TURN_KD) / 1000);
+        dTerm = (int32_t) (((int64_t) WEIFEN * g_turnKd) / 1000);
 
         /* P/D 分别限幅，再合成总修正量。 */
-        pTerm = line_track_limit(pTerm, LINE_TRACK_P_TERM_LIMIT_MM_S);
-        dTerm = line_track_limit(dTerm, LINE_TRACK_D_TERM_LIMIT_MM_S);
+        pTermLimit = (g_maxCorrectionMmS * 3) / 4;
+        dTermLimit = g_maxCorrectionMmS - pTermLimit;
+        pTerm = line_track_limit(pTerm, pTermLimit);
+        dTerm = line_track_limit(dTerm, dTermLimit);
 
         correction = pTerm + dTerm;
-        correction = line_track_limit(
-            correction,
-            LINE_TRACK_MAX_CORRECTION_MM_S);
+        correction = line_track_limit(correction, g_maxCorrectionMmS);
 
         /*
          * 差速混控：

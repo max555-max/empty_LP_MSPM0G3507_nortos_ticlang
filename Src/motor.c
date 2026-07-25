@@ -38,6 +38,16 @@ static int motor_limit_pwm(int pwm)
  */
 void motor_set_pwm(int pwmL,int pwmR)
 {
+    int pwmTemp;
+
+    /*
+     * Current rear-drive wiring maps software left/right to opposite driver
+     * channels, so swap once at the motor boundary.
+     */
+    pwmTemp = pwmL;
+    pwmL = pwmR;
+    pwmR = pwmTemp;
+
     /* 先限幅，防止 PID 或上层控制输出超过 4000。 */
     pwmL = motor_limit_pwm(pwmL);
     pwmR = motor_limit_pwm(pwmR);
@@ -45,15 +55,15 @@ void motor_set_pwm(int pwmL,int pwmR)
     if(pwmL>0)//front
     {
         /* 左电机前进方向。 */
-        DL_GPIO_setPins(AIN_PORT, AIN_AIN1_PIN);
-        DL_GPIO_clearPins(AIN_PORT, AIN_AIN2_PIN);
+        DL_GPIO_setPins(AIN_PORT, AIN_AIN2_PIN);
+        DL_GPIO_clearPins(AIN_PORT, AIN_AIN1_PIN);
         DL_Timer_setCaptureCompareValue(PWM_INST,pwmL,GPIO_PWM_C0_IDX);
     }
     else if(pwmL<0)//back
     {
         /* 左电机后退方向，PWM 取绝对值。 */
-        DL_GPIO_setPins(AIN_PORT,AIN_AIN2_PIN);
-        DL_GPIO_clearPins(AIN_PORT,AIN_AIN1_PIN);
+        DL_GPIO_setPins(AIN_PORT,AIN_AIN1_PIN);
+        DL_GPIO_clearPins(AIN_PORT,AIN_AIN2_PIN);
         DL_Timer_setCaptureCompareValue(PWM_INST,-pwmL,GPIO_PWM_C0_IDX);
     }
     else
@@ -65,15 +75,15 @@ void motor_set_pwm(int pwmL,int pwmR)
     if(pwmR>0)
     {
         /* 右电机前进方向。 */
-        DL_GPIO_setPins(BIN_PORT,BIN_BIN1_PIN);
-        DL_GPIO_clearPins(BIN_PORT,BIN_BIN2_PIN);
+        DL_GPIO_setPins(BIN_PORT,BIN_BIN2_PIN);
+        DL_GPIO_clearPins(BIN_PORT,BIN_BIN1_PIN);
         DL_Timer_setCaptureCompareValue(PWM_INST,pwmR,GPIO_PWM_C1_IDX);
     }
     else if(pwmR<0)
     {
         /* 右电机后退方向，PWM 取绝对值。 */
-        DL_GPIO_setPins(BIN_PORT,BIN_BIN2_PIN);
-        DL_GPIO_clearPins(BIN_PORT,BIN_BIN1_PIN);
+        DL_GPIO_setPins(BIN_PORT,BIN_BIN1_PIN);
+        DL_GPIO_clearPins(BIN_PORT,BIN_BIN2_PIN);
         DL_Timer_setCaptureCompareValue(PWM_INST,-pwmR,GPIO_PWM_C1_IDX);
     }
     else

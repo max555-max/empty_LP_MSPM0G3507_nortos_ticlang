@@ -7,20 +7,58 @@
  *
  * 特点：
  *   1. GPIO 中断触发；
- *   2. AB 相四倍频计数；
+ *   2. A 相单边沿计数，B 相用于判断方向；
  *   3. 每 10ms 根据计数差计算一次轮速，单位 mm/s；
  *   4. 计数变量在中断中修改，所以读取时需要短暂关中断保护。
  */
 
-/* 左右轮 A/B 相引脚别名，方便后面统一处理。 */
-#define ENCODER_LEFT_A_PIN        (ENCODER_E1A_PIN)
-#define ENCODER_LEFT_B_PIN        (ENCODER_E1B_PIN)
-#define ENCODER_RIGHT_A_PIN       (ENCODER_E2A_PIN)
-#define ENCODER_RIGHT_B_PIN       (ENCODER_E2B_PIN)
+/*
+ * 左右轮 A/B 相引脚别名。
+ *
+ * 注意：当前 SysConfig 中左右编码器分布在两个 GPIO 端口：
+ *   E1A -> GPIOA.26
+ *   E1B -> GPIOA.25
+ *   E2A -> GPIOB.24
+ *   E2B -> GPIOB.20
+ *
+ * 所以读取 AB 状态时必须同时使用生成的 PORT 和 PIN 宏，
+ * 不能假设某一侧编码器的 A/B 都在 GPIOA 或都在 GPIOB。
+ */
+#define ENCODER_LEFT_A_PORT       (ENCODER_E2A_PORT)
+#define ENCODER_LEFT_A_PIN        (ENCODER_E2A_PIN)
+#define ENCODER_LEFT_B_PORT       (ENCODER_E2B_PORT)
+#define ENCODER_LEFT_B_PIN        (ENCODER_E2B_PIN)
+
+#define ENCODER_RIGHT_A_PORT      (ENCODER_E1A_PORT)
+#define ENCODER_RIGHT_A_PIN       (ENCODER_E1A_PIN)
+#define ENCODER_RIGHT_B_PORT      (ENCODER_E1B_PORT)
+#define ENCODER_RIGHT_B_PIN       (ENCODER_E1B_PIN)
 
 #define ENCODER_LEFT_PINS         (ENCODER_LEFT_A_PIN | ENCODER_LEFT_B_PIN)
 #define ENCODER_RIGHT_PINS        (ENCODER_RIGHT_A_PIN | ENCODER_RIGHT_B_PIN)
-// #define ENCODER_ALL_PINS          (ENCODER_LEFT_PINS | ENCODER_RIGHT_PINS)
+
+#define ENCODER_LEFT_IRQ_PINS     (ENCODER_LEFT_A_PIN)
+#define ENCODER_RIGHT_IRQ_PINS    (ENCODER_RIGHT_A_PIN)
+
+/*
+ * 当前 SysConfig：
+ *   GPIOA: E1B = PA25, E1A = PA26
+ *   GPIOB: E2B = PB20, E2A = PB24
+ *
+ * 若后续重新分配编码器引脚，需要同步检查这里的端口掩码。
+ */
+#define ENCODER_GPIOA_PINS        (ENCODER_E1A_PIN | \
+                                   ENCODER_E1B_PIN)
+#define ENCODER_GPIOB_PINS        (ENCODER_E2A_PIN | \
+                                   ENCODER_E2B_PIN)
+#define ENCODER_GPIOA_IRQ_PINS    (ENCODER_E1A_PIN)
+#define ENCODER_GPIOB_IRQ_PINS    (ENCODER_E2A_PIN)
+#define ENCODER_GPIOA_POLARITY_MASK  (DL_GPIO_PIN_25_EDGE_RISE_FALL | \
+                                      DL_GPIO_PIN_26_EDGE_RISE_FALL)
+#define ENCODER_GPIOB_POLARITY_MASK  (DL_GPIO_PIN_20_EDGE_RISE_FALL | \
+                                      DL_GPIO_PIN_24_EDGE_RISE_FALL)
+#define ENCODER_GPIOA_EDGE_POLARITY  (DL_GPIO_PIN_26_EDGE_RISE)
+#define ENCODER_GPIOB_EDGE_POLARITY  (DL_GPIO_PIN_24_EDGE_RISE)
 
 /* π 放大 1000000 倍，避免浮点参与编码器距离计算。 */
 #define ENCODER_PI_X1000000       (3141593LL)
@@ -52,39 +90,63 @@ static int32_t g_encoderRightLastSpeedCount = 0;
 /* 1ms 计数器，累计到 ENCODER_SPEED_PERIOD_MS 后更新速度。 */
 static uint8_t g_encoderSpeedTickMs = 0;
 
-/* 读取某一组 A/B 引脚当前状态：bit1=A，bit0=B。 */
-static uint8_t encoder_read_A_state(uint32_t aPin, uint32_t bPin)
+static uint8_t encoder_left_a_is_high(void)
 {
-    uint32_t pins = DL_GPIO_readPins(GPIOA, aPin | bPin);
+    return (DL_GPIO_readPins(ENCODER_LEFT_A_PORT, ENCODER_LEFT_A_PIN) &
+            ENCODER_LEFT_A_PIN) != 0U;
+}
+
+static uint8_t encoder_left_b_is_high(void)
+{
+    return (DL_GPIO_readPins(ENCODER_LEFT_B_PORT, ENCODER_LEFT_B_PIN) &
+            ENCODER_LEFT_B_PIN) != 0U;
+}
+
+static uint8_t encoder_right_a_is_high(void)
+{
+    return (DL_GPIO_readPins(ENCODER_RIGHT_A_PORT, ENCODER_RIGHT_A_PIN) &
+            ENCODER_RIGHT_A_PIN) != 0U;
+}
+
+static uint8_t encoder_right_b_is_high(void)
+{
+    return (DL_GPIO_readPins(ENCODER_RIGHT_B_PORT, ENCODER_RIGHT_B_PIN) &
+            ENCODER_RIGHT_B_PIN) != 0U;
+}
+
+/* 读取左轮 A/B 当前状态：bit1=A，bit0=B。 */
+static uint8_t encoder_read_left_state(void)
+{
     uint8_t state = 0;
 
-    if ((pins & aPin) != 0U) {
+    if (encoder_left_a_is_high()) {
         state |= 0x02U;
     }
 
-    if ((pins & bPin) != 0U) {
+    if (encoder_left_b_is_high()) {
         state |= 0x01U;
     }
 
     return state;
 }
 
-static uint8_t encoder_read_B_state(uint32_t aPin, uint32_t bPin)
+/* 读取右轮 A/B 当前状态：bit1=A，bit0=B。 */
+static uint8_t encoder_read_right_state(void)
 {
-    uint32_t pins = DL_GPIO_readPins(GPIOB, aPin | bPin);
     uint8_t state = 0;
 
-    if ((pins & aPin) != 0U) {
+    if (encoder_right_a_is_high()) {
         state |= 0x02U;
     }
 
-    if ((pins & bPin) != 0U) {
+    if (encoder_right_b_is_high()) {
         state |= 0x01U;
     }
 
     return state;
 }
 
+#if 0
 static int8_t encoder_get_delta(uint8_t lastState, uint8_t currentState)
 {
     /*
@@ -107,27 +169,22 @@ static int8_t encoder_get_delta(uint8_t lastState, uint8_t currentState)
     return quadratureTable[((lastState & 0x03U) << 2) |
                            (currentState & 0x03U)];
 }
+#endif
 
 static void encoder_update_left(void)
 {
-    /* 左轮 A/B 状态变化后，根据状态表得到本次增量。 */
-    uint8_t currentState =
-        encoder_read_A_state(ENCODER_LEFT_A_PIN, ENCODER_LEFT_B_PIN);
-    int8_t delta = encoder_get_delta(g_encoderLeftLastState, currentState);
+    /* A 相上升沿到来时读取 B 相判断方向。 */
+    int8_t delta = encoder_left_b_is_high() ? 1 : -1;
 
     g_encoderLeftCount += (int32_t) delta * ENCODER_LEFT_DIR;
-    g_encoderLeftLastState = currentState;
 }
 
 static void encoder_update_right(void)
 {
-    /* 右轮 A/B 状态变化后，根据状态表得到本次增量。 */
-    uint8_t currentState =
-        encoder_read_B_state(ENCODER_RIGHT_A_PIN, ENCODER_RIGHT_B_PIN);
-    int8_t delta = encoder_get_delta(g_encoderRightLastState, currentState);
+    /* A 相上升沿到来时读取 B 相判断方向。 */
+    int8_t delta = encoder_right_b_is_high() ? 1 : -1;
 
     g_encoderRightCount += (int32_t) delta * ENCODER_RIGHT_DIR;
-    g_encoderRightLastState = currentState;
 }
 
 static int32_t encoder_delta_to_speed_mm_s(int32_t deltaCount)
@@ -197,60 +254,53 @@ void encoder_init(void)
     g_encoderSpeedTickMs = 0;
 
     /* 记录当前AB初始状态。 */
-    g_encoderLeftLastState =
-        encoder_read_A_state(
-            ENCODER_LEFT_A_PIN,
-            ENCODER_LEFT_B_PIN);
+    g_encoderLeftLastState = encoder_read_left_state();
+    g_encoderRightLastState = encoder_read_right_state();
 
-    g_encoderRightLastState =
-        encoder_read_B_state(
-            ENCODER_RIGHT_A_PIN,
-            ENCODER_RIGHT_B_PIN);
+    DL_GPIO_disableInterrupt(
+        GPIOA,
+        ENCODER_GPIOA_PINS);
 
-    /*
-     * PA25、PA26属于GPIOA上半区16～31。
-     */
+    DL_GPIO_disableInterrupt(
+        GPIOB,
+        ENCODER_GPIOB_PINS);
+
+    GPIOA->POLARITY31_16 &= ~ENCODER_GPIOA_POLARITY_MASK;
+    GPIOB->POLARITY31_16 &= ~ENCODER_GPIOB_POLARITY_MASK;
+
     DL_GPIO_setUpperPinsPolarity(
         GPIOA,
-        DL_GPIO_PIN_25_EDGE_RISE_FALL |
-        DL_GPIO_PIN_26_EDGE_RISE_FALL);
+        ENCODER_GPIOA_EDGE_POLARITY);
 
-    /*
-     * PB20、PB24属于GPIOB上半区16～31。
-     */
     DL_GPIO_setUpperPinsPolarity(
         GPIOB,
-        DL_GPIO_PIN_20_EDGE_RISE_FALL |
-        DL_GPIO_PIN_24_EDGE_RISE_FALL);
+        ENCODER_GPIOB_EDGE_POLARITY);
 
     /* 清除可能残留的GPIO中断标志。 */
     DL_GPIO_clearInterruptStatus(
         GPIOA,
-        ENCODER_LEFT_PINS);
+        ENCODER_GPIOA_PINS);
 
     DL_GPIO_clearInterruptStatus(
         GPIOB,
-        ENCODER_RIGHT_PINS);
+        ENCODER_GPIOB_PINS);
 
-    /* 使能左右编码器四个引脚的中断。 */
+    /* 只使能 A 相中断，B 相保留为方向输入。 */
     DL_GPIO_enableInterrupt(
         GPIOA,
-        ENCODER_LEFT_PINS);
+        ENCODER_GPIOA_IRQ_PINS);
 
     DL_GPIO_enableInterrupt(
         GPIOB,
-        ENCODER_RIGHT_PINS);
+        ENCODER_GPIOB_IRQ_PINS);
 
-    /*
-     * GPIOA和GPIOB在MSPM0G3507中使用同一个IRQ 1，
-     * 清除一次共享NVIC挂起标志即可。
-     */
-    NVIC_ClearPendingIRQ(GPIOA_INT_IRQn);
+    NVIC_ClearPendingIRQ(ENCODER_GPIOA_INT_IRQN);
+    NVIC_ClearPendingIRQ(ENCODER_GPIOB_INT_IRQN);
 
     __set_PRIMASK(primask);
 
-    /* GPIOA和GPIOB共用IRQ 1，只需要使能一次。 */
-    NVIC_EnableIRQ(GPIOA_INT_IRQn);
+    NVIC_EnableIRQ(ENCODER_GPIOA_INT_IRQN);
+    NVIC_EnableIRQ(ENCODER_GPIOB_INT_IRQN);
 }
 
 void encoder_tick_1ms(void)
@@ -325,8 +375,7 @@ void encoder_reset_left_count(void)
     g_encoderLeftCount = 0;
     g_encoderLeftSpeedMmS = 0;
     g_encoderLeftLastSpeedCount = 0;
-    g_encoderLeftLastState =
-        encoder_read_A_state(ENCODER_LEFT_A_PIN, ENCODER_LEFT_B_PIN);
+    g_encoderLeftLastState = encoder_read_left_state();
     __set_PRIMASK(primask);
 }
 
@@ -339,8 +388,7 @@ void encoder_reset_right_count(void)
     g_encoderRightCount = 0;
     g_encoderRightSpeedMmS = 0;
     g_encoderRightLastSpeedCount = 0;
-    g_encoderRightLastState =
-        encoder_read_B_state(ENCODER_RIGHT_A_PIN, ENCODER_RIGHT_B_PIN);
+    g_encoderRightLastState = encoder_read_right_state();
     __set_PRIMASK(primask);
 }
 
@@ -357,10 +405,8 @@ void encoder_reset_count(void)
     g_encoderLeftLastSpeedCount = 0;
     g_encoderRightLastSpeedCount = 0;
     g_encoderSpeedTickMs = 0;
-    g_encoderLeftLastState =
-        encoder_read_A_state(ENCODER_LEFT_A_PIN, ENCODER_LEFT_B_PIN);
-    g_encoderRightLastState =
-        encoder_read_B_state(ENCODER_RIGHT_A_PIN, ENCODER_RIGHT_B_PIN);
+    g_encoderLeftLastState = encoder_read_left_state();
+    g_encoderRightLastState = encoder_read_right_state();
     __set_PRIMASK(primask);
 }
 
@@ -374,14 +420,14 @@ void encoder_gpio_irq_handler(void)
     uint32_t pendingA;
     uint32_t pendingB;
 
-    /* 分别读取GPIOA和GPIOB的中断状态。 */
+    /* 分别读取 GPIOA 和 GPIOB 的编码器中断状态。 */
     pendingA = DL_GPIO_getEnabledInterruptStatus(
         GPIOA,
-        ENCODER_LEFT_PINS);
+        ENCODER_GPIOA_IRQ_PINS);
 
     pendingB = DL_GPIO_getEnabledInterruptStatus(
         GPIOB,
-        ENCODER_RIGHT_PINS);
+        ENCODER_GPIOB_IRQ_PINS);
 
     /*
      * 先清除本次中断标志，再读取AB状态。
@@ -389,11 +435,17 @@ void encoder_gpio_irq_handler(void)
      */
     if (pendingA != 0U) {
         DL_GPIO_clearInterruptStatus(GPIOA, pendingA);
-        encoder_update_left();
     }
 
     if (pendingB != 0U) {
         DL_GPIO_clearInterruptStatus(GPIOB, pendingB);
+    }
+
+    if (((pendingA | pendingB) & ENCODER_LEFT_IRQ_PINS) != 0U) {
+        encoder_update_left();
+    }
+
+    if (((pendingA | pendingB) & ENCODER_RIGHT_IRQ_PINS) != 0U) {
         encoder_update_right();
     }
 }

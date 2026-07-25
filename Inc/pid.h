@@ -42,7 +42,7 @@ typedef struct {
  * 注意：speed_pid_init() 后是否立即使用该默认值，要看 pid.c 里的实现。
  * 上层任务一般会主动调用 speed_pid_set_speed() 设置目标速度。
  */
-#define SPEED_PID_DEFAULT_LEFT_TARGET_MM_S      (800)
+#define SPEED_PID_DEFAULT_LEFT_TARGET_MM_S      (0)
 #define SPEED_PID_DEFAULT_RIGHT_TARGET_MM_S     (800)
 
 /*
@@ -55,16 +55,16 @@ typedef struct {
  *   用于克服电机静摩擦。目标速度非 0 且 PID 输出太小时，
  *   会补偿一个最小启动 PWM。
  */
-#define SPEED_PID_LEFT_KP               (2200)
-#define SPEED_PID_LEFT_KI               (110)
+#define SPEED_PID_LEFT_KP               (6500)
+#define SPEED_PID_LEFT_KI               (800)
 #define SPEED_PID_LEFT_KD               (0)
-#define SPEED_PID_LEFT_INTEGRAL_LIMIT   (20000)
+#define SPEED_PID_LEFT_INTEGRAL_LIMIT   (12000)
 #define SPEED_PID_LEFT_MIN_START_PWM    (500)
 
-#define SPEED_PID_RIGHT_KP              (2500)
-#define SPEED_PID_RIGHT_KI              (650)
+#define SPEED_PID_RIGHT_KP              (6000)
+#define SPEED_PID_RIGHT_KI              (700)
 #define SPEED_PID_RIGHT_KD              (0)
-#define SPEED_PID_RIGHT_INTEGRAL_LIMIT  (50000)
+#define SPEED_PID_RIGHT_INTEGRAL_LIMIT  (12000)
 #define SPEED_PID_RIGHT_MIN_START_PWM   (500)
 
 /* 初始化一个通用 PID 控制器。 */

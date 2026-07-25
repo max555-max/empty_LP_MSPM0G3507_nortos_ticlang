@@ -8,33 +8,33 @@
  * AB 相编码器计数/测速模块
  *
  * 计数方式：
- *   GPIO 中断读取 A/B 两相；
- *   使用 AB 相四倍频，所以 A/B 任意边沿变化都会参与计数。
+ *   GPIO 中断读取 A 相边沿；
+ *   B 相只用于判断方向，降低高速时的 GPIO 中断负载。
  *
- * 当前引脚映射：
- *   左轮：E2A/E2B = PA16/PA17
- *   右轮：E1A/E1B = PA14/PA15
+ * 当前软件引脚映射以 Debug/ti_msp_dl_config.h 生成为准：
+ *   E1A/E1B、E2A/E2B 可能分布在不同 GPIO 端口。
  *
  * 注意：
  *   编码器模块自带上拉电阻，SysConfig 中 GPIO 不要再开内部上下拉。
  */
 
 /* 左右编码器方向修正。某侧前进计数为负/正不符合预期时，只改这里。 */
-#define ENCODER_LEFT_DIR                  (-1)
-#define ENCODER_RIGHT_DIR                 (1)
+#define ENCODER_LEFT_DIR                  (1)
+#define ENCODER_RIGHT_DIR                 (-1)
 
 /*
  * 编码器/轮子物理参数：
  *   电机编码器线数：13；
- *   AB 四倍频：x4；
+ *   A 相单边沿计数：x1；
  *   减速比：1:20.409；
  *   轮径：48mm；
  *   测速周期：10ms。
  */
-#define ENCODER_LINES_PER_MOTOR_REV       (13)
-#define ENCODER_QUADRATURE_MULTIPLIER     (4)
-#define ENCODER_GEAR_RATIO_X1000          (20409)
-#define ENCODER_WHEEL_DIAMETER_MM         (48)
+#define ENCODER_LINES_PER_MOTOR_REV       (500)
+/* Runtime count mode: A-phase rising edge only, B-phase is read for direction. */
+#define ENCODER_QUADRATURE_MULTIPLIER     (1)
+#define ENCODER_GEAR_RATIO_X1000          (28000)
+#define ENCODER_WHEEL_DIAMETER_MM         (65)
 #define ENCODER_SPEED_PERIOD_MS           (10)
 
 /* 初始化编码器 GPIO 状态和内部计数变量。 */

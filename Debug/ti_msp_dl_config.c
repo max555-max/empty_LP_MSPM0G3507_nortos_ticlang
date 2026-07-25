@@ -55,6 +55,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_init(void)
     SYSCFG_DL_PWM_init();
     SYSCFG_DL_I2C_ICM42688_init();
     SYSCFG_DL_UART0_init();
+    SYSCFG_DL_UART_1_init();
     SYSCFG_DL_SYSTICK_init();
     /* Ensure backup structures have no valid state */
 	gPWMBackup.backupRdy 	= false;
@@ -91,6 +92,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_initPower(void)
     DL_TimerG_reset(PWM_INST);
     DL_I2C_reset(I2C_ICM42688_INST);
     DL_UART_Main_reset(UART0_INST);
+    DL_UART_Main_reset(UART_1_INST);
 
 
     DL_GPIO_enablePower(GPIOA);
@@ -98,6 +100,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_initPower(void)
     DL_TimerG_enablePower(PWM_INST);
     DL_I2C_enablePower(I2C_ICM42688_INST);
     DL_UART_Main_enablePower(UART0_INST);
+    DL_UART_Main_enablePower(UART_1_INST);
 
     delay_cycles(POWER_STARTUP_DELAY);
 }
@@ -125,32 +128,44 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
         GPIO_UART0_IOMUX_TX, GPIO_UART0_IOMUX_TX_FUNC);
     DL_GPIO_initPeripheralInputFunction(
         GPIO_UART0_IOMUX_RX, GPIO_UART0_IOMUX_RX_FUNC);
+    DL_GPIO_initPeripheralOutputFunction(
+        GPIO_UART_1_IOMUX_TX, GPIO_UART_1_IOMUX_TX_FUNC);
+    DL_GPIO_initPeripheralInputFunction(
+        GPIO_UART_1_IOMUX_RX, GPIO_UART_1_IOMUX_RX_FUNC);
 
     DL_GPIO_initDigitalOutput(LED_LED1_IOMUX);
 
     DL_GPIO_initDigitalOutput(BUZZER_BZ_IOMUX);
 
-    DL_GPIO_initDigitalOutput(AIN_AIN1_IOMUX);
+    DL_GPIO_initDigitalOutput(OLED_RST_PIN_RST_IOMUX);
+
+    DL_GPIO_initDigitalOutput(OLED_DC_PIN_DC_IOMUX);
+
+    DL_GPIO_initDigitalOutput(OLED_SCL_PIN_SCL_IOMUX);
+
+    DL_GPIO_initDigitalOutput(OLED_SDA_PIN_SDA_IOMUX);
 
     DL_GPIO_initDigitalOutput(AIN_AIN2_IOMUX);
 
-    DL_GPIO_initDigitalOutput(BIN_BIN1_IOMUX);
+    DL_GPIO_initDigitalOutput(AIN_AIN1_IOMUX);
 
     DL_GPIO_initDigitalOutput(BIN_BIN2_IOMUX);
 
-    DL_GPIO_initDigitalInputFeatures(ENCODER_E1A_IOMUX,
-		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
-		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
+    DL_GPIO_initDigitalOutput(BIN_BIN1_IOMUX);
 
     DL_GPIO_initDigitalInputFeatures(ENCODER_E1B_IOMUX,
 		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
 		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
 
-    DL_GPIO_initDigitalInputFeatures(ENCODER_E2A_IOMUX,
+    DL_GPIO_initDigitalInputFeatures(ENCODER_E1A_IOMUX,
 		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
 		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
 
     DL_GPIO_initDigitalInputFeatures(ENCODER_E2B_IOMUX,
+		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
+		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
+
+    DL_GPIO_initDigitalInputFeatures(ENCODER_E2A_IOMUX,
 		 DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_NONE,
 		 DL_GPIO_HYSTERESIS_DISABLE, DL_GPIO_WAKEUP_DISABLE);
 
@@ -160,32 +175,40 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 
     DL_GPIO_initDigitalOutput(GRAY_SERIAL_CLK_IOMUX);
 
-    DL_GPIO_setPins(GPIOA, AIN_AIN1_PIN |
+    DL_GPIO_setPins(GPIOA, OLED_SCL_PIN_SCL_PIN |
+		OLED_SDA_PIN_SDA_PIN |
 		AIN_AIN2_PIN |
-		BIN_BIN1_PIN |
-		BIN_BIN2_PIN);
-    DL_GPIO_enableOutput(GPIOA, AIN_AIN1_PIN |
+		AIN_AIN1_PIN |
+		BIN_BIN2_PIN |
+		BIN_BIN1_PIN);
+    DL_GPIO_enableOutput(GPIOA, OLED_SCL_PIN_SCL_PIN |
+		OLED_SDA_PIN_SDA_PIN |
 		AIN_AIN2_PIN |
-		BIN_BIN1_PIN |
-		BIN_BIN2_PIN);
+		AIN_AIN1_PIN |
+		BIN_BIN2_PIN |
+		BIN_BIN1_PIN);
     DL_GPIO_setUpperPinsPolarity(GPIOA, DL_GPIO_PIN_25_EDGE_RISE_FALL |
 		DL_GPIO_PIN_26_EDGE_RISE_FALL);
-    DL_GPIO_clearInterruptStatus(GPIOA, ENCODER_E1A_PIN |
-		ENCODER_E1B_PIN);
-    DL_GPIO_enableInterrupt(GPIOA, ENCODER_E1A_PIN |
-		ENCODER_E1B_PIN);
+    DL_GPIO_clearInterruptStatus(GPIOA, ENCODER_E1B_PIN |
+		ENCODER_E1A_PIN);
+    DL_GPIO_enableInterrupt(GPIOA, ENCODER_E1B_PIN |
+		ENCODER_E1A_PIN);
     DL_GPIO_clearPins(GPIOB, BUZZER_BZ_PIN);
     DL_GPIO_setPins(GPIOB, LED_LED1_PIN |
+		OLED_RST_PIN_RST_PIN |
+		OLED_DC_PIN_DC_PIN |
 		GRAY_SERIAL_CLK_PIN);
     DL_GPIO_enableOutput(GPIOB, LED_LED1_PIN |
 		BUZZER_BZ_PIN |
+		OLED_RST_PIN_RST_PIN |
+		OLED_DC_PIN_DC_PIN |
 		GRAY_SERIAL_CLK_PIN);
     DL_GPIO_setUpperPinsPolarity(GPIOB, DL_GPIO_PIN_20_EDGE_RISE_FALL |
 		DL_GPIO_PIN_24_EDGE_RISE_FALL);
-    DL_GPIO_clearInterruptStatus(GPIOB, ENCODER_E2A_PIN |
-		ENCODER_E2B_PIN);
-    DL_GPIO_enableInterrupt(GPIOB, ENCODER_E2A_PIN |
-		ENCODER_E2B_PIN);
+    DL_GPIO_clearInterruptStatus(GPIOB, ENCODER_E2B_PIN |
+		ENCODER_E2A_PIN);
+    DL_GPIO_enableInterrupt(GPIOB, ENCODER_E2B_PIN |
+		ENCODER_E2A_PIN);
 
 }
 
@@ -411,6 +434,43 @@ SYSCONFIG_WEAK void SYSCFG_DL_UART0_init(void)
 
 
     DL_UART_Main_enable(UART0_INST);
+}
+static const DL_UART_Main_ClockConfig gUART_1ClockConfig = {
+    .clockSel    = DL_UART_MAIN_CLOCK_BUSCLK,
+    .divideRatio = DL_UART_MAIN_CLOCK_DIVIDE_RATIO_1
+};
+
+static const DL_UART_Main_Config gUART_1Config = {
+    .mode        = DL_UART_MAIN_MODE_NORMAL,
+    .direction   = DL_UART_MAIN_DIRECTION_TX_RX,
+    .flowControl = DL_UART_MAIN_FLOW_CONTROL_NONE,
+    .parity      = DL_UART_MAIN_PARITY_NONE,
+    .wordLength  = DL_UART_MAIN_WORD_LENGTH_8_BITS,
+    .stopBits    = DL_UART_MAIN_STOP_BITS_ONE
+};
+
+SYSCONFIG_WEAK void SYSCFG_DL_UART_1_init(void)
+{
+    DL_UART_Main_setClockConfig(UART_1_INST, (DL_UART_Main_ClockConfig *) &gUART_1ClockConfig);
+
+    DL_UART_Main_init(UART_1_INST, (DL_UART_Main_Config *) &gUART_1Config);
+    /*
+     * Configure baud rate by setting oversampling and baud rate divisors.
+     *  Target baud rate: 9600
+     *  Actual baud rate: 9599.81
+     */
+    DL_UART_Main_setOversampling(UART_1_INST, DL_UART_OVERSAMPLING_RATE_16X);
+    DL_UART_Main_setBaudRateDivisor(UART_1_INST, UART_1_IBRD_40_MHZ_9600_BAUD, UART_1_FBRD_40_MHZ_9600_BAUD);
+
+
+    /* Configure Interrupts */
+    DL_UART_Main_enableInterrupt(UART_1_INST,
+                                 DL_UART_MAIN_INTERRUPT_RX);
+    /* Setting the Interrupt Priority */
+    NVIC_SetPriority(UART_1_INST_INT_IRQN, 1);
+
+
+    DL_UART_Main_enable(UART_1_INST);
 }
 
 SYSCONFIG_WEAK void SYSCFG_DL_SYSTICK_init(void)

@@ -6,340 +6,536 @@
 #include "vofa.h"
 
 /*
- * attitude.c
+ * 本文件与 ICM42688 驱动中的量程配置必须保持一致：
  *
- * 姿态解算模块。
- *
- * 当前算法：
- *   roll/pitch：陀螺仪积分 + 加速度计互补滤波修正；
- *   yaw       ：Z 轴陀螺仪积分。
- *
- * 注意：
- *   没有磁力计时，yaw 没有绝对参考，只能依靠陀螺仪积分。
- *   因此 yaw 会有少量漂移，静止零偏学习只能减小漂移，不能完全消除。
+ *   加速度计：±16 g     -> 2048 LSB/g
+ *   陀螺仪：  ±2000 dps -> 16.384 LSB/(deg/s)
  */
+#define ATTITUDE_EXPECTED_WHO_AM_I          (0x47U)
+#define ATTITUDE_ACCEL_1G_LSB               (2048.0f)
+#define ATTITUDE_GYRO_DPS_PER_LSB           (2000.0f / 32768.0f)
+
+#define ATTITUDE_RAD_TO_DEG                 (57.29577951308232f)
+#define ATTITUDE_DEG_TO_RAD                 (0.017453292519943295f)
 
 /*
- * ICM42688 当前在 icm42688.c 中配置为：
- *   accel：±16g     -> 2048 LSB/g
- *   gyro ：±2000dps -> 16.384 LSB/(deg/s)
+ * Z轴角速度比例标定系数。
+ *
+ * 初始保持 1.0。
+ * 如果实际旋转 360°，程序累计角度为 measuredDeg：
+ *
+ *   新系数 = 360.0f / measuredDeg
+ *
+ * 推荐正反方向分别转多圈后取平均值再填写。
  */
-#define ATTITUDE_ACCEL_1G_LSB             (2048.0f)
-#define ATTITUDE_GYRO_DPS_PER_LSB         (2000.0f / 32768.0f)
-#define ATTITUDE_RAD_TO_DEG               (57.29577951308232f)
-#define ATTITUDE_DEG_TO_RAD               (0.017453292519943295f)
+#define ATTITUDE_GYRO_Z_SCALE               (1.000000f)
 
 /*
- * 互补滤波系数：
- *   0.98：更相信陀螺仪，曲线更平滑，但漂移略大；
- *   0.95：更相信加速度计，漂移更小，但更容易受震动影响。
+ * roll、pitch 互补滤波。
+ * 0.98 表示短期主要相信陀螺仪，长期由加速度计纠偏。
  */
-#define ATTITUDE_COMPLEMENTARY_ALPHA       (0.98f)
-#define ATTITUDE_ACCEL_LPF_ALPHA           (0.20f)
-#define ATTITUDE_ACCEL_MIN_G               (0.70f)
-#define ATTITUDE_ACCEL_MAX_G               (1.30f)
-#define ATTITUDE_DT_MIN_S                  (0.001f)
-#define ATTITUDE_DT_MAX_S                  (0.050f)
-#define ATTITUDE_GYRO_DEADBAND_DPS         (0.15f)
-#define ATTITUDE_YAW_DEADBAND_DPS          (0.20f)
-#define ATTITUDE_STATIONARY_GYRO_DPS       (0.80f)
-#define ATTITUDE_GYRO_BIAS_LEARN_ALPHA     (0.002f)
-#define ATTITUDE_PITCH_LIMIT_DEG           (89.0f)
+#define ATTITUDE_COMPLEMENTARY_ALPHA        (0.98f)
 
-/* 陀螺仪零偏，上电静止校准得到。 */
-static float gyroBiasX = 0.0f;
-static float gyroBiasY = 0.0f;
-static float gyroBiasZ = 0.0f;
+/* 加速度计一阶低通滤波系数。 */
+#define ATTITUDE_ACCEL_LPF_ALPHA            (0.20f)
 
-/* 加速度计低通滤波值，用于 roll/pitch 修正。 */
-static float accFiltX = 0.0f;
-static float accFiltY = 0.0f;
-static float accFiltZ = ATTITUDE_ACCEL_1G_LSB;
-static bool accFilterReady = false;
-
-/* 非阻塞校准状态。 */
-static bool gyroCalibrated = false;
-static uint16_t gyroCalCount = 0U;
-static int32_t gyroCalSumX = 0;
-static int32_t gyroCalSumY = 0;
-static int32_t gyroCalSumZ = 0;
-static int32_t accCalSumX = 0;
-static int32_t accCalSumY = 0;
-static int32_t accCalSumZ = 0;
-
-/* 当前欧拉角。 */
-static float rollDeg = 0.0f;
-static float pitchDeg = 0.0f;
-static float yawDeg = 0.0f;
 /*
- * 当前经过零偏补偿和死区处理后的 Z 轴角速度。
- * 单位：°/s。
+ * 只有加速度模长接近重力时，才允许使用加速度计纠正 roll、pitch。
  */
-static float gyroZDps = 0.0f;
-/* 上电静止时的 roll/pitch 零点，用来抵消安装倾角。 */
-static float rollZeroDeg = 0.0f;
-static float pitchZeroDeg = 0.0f;
+#define ATTITUDE_ACCEL_MIN_G                (0.70f)
+#define ATTITUDE_ACCEL_MAX_G                (1.30f)
 
-static float attitude_clamp(float value, float minValue, float maxValue);
-static float attitude_apply_deadband(float value, float deadband);
+/* 姿态更新时间范围。 */
+#define ATTITUDE_DT_MIN_S                   (0.001f)
+#define ATTITUDE_DT_MAX_S                   (0.050f)
+
+/*
+ * 陀螺仪死区。
+ *
+ * yaw 死区过大时会漏掉低速转动，导致固定角度旋转偏小。
+ * 0.05 dps 作为较保守的初始值。
+ */
+#define ATTITUDE_GYRO_DEADBAND_DPS          (0.10f)
+#define ATTITUDE_YAW_DEADBAND_DPS           (0.05f)
+
+/*
+ * 静止在线零偏学习。
+ *
+ * 阈值设置得较小，避免把真实的慢速旋转学习成零偏。
+ * 不需要在线学习时可把 ALPHA 改成 0.0f。
+ */
+#define ATTITUDE_STATIONARY_GYRO_DPS        (0.20f)
+#define ATTITUDE_STATIONARY_ACCEL_MIN_G     (0.95f)
+#define ATTITUDE_STATIONARY_ACCEL_MAX_G     (1.05f)
+#define ATTITUDE_GYRO_BIAS_LEARN_ALPHA      (0.0002f)
+
+/* 避免欧拉角公式在 pitch 接近 ±90° 时出现奇异。 */
+#define ATTITUDE_PITCH_LIMIT_DEG            (89.0f)
+
+/* 阻塞式校准最多允许的尝试倍数。 */
+#define ATTITUDE_CALIB_MAX_ATTEMPT_FACTOR   (3U)
+
+/* 陀螺仪零偏，单位为原始 LSB。 */
+static float g_gyroBiasX = 0.0f;
+static float g_gyroBiasY = 0.0f;
+static float g_gyroBiasZ = 0.0f;
+
+/* 加速度计低通滤波值，单位为原始 LSB。 */
+static float g_accFiltX = 0.0f;
+static float g_accFiltY = 0.0f;
+static float g_accFiltZ = ATTITUDE_ACCEL_1G_LSB;
+static bool g_accFilterReady = false;
+
+/* 非阻塞校准累计状态。 */
+static bool g_gyroCalibrated = false;
+static uint32_t g_gyroCalCount = 0U;
+static int64_t g_gyroCalSumX = 0;
+static int64_t g_gyroCalSumY = 0;
+static int64_t g_gyroCalSumZ = 0;
+static int64_t g_accCalSumX = 0;
+static int64_t g_accCalSumY = 0;
+static int64_t g_accCalSumZ = 0;
+
+/* 当前欧拉角，单位 deg。 */
+static float g_rollDeg = 0.0f;
+static float g_pitchDeg = 0.0f;
+static float g_yawDeg = 0.0f;
+
+/*
+ * 安装零点：
+ * 校准时把传感器当前静止姿态定义为 roll=0、pitch=0。
+ */
+static float g_rollZeroDeg = 0.0f;
+static float g_pitchZeroDeg = 0.0f;
+
+/*
+ * 当前最终有效的 Z轴角速度，单位 deg/s。
+ * angle_control.c 通过 getter 读取。
+ */
+static float g_gyroZDps = 0.0f;
+
+static float attitude_clamp(
+    float value,
+    float minValue,
+    float maxValue);
+
+static float attitude_apply_deadband(
+    float value,
+    float deadband);
+
 static float attitude_wrap_180(float angle);
+
+static bool attitude_raw_is_valid(
+    const icm42688_raw_t *raw);
+
 static void attitude_accel_to_euler(
-    float ax, float ay, float az, float *roll, float *pitch);
-static void attitude_set_zero_from_accel(float ax, float ay, float az);
+    float ax,
+    float ay,
+    float az,
+    float *roll,
+    float *pitch);
+
+static void attitude_set_zero_from_accel(
+    float ax,
+    float ay,
+    float az);
+
+static void attitude_reset_calibration_accumulator(void);
 
 void attitude_init(void)
 {
-    /* 清空零偏、滤波、校准和姿态状态。 */
-    gyroBiasX = 0.0f;
-    gyroBiasY = 0.0f;
-    gyroBiasZ = 0.0f;
+    g_gyroBiasX = 0.0f;
+    g_gyroBiasY = 0.0f;
+    g_gyroBiasZ = 0.0f;
 
-    accFiltX = 0.0f;
-    accFiltY = 0.0f;
-    accFiltZ = ATTITUDE_ACCEL_1G_LSB;
-    accFilterReady = false;
+    g_accFiltX = 0.0f;
+    g_accFiltY = 0.0f;
+    g_accFiltZ = ATTITUDE_ACCEL_1G_LSB;
+    g_accFilterReady = false;
 
-    gyroCalibrated = false;
-    gyroCalCount = 0U;
-    gyroCalSumX = 0;
-    gyroCalSumY = 0;
-    gyroCalSumZ = 0;
-    accCalSumX = 0;
-    accCalSumY = 0;
-    accCalSumZ = 0;
+    g_gyroCalibrated = false;
+    attitude_reset_calibration_accumulator();
 
-    rollDeg = 0.0f;
-    pitchDeg = 0.0f;
-    yawDeg = 0.0f;
-    gyroZDps = 0.0f;
-    rollZeroDeg = 0.0f;
-    pitchZeroDeg = 0.0f;
+    g_rollDeg = 0.0f;
+    g_pitchDeg = 0.0f;
+    g_yawDeg = 0.0f;
+
+    g_rollZeroDeg = 0.0f;
+    g_pitchZeroDeg = 0.0f;
+
+    g_gyroZDps = 0.0f;
 }
 
 void attitude_calibrate_gyro(uint16_t sampleCount)
 {
-    icm42688_raw_t raw;
-    int32_t sumX = 0;
-    int32_t sumY = 0;
-    int32_t sumZ = 0;
-    int32_t sumAx = 0;
-    int32_t sumAy = 0;
-    int32_t sumAz = 0;
+    icm42688_raw_t raw = {0};
+
+    int64_t sumGx = 0;
+    int64_t sumGy = 0;
+    int64_t sumGz = 0;
+
+    int64_t sumAx = 0;
+    int64_t sumAy = 0;
+    int64_t sumAz = 0;
+
+    uint32_t validCount = 0U;
+    uint32_t attemptCount = 0U;
+    uint32_t maxAttempts;
+
+    g_gyroCalibrated = false;
+    g_gyroZDps = 0.0f;
 
     if (sampleCount == 0U) {
         return;
     }
 
+    maxAttempts =
+        (uint32_t)sampleCount *
+        ATTITUDE_CALIB_MAX_ATTEMPT_FACTOR;
+
     /*
-     * 阻塞式校准：
-     *   小车必须静止；
-     *   采集 sampleCount 次陀螺仪原始值求平均，作为零偏。
+     * 只累计 WHO_AM_I 正确的有效帧。
+     * I2C 偶发失败的数据不会污染零偏。
      */
-    for (uint16_t i = 0U; i < sampleCount; i++) {
+    while ((validCount < (uint32_t)sampleCount) &&
+           (attemptCount < maxAttempts)) {
+
+        attemptCount++;
         icm42688_read_raw(&raw);
-        sumX += raw.gyroX;
-        sumY += raw.gyroY;
-        sumZ += raw.gyroZ;
+
+        if (!attitude_raw_is_valid(&raw)) {
+            delay_ms(2U);
+            continue;
+        }
+
+        sumGx += raw.gyroX;
+        sumGy += raw.gyroY;
+        sumGz += raw.gyroZ;
+
         sumAx += raw.accelX;
         sumAy += raw.accelY;
         sumAz += raw.accelZ;
+
+        validCount++;
         delay_ms(2U);
     }
 
-    /* 陀螺仪零偏平均值。 */
-    gyroBiasX = (float) sumX / (float) sampleCount;
-    gyroBiasY = (float) sumY / (float) sampleCount;
-    gyroBiasZ = (float) sumZ / (float) sampleCount;
+    /*
+     * 未获得足够有效样本时保持“未校准”状态。
+     */
+    if (validCount < (uint32_t)sampleCount) {
+        return;
+    }
 
-    /* 加速度计平均值用于建立 roll/pitch 零点。 */
-    accFiltX = (float) sumAx / (float) sampleCount;
-    accFiltY = (float) sumAy / (float) sampleCount;
-    accFiltZ = (float) sumAz / (float) sampleCount;
-    accFilterReady = true;
+    g_gyroBiasX = (float)sumGx / (float)validCount;
+    g_gyroBiasY = (float)sumGy / (float)validCount;
+    g_gyroBiasZ = (float)sumGz / (float)validCount;
 
-    attitude_set_zero_from_accel(accFiltX, accFiltY, accFiltZ);
-    gyroCalibrated = true;
+    g_accFiltX = (float)sumAx / (float)validCount;
+    g_accFiltY = (float)sumAy / (float)validCount;
+    g_accFiltZ = (float)sumAz / (float)validCount;
+    g_accFilterReady = true;
+
+    attitude_set_zero_from_accel(
+        g_accFiltX,
+        g_accFiltY,
+        g_accFiltZ);
+
+    g_gyroCalibrated = true;
 }
 
 bool attitude_calibrate_gyro_step(
-    const icm42688_raw_t *raw, uint16_t sampleCount)
+    const icm42688_raw_t *raw,
+    uint16_t sampleCount)
 {
-    if (gyroCalibrated) {
-        /* 已校准完成时，后续调用直接返回 true。 */
+    if (g_gyroCalibrated) {
         return true;
     }
 
-    if ((raw == 0) || (sampleCount == 0U)) {
+    if ((sampleCount == 0U) ||
+        (!attitude_raw_is_valid(raw))) {
         return false;
     }
 
-    /* 非阻塞校准：每调用一次累加一帧原始数据。 */
-    gyroCalSumX += raw->gyroX;
-    gyroCalSumY += raw->gyroY;
-    gyroCalSumZ += raw->gyroZ;
-    accCalSumX += raw->accelX;
-    accCalSumY += raw->accelY;
-    accCalSumZ += raw->accelZ;
-    gyroCalCount++;
+    g_gyroCalSumX += raw->gyroX;
+    g_gyroCalSumY += raw->gyroY;
+    g_gyroCalSumZ += raw->gyroZ;
 
-    if (gyroCalCount < sampleCount) {
-        /* 样本数还没攒够，校准未完成。 */
+    g_accCalSumX += raw->accelX;
+    g_accCalSumY += raw->accelY;
+    g_accCalSumZ += raw->accelZ;
+
+    g_gyroCalCount++;
+
+    if (g_gyroCalCount < (uint32_t)sampleCount) {
         return false;
     }
 
-    /* 样本数足够后计算平均零偏。 */
-    gyroBiasX = (float) gyroCalSumX / (float) gyroCalCount;
-    gyroBiasY = (float) gyroCalSumY / (float) gyroCalCount;
-    gyroBiasZ = (float) gyroCalSumZ / (float) gyroCalCount;
+    g_gyroBiasX =
+        (float)g_gyroCalSumX / (float)g_gyroCalCount;
+    g_gyroBiasY =
+        (float)g_gyroCalSumY / (float)g_gyroCalCount;
+    g_gyroBiasZ =
+        (float)g_gyroCalSumZ / (float)g_gyroCalCount;
 
-    accFiltX = (float) accCalSumX / (float) gyroCalCount;
-    accFiltY = (float) accCalSumY / (float) gyroCalCount;
-    accFiltZ = (float) accCalSumZ / (float) gyroCalCount;
-    accFilterReady = true;
+    g_accFiltX =
+        (float)g_accCalSumX / (float)g_gyroCalCount;
+    g_accFiltY =
+        (float)g_accCalSumY / (float)g_gyroCalCount;
+    g_accFiltZ =
+        (float)g_accCalSumZ / (float)g_gyroCalCount;
+    g_accFilterReady = true;
 
-    attitude_set_zero_from_accel(accFiltX, accFiltY, accFiltZ);
-    gyroCalibrated = true;
+    attitude_set_zero_from_accel(
+        g_accFiltX,
+        g_accFiltY,
+        g_accFiltZ);
+
+    g_gyroZDps = 0.0f;
+    g_gyroCalibrated = true;
 
     return true;
 }
 
 bool attitude_is_gyro_calibrated(void)
 {
-    return gyroCalibrated;
+    return g_gyroCalibrated;
 }
 
-bool attitude_update_from_icm42688(const icm42688_raw_t *raw, float dt)
+bool attitude_update_from_icm42688(
+    const icm42688_raw_t *raw,
+    float dt)
 {
     float gx;
     float gy;
     float gz;
+
     float ax;
     float ay;
     float az;
+    float rawAccMagG;
     float accMagG;
+
     float rollRad;
     float pitchRad;
+    float cosPitch;
+
     float rollRateDps;
     float pitchRateDps;
     float yawRateDps;
+
     float rollAccDeg;
     float pitchAccDeg;
     float rollAccRelDeg;
     float pitchAccRelDeg;
 
-    if ((raw == 0) || (dt <= 0.0f)) {
+    if ((!attitude_raw_is_valid(raw)) ||
+        (!g_gyroCalibrated) ||
+        (dt <= 0.0f)) {
+        g_gyroZDps = 0.0f;
         return false;
     }
 
-    /* 限制 dt，避免任务卡顿或异常 dt 导致积分突变。 */
-    dt = attitude_clamp(dt, ATTITUDE_DT_MIN_S, ATTITUDE_DT_MAX_S);
-
-    /* 原始陀螺仪值减去零偏，再换算为 deg/s。 */
-    gx = ((float) raw->gyroX - gyroBiasX) * ATTITUDE_GYRO_DPS_PER_LSB;
-    gy = ((float) raw->gyroY - gyroBiasY) * ATTITUDE_GYRO_DPS_PER_LSB;
-    gz = ((float) raw->gyroZ - gyroBiasZ) * ATTITUDE_GYRO_DPS_PER_LSB;
+    dt = attitude_clamp(
+        dt,
+        ATTITUDE_DT_MIN_S,
+        ATTITUDE_DT_MAX_S);
 
     /*
-     * 静止零偏慢学习：
-     *   如果三轴角速度都很小，认为板子静止；
-     *   此时缓慢修正 gyroBias，主要用于减小 yaw 漂移。
+     * 零偏扣除并换算为 deg/s。
      */
-    if ((fabsf(gx) < ATTITUDE_STATIONARY_GYRO_DPS) &&
+    gx =
+        ((float)raw->gyroX - g_gyroBiasX) *
+        ATTITUDE_GYRO_DPS_PER_LSB;
+
+    gy =
+        ((float)raw->gyroY - g_gyroBiasY) *
+        ATTITUDE_GYRO_DPS_PER_LSB;
+
+    gz =
+        ((float)raw->gyroZ - g_gyroBiasZ) *
+        ATTITUDE_GYRO_DPS_PER_LSB *
+        ATTITUDE_GYRO_Z_SCALE;
+
+    /*
+     * 在线零偏学习必须同时满足：
+     *   1. 三轴角速度都非常小；
+     *   2. 加速度模长非常接近 1g。
+     *
+     * 这样比只判断陀螺仪更不容易把真实运动学成零偏。
+     */
+    rawAccMagG =
+        sqrtf(
+            (float)raw->accelX * (float)raw->accelX +
+            (float)raw->accelY * (float)raw->accelY +
+            (float)raw->accelZ * (float)raw->accelZ) /
+        ATTITUDE_ACCEL_1G_LSB;
+
+    if ((ATTITUDE_GYRO_BIAS_LEARN_ALPHA > 0.0f) &&
+        (fabsf(gx) < ATTITUDE_STATIONARY_GYRO_DPS) &&
         (fabsf(gy) < ATTITUDE_STATIONARY_GYRO_DPS) &&
-        (fabsf(gz) < ATTITUDE_STATIONARY_GYRO_DPS)) {
-        gyroBiasX += ATTITUDE_GYRO_BIAS_LEARN_ALPHA *
-                     ((float) raw->gyroX - gyroBiasX);
-        gyroBiasY += ATTITUDE_GYRO_BIAS_LEARN_ALPHA *
-                     ((float) raw->gyroY - gyroBiasY);
-        gyroBiasZ += ATTITUDE_GYRO_BIAS_LEARN_ALPHA *
-                     ((float) raw->gyroZ - gyroBiasZ);
+        (fabsf(gz) < ATTITUDE_STATIONARY_GYRO_DPS) &&
+        (rawAccMagG >= ATTITUDE_STATIONARY_ACCEL_MIN_G) &&
+        (rawAccMagG <= ATTITUDE_STATIONARY_ACCEL_MAX_G)) {
 
-        gx = ((float) raw->gyroX - gyroBiasX) * ATTITUDE_GYRO_DPS_PER_LSB;
-        gy = ((float) raw->gyroY - gyroBiasY) * ATTITUDE_GYRO_DPS_PER_LSB;
-        gz = ((float) raw->gyroZ - gyroBiasZ) * ATTITUDE_GYRO_DPS_PER_LSB;
+        g_gyroBiasX +=
+            ATTITUDE_GYRO_BIAS_LEARN_ALPHA *
+            ((float)raw->gyroX - g_gyroBiasX);
+
+        g_gyroBiasY +=
+            ATTITUDE_GYRO_BIAS_LEARN_ALPHA *
+            ((float)raw->gyroY - g_gyroBiasY);
+
+        g_gyroBiasZ +=
+            ATTITUDE_GYRO_BIAS_LEARN_ALPHA *
+            ((float)raw->gyroZ - g_gyroBiasZ);
+
+        gx =
+            ((float)raw->gyroX - g_gyroBiasX) *
+            ATTITUDE_GYRO_DPS_PER_LSB;
+
+        gy =
+            ((float)raw->gyroY - g_gyroBiasY) *
+            ATTITUDE_GYRO_DPS_PER_LSB;
+
+        gz =
+            ((float)raw->gyroZ - g_gyroBiasZ) *
+            ATTITUDE_GYRO_DPS_PER_LSB *
+            ATTITUDE_GYRO_Z_SCALE;
     }
 
-    /* 小角速度死区，过滤静止时的微小抖动。 */
-    gx = attitude_apply_deadband(gx, ATTITUDE_GYRO_DEADBAND_DPS);
-    gy = attitude_apply_deadband(gy, ATTITUDE_GYRO_DEADBAND_DPS);
-    gz = attitude_apply_deadband(gz, ATTITUDE_YAW_DEADBAND_DPS);
-    /*
-     * 保存最终有效的 Z 轴角速度，供角度控制器使用。
-     * 这里保存的是已经扣除零偏、转换为 °/s 并经过死区后的值。
-     */
-    gyroZDps = gz;
+    gx = attitude_apply_deadband(
+        gx,
+        ATTITUDE_GYRO_DEADBAND_DPS);
+
+    gy = attitude_apply_deadband(
+        gy,
+        ATTITUDE_GYRO_DEADBAND_DPS);
+
+    gz = attitude_apply_deadband(
+        gz,
+        ATTITUDE_YAW_DEADBAND_DPS);
 
     /*
-     * 陀螺仪积分。
-     *
-     * 这里没有简单使用 roll += gx、pitch += gy；
-     * 而是按欧拉角角速度关系计算 roll/pitch 变化，
-     * 这样在板子已经倾斜时会更稳定。
+     * 保存最终有效 gyroZ。
+     * 角度环的 D 项读取的就是这个值。
      */
-    pitchDeg = attitude_clamp(
-        pitchDeg, -ATTITUDE_PITCH_LIMIT_DEG, ATTITUDE_PITCH_LIMIT_DEG);
-    rollRad = rollDeg * ATTITUDE_DEG_TO_RAD;
-    pitchRad = pitchDeg * ATTITUDE_DEG_TO_RAD;
+    g_gyroZDps = gz;
 
-    rollRateDps = gx +
-                  sinf(rollRad) * tanf(pitchRad) * gy +
-                  cosf(rollRad) * tanf(pitchRad) * gz;
-    pitchRateDps = cosf(rollRad) * gy - sinf(rollRad) * gz;
+    /*
+     * 机体系角速度转换为欧拉角速度。
+     */
+    g_pitchDeg = attitude_clamp(
+        g_pitchDeg,
+        -ATTITUDE_PITCH_LIMIT_DEG,
+        ATTITUDE_PITCH_LIMIT_DEG);
 
-    rollDeg += rollRateDps * dt;
-    pitchDeg += pitchRateDps * dt;
+    rollRad = g_rollDeg * ATTITUDE_DEG_TO_RAD;
+    pitchRad = g_pitchDeg * ATTITUDE_DEG_TO_RAD;
+    cosPitch = cosf(pitchRad);
 
-    /* yaw 没有加速度计修正，只由 Z 轴陀螺仪积分得到。 */
+    /*
+     * pitch 已限制到 ±89°，这里仍保留最小值保护。
+     */
+    if (fabsf(cosPitch) < 0.01f) {
+        cosPitch = (cosPitch >= 0.0f) ? 0.01f : -0.01f;
+    }
+
+    rollRateDps =
+        gx +
+        sinf(rollRad) * tanf(pitchRad) * gy +
+        cosf(rollRad) * tanf(pitchRad) * gz;
+
+    pitchRateDps =
+        cosf(rollRad) * gy -
+        sinf(rollRad) * gz;
+
     yawRateDps =
-    sinf(rollRad) / cosf(pitchRad) * gy +
-    cosf(rollRad) / cosf(pitchRad) * gz;
+        sinf(rollRad) / cosPitch * gy +
+        cosf(rollRad) / cosPitch * gz;
 
-    yawDeg += yawRateDps * dt;
+    g_rollDeg += rollRateDps * dt;
+    g_pitchDeg += pitchRateDps * dt;
+    g_yawDeg += yawRateDps * dt;
 
     /*
-     * 加速度计低通滤波，并用于修正 roll/pitch。
-     *
-     * 如果加速度模长明显不是 1g，说明车体正在加速/震动，
-     * 此时不使用加速度计修正，避免把运动加速度误当成重力方向。
+     * 加速度计低通滤波。
      */
-    if (!accFilterReady) {
-        accFiltX = (float) raw->accelX;
-        accFiltY = (float) raw->accelY;
-        accFiltZ = (float) raw->accelZ;
-        accFilterReady = true;
+    if (!g_accFilterReady) {
+        g_accFiltX = (float)raw->accelX;
+        g_accFiltY = (float)raw->accelY;
+        g_accFiltZ = (float)raw->accelZ;
+        g_accFilterReady = true;
     } else {
-        accFiltX += ATTITUDE_ACCEL_LPF_ALPHA * ((float) raw->accelX - accFiltX);
-        accFiltY += ATTITUDE_ACCEL_LPF_ALPHA * ((float) raw->accelY - accFiltY);
-        accFiltZ += ATTITUDE_ACCEL_LPF_ALPHA * ((float) raw->accelZ - accFiltZ);
+        g_accFiltX +=
+            ATTITUDE_ACCEL_LPF_ALPHA *
+            ((float)raw->accelX - g_accFiltX);
+
+        g_accFiltY +=
+            ATTITUDE_ACCEL_LPF_ALPHA *
+            ((float)raw->accelY - g_accFiltY);
+
+        g_accFiltZ +=
+            ATTITUDE_ACCEL_LPF_ALPHA *
+            ((float)raw->accelZ - g_accFiltZ);
     }
 
-    ax = accFiltX;
-    ay = accFiltY;
-    az = accFiltZ;
+    ax = g_accFiltX;
+    ay = g_accFiltY;
+    az = g_accFiltZ;
 
-    if (!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
-        accMagG = sqrtf(ax * ax + ay * ay + az * az) / ATTITUDE_ACCEL_1G_LSB;
+    if (!((ax == 0.0f) &&
+          (ay == 0.0f) &&
+          (az == 0.0f))) {
 
+        accMagG =
+            sqrtf(ax * ax + ay * ay + az * az) /
+            ATTITUDE_ACCEL_1G_LSB;
+
+        /*
+         * 强加速、碰撞或振动时不使用加速度计纠正姿态。
+         */
         if ((accMagG >= ATTITUDE_ACCEL_MIN_G) &&
             (accMagG <= ATTITUDE_ACCEL_MAX_G)) {
-            /* 加速度计得到的是绝对倾角，需要减去上电零点。 */
-            attitude_accel_to_euler(ax, ay, az, &rollAccDeg, &pitchAccDeg);
-            rollAccRelDeg = attitude_wrap_180(rollAccDeg - rollZeroDeg);
-            pitchAccRelDeg = attitude_wrap_180(pitchAccDeg - pitchZeroDeg);
 
-            /* 互补滤波：陀螺积分为主，加速度计慢慢拉回。 */
-            rollDeg = ATTITUDE_COMPLEMENTARY_ALPHA * rollDeg +
-                      (1.0f - ATTITUDE_COMPLEMENTARY_ALPHA) * rollAccRelDeg;
-            pitchDeg = ATTITUDE_COMPLEMENTARY_ALPHA * pitchDeg +
-                       (1.0f - ATTITUDE_COMPLEMENTARY_ALPHA) * pitchAccRelDeg;
+            attitude_accel_to_euler(
+                ax,
+                ay,
+                az,
+                &rollAccDeg,
+                &pitchAccDeg);
+
+            rollAccRelDeg =
+                attitude_wrap_180(
+                    rollAccDeg - g_rollZeroDeg);
+
+            pitchAccRelDeg =
+                attitude_wrap_180(
+                    pitchAccDeg - g_pitchZeroDeg);
+
+            /*
+             * 使用“角度差”进行互补修正，
+             * 避免 roll 接近 ±180° 时直接加权造成跳变。
+             */
+            g_rollDeg +=
+                (1.0f - ATTITUDE_COMPLEMENTARY_ALPHA) *
+                attitude_wrap_180(
+                    rollAccRelDeg - g_rollDeg);
+
+            g_pitchDeg +=
+                (1.0f - ATTITUDE_COMPLEMENTARY_ALPHA) *
+                (pitchAccRelDeg - g_pitchDeg);
         }
     }
 
-    /* 输出角度范围限制，避免跨越 ±180° 时数值无限增长。 */
-    rollDeg = attitude_wrap_180(rollDeg);
-    pitchDeg = attitude_clamp(
-        pitchDeg, -ATTITUDE_PITCH_LIMIT_DEG, ATTITUDE_PITCH_LIMIT_DEG);
-    yawDeg = attitude_wrap_180(yawDeg);
+    g_rollDeg = attitude_wrap_180(g_rollDeg);
+
+    g_pitchDeg = attitude_clamp(
+        g_pitchDeg,
+        -ATTITUDE_PITCH_LIMIT_DEG,
+        ATTITUDE_PITCH_LIMIT_DEG);
+
+    g_yawDeg = attitude_wrap_180(g_yawDeg);
 
     return true;
 }
@@ -347,19 +543,17 @@ bool attitude_update_from_icm42688(const icm42688_raw_t *raw, float dt)
 void attitude_get_euler(attitude_euler_t *euler)
 {
     if (euler == 0) {
-        /* 防止空指针。 */
         return;
     }
 
-    /* 输出当前姿态角。 */
-    euler->roll = rollDeg;
-    euler->pitch = pitchDeg;
-    euler->yaw = yawDeg;
+    euler->roll = g_rollDeg;
+    euler->pitch = g_pitchDeg;
+    euler->yaw = g_yawDeg;
 }
 
 float attitude_get_gyro_z_dps(void)
 {
-    return gyroZDps;
+    return g_gyroZDps;
 }
 
 void attitude_print_euler(const attitude_euler_t *euler)
@@ -368,7 +562,6 @@ void attitude_print_euler(const attitude_euler_t *euler)
         return;
     }
 
-    /* VOFA FireWater 格式：samples:roll,pitch,yaw */
     uart0_send_string("samples:");
     uart0_send_float(euler->roll, 2U);
     uart0_send_byte(',');
@@ -378,9 +571,11 @@ void attitude_print_euler(const attitude_euler_t *euler)
     uart0_send_byte('\n');
 }
 
-static float attitude_clamp(float value, float minValue, float maxValue)
+static float attitude_clamp(
+    float value,
+    float minValue,
+    float maxValue)
 {
-    /* 通用限幅函数。 */
     if (value < minValue) {
         return minValue;
     }
@@ -392,10 +587,12 @@ static float attitude_clamp(float value, float minValue, float maxValue)
     return value;
 }
 
-static float attitude_apply_deadband(float value, float deadband)
+static float attitude_apply_deadband(
+    float value,
+    float deadband)
 {
-    /* 小于死区的值直接置 0，减小静止抖动。 */
-    if ((value > -deadband) && (value < deadband)) {
+    if ((value > -deadband) &&
+        (value < deadband)) {
         return 0.0f;
     }
 
@@ -404,7 +601,6 @@ static float attitude_apply_deadband(float value, float deadband)
 
 static float attitude_wrap_180(float angle)
 {
-    /* 将角度归一化到 -180~180。 */
     while (angle > 180.0f) {
         angle -= 360.0f;
     }
@@ -416,26 +612,66 @@ static float attitude_wrap_180(float angle)
     return angle;
 }
 
-static void attitude_accel_to_euler(
-    float ax, float ay, float az, float *roll, float *pitch)
+static bool attitude_raw_is_valid(
+    const icm42688_raw_t *raw)
 {
-    /* 根据重力方向计算 roll/pitch。 */
+    if (raw == 0) {
+        return false;
+    }
+
+    return raw->whoAmI ==
+           ATTITUDE_EXPECTED_WHO_AM_I;
+}
+
+static void attitude_accel_to_euler(
+    float ax,
+    float ay,
+    float az,
+    float *roll,
+    float *pitch)
+{
     if (roll != 0) {
-        *roll = atan2f(ay, az) * ATTITUDE_RAD_TO_DEG;
+        *roll =
+            atan2f(ay, az) *
+            ATTITUDE_RAD_TO_DEG;
     }
 
     if (pitch != 0) {
-        *pitch = atan2f(-ax, sqrtf(ay * ay + az * az)) * ATTITUDE_RAD_TO_DEG;
+        *pitch =
+            atan2f(
+                -ax,
+                sqrtf(ay * ay + az * az)) *
+            ATTITUDE_RAD_TO_DEG;
     }
 }
 
-static void attitude_set_zero_from_accel(float ax, float ay, float az)
+static void attitude_set_zero_from_accel(
+    float ax,
+    float ay,
+    float az)
 {
-    /* 用上电静止时的加速度方向建立 roll/pitch 零点。 */
-    attitude_accel_to_euler(ax, ay, az, &rollZeroDeg, &pitchZeroDeg);
+    attitude_accel_to_euler(
+        ax,
+        ay,
+        az,
+        &g_rollZeroDeg,
+        &g_pitchZeroDeg);
 
-    /* 校准完成后姿态从 0 开始。 */
-    rollDeg = 0.0f;
-    pitchDeg = 0.0f;
-    yawDeg = 0.0f;
+    g_rollDeg = 0.0f;
+    g_pitchDeg = 0.0f;
+    g_yawDeg = 0.0f;
+    g_gyroZDps = 0.0f;
+}
+
+static void attitude_reset_calibration_accumulator(void)
+{
+    g_gyroCalCount = 0U;
+
+    g_gyroCalSumX = 0;
+    g_gyroCalSumY = 0;
+    g_gyroCalSumZ = 0;
+
+    g_accCalSumX = 0;
+    g_accCalSumY = 0;
+    g_accCalSumZ = 0;
 }

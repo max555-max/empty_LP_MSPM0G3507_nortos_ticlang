@@ -3,6 +3,11 @@
 #include "motor.h"
 #include "vofa.h"
 
+#define SPEED_PID_VOFA_PERIOD_MS    (50U)
+#define SPEED_PID_VOFA_DIVIDER      ((SPEED_PID_VOFA_PERIOD_MS + \
+                                      SPEED_PID_CONTROL_PERIOD_MS - 1U) / \
+                                      SPEED_PID_CONTROL_PERIOD_MS)
+
 /*
  * pid.c
  *
@@ -29,6 +34,8 @@ static int32_t g_rightTargetMmS = SPEED_PID_DEFAULT_RIGHT_TARGET_MM_S;
 /* 最近一次计算出的 PWM，供 VOFA 和调试接口读取。 */
 static int32_t g_leftPwm = 0;
 static int32_t g_rightPwm = 0;
+
+static uint8_t g_speedPidVofaTick = 0U;
 
 /* 对 value 做正负限幅。limit<=0 时认为不启用限幅。 */
 static int32_t pid_limit(int32_t value, int32_t limit)
@@ -75,6 +82,18 @@ static int32_t pid_apply_min_start_pwm(
     }
 
     return pwm;
+}
+
+static uint8_t speed_pid_should_send_vofa(void)
+{
+    g_speedPidVofaTick++;
+
+    if (g_speedPidVofaTick >= SPEED_PID_VOFA_DIVIDER) {
+        g_speedPidVofaTick = 0U;
+        return 1U;
+    }
+
+    return 0U;
 }
 
 void pid_init(pid_t *pid,
@@ -138,6 +157,7 @@ void speed_pid_init(void)
     g_rightTargetMmS = SPEED_PID_DEFAULT_RIGHT_TARGET_MM_S;
     g_leftPwm = 0;
     g_rightPwm = 0;
+    g_speedPidVofaTick = 0U;
 
     /* 分别初始化左右轮 PID，左右轮参数可以不同。 */
     pid_init(&g_leftSpeedPid,
@@ -187,6 +207,7 @@ void speed_pid_stop(void)
     pid_reset(&g_rightSpeedPid);
     g_leftPwm = 0;
     g_rightPwm = 0;
+    g_speedPidVofaTick = 0U;
     motor_set_pwm(0, 0);
 }
 
@@ -245,12 +266,14 @@ void speed_pid_control_update(void)
         g_rightPwm = 0;
         motor_set_pwm(0, 0);
 
-        vofa_send_six_int(g_leftTargetMmS,
-                          leftSpeed,
-                          g_leftPwm,
-                          g_rightTargetMmS,
-                          rightSpeed,
-                          g_rightPwm);
+        if (speed_pid_should_send_vofa() != 0U) {
+            vofa_send_six_int(g_leftTargetMmS,
+                              leftSpeed,
+                              g_leftPwm,
+                              g_rightTargetMmS,
+                              rightSpeed,
+                              g_rightPwm);
+        }
         return;
     }
 
@@ -275,12 +298,14 @@ void speed_pid_control_update(void)
      *   ch4：右轮反馈速度
      *   ch5：右轮 PWM
      */
-    vofa_send_six_int(g_leftTargetMmS,
-                      leftSpeed,
-                      g_leftPwm,
-                      g_rightTargetMmS,
-                      rightSpeed,
-                      g_rightPwm);
+    if (speed_pid_should_send_vofa() != 0U) {
+        vofa_send_six_int(g_leftTargetMmS,
+                          leftSpeed,
+                          g_leftPwm,
+                          g_rightTargetMmS,
+                          rightSpeed,
+                          g_rightPwm);
+    }
 }
 
 int32_t speed_pid_get_left_target(void)
