@@ -28,7 +28,13 @@
  *
  * 推荐正反方向分别转多圈后取平均值再填写。
  */
-#define ATTITUDE_GYRO_Z_SCALE               (1.000000f)
+/*
+ * Calibration formula:
+ *   ATTITUDE_YAW_SCALE = actual_turn_deg / reported_yaw_deg
+ *
+ * Example: actual 90 deg, reported 80 deg -> 90 / 80 = 1.125f.
+ */
+#define ATTITUDE_YAW_SCALE                  (0.991000f)
 
 /*
  * roll、pitch 互补滤波。
@@ -355,7 +361,7 @@ bool attitude_update_from_icm42688(
     gz =
         ((float)raw->gyroZ - g_gyroBiasZ) *
         ATTITUDE_GYRO_DPS_PER_LSB *
-        ATTITUDE_GYRO_Z_SCALE;
+        ATTITUDE_YAW_SCALE;
 
     /*
      * 在线零偏学习必须同时满足：
@@ -401,7 +407,7 @@ bool attitude_update_from_icm42688(
         gz =
             ((float)raw->gyroZ - g_gyroBiasZ) *
             ATTITUDE_GYRO_DPS_PER_LSB *
-            ATTITUDE_GYRO_Z_SCALE;
+            ATTITUDE_YAW_SCALE;
     }
 
     gx = attitude_apply_deadband(

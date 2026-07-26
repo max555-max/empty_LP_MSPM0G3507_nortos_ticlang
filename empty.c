@@ -5,204 +5,178 @@
 
 #include "ti_msp_dl_config.h"
 
-#include "delay.h"
 #include "attitude.h"
+#include "delay.h"
 #include "icm42688.h"
+#include "mpu6050.h"
 #include "vofa.h"
 
-/* 姿态更新和调试输出周期。 */
-#define IMU_UPDATE_PERIOD_MS             (10U)
+#include <stdbool.h>
+#include <stdint.h>
 
-/* 陀螺仪零偏校准采样次数。 */
-#define IMU_GYRO_CALIB_SAMPLE_COUNT      (1000U)
+#define MPU6050_UPDATE_PERIOD_MS         (10U)
+#define MPU6050_RETRY_PERIOD_MS          (1000U)
+#define MPU6050_GYRO_CALIB_SAMPLE_COUNT  (200U)
 
 /*
- * 当前 ICM42688 驱动配置为 ±2000 dps。
- * 原始值转换为 °/s：
- *     gyroDps = raw × 2000 / 32768
+ * Existing attitude.c expects ICM42688 raw accel at +/-16 g:
+ *   2048 LSB/g.
+ *
+ * This MPU6050 test config uses +/-2 g:
+ *   16384 LSB/g.
+ *
+ * Divide MPU6050 accel raw values by 8 before feeding the ICM attitude
+ * algorithm. Gyro is configured as +/-2000 dps on both paths and can be passed
+ * through with the existing scale.
  */
-#define IMU_GYRO_DPS_PER_LSB             (2000.0f / 32768.0f)
+#define MPU6050_TO_ICM_ACCEL_DIVIDER      (8)
 
-/* 初始化失败或掉线后的重新尝试周期。 */
-#define IMU_RETRY_PERIOD_MS              (1000U)
-
-/* ICM42688 正常 WHO_AM_I。 */
-#define ICM42688_EXPECTED_WHO_AM_I       (0x47U)
-
-/* 姿态解算允许的 dt 范围。 */
-#define IMU_DT_DEFAULT_S                 (0.010f)
-#define IMU_DT_MIN_S                     (0.001f)
-#define IMU_DT_MAX_S                     (0.050f)
+static void mpu6050_to_attitude_raw(
+    const mpu6050_raw_t *mpu,
+    icm42688_raw_t *attRaw);
 
 int main(void)
 {
-    icm42688_raw_t raw = {0};
+    mpu6050_raw_t mpuRaw = {0};
+    mpu6050_diag_t diag = {0};
+    icm42688_raw_t attitudeRaw = {0};
     attitude_euler_t euler = {0};
 
-    bool imuOk;
-
-    uint32_t lastUpdateMs;
+    bool mpuOk;
+    bool attitudeUpdated = false;
     uint32_t lastRetryMs;
+    uint32_t lastUpdateMs;
     uint32_t nowMs;
-
+    uint16_t gyroCalibProgress = 0U;
     float dt;
 
-    /*
-     * 初始化 MCU 外设。
-     *
-     * 必须先执行 SYSCFG_DL_init()，
-     * 因为硬件 I2C0、PA0 和 PA1 都由 SysConfig 初始化。
-     */
     SYSCFG_DL_init();
 
-    /* 初始化姿态解算器内部状态。 */
     attitude_init();
-
-    /* 初始化 ICM42688 硬件 I2C 通信。 */
-    imuOk = icm42688_init();
-
-    if (imuOk) {
-        /*
-         * 传感器刚启动后先等待输出稳定。
-         */
-        delay_ms(200U);
-
-        /*
-         * 校准期间必须保持小车和传感器静止。
-         *
-         * 如果 attitude_calibrate_gyro() 内部每次采样延时 2 ms，
-         * 1000 次采样大约需要 2 秒。
-         */
-        attitude_calibrate_gyro(IMU_GYRO_CALIB_SAMPLE_COUNT);
-    }
-
-    lastUpdateMs = delay_get_ms();
-    lastRetryMs = lastUpdateMs;
+    mpuOk = mpu6050_init();
+    lastRetryMs = delay_get_ms();
+    lastUpdateMs = lastRetryMs;
 
     while (1) {
         nowMs = delay_get_ms();
 
-        /*
-         * 初始化失败或运行中掉线后，每隔 1 秒重新初始化一次。
-         *
-         * 避免传感器启动失败后，程序永久停留在错误状态。
-         */
-        if (imuOk == false) {
-            if ((uint32_t)(nowMs - lastRetryMs) >= IMU_RETRY_PERIOD_MS) {
+        if (mpuOk == false) {
+            if ((uint32_t)(nowMs - lastRetryMs) >=
+                MPU6050_RETRY_PERIOD_MS) {
+
                 lastRetryMs = nowMs;
+                attitude_init();
+                gyroCalibProgress = 0U;
+                mpuOk = mpu6050_init();
+                lastUpdateMs = delay_get_ms();
+            }
+        }
 
-                imuOk = icm42688_init();
+        if (mpuOk) {
+            mpuOk = mpu6050_read_raw(&mpuRaw);
+        }
 
-                if (imuOk) {
-                    delay_ms(200U);
+        if (mpuOk) {
+            mpu6050_to_attitude_raw(&mpuRaw, &attitudeRaw);
 
-                    /*
-                     * 重新连接后重新校准零偏。
-                     * 校准期间必须保持传感器静止。
-                     */
-                    attitude_init();
-                    attitude_calibrate_gyro(
-                        IMU_GYRO_CALIB_SAMPLE_COUNT);
+            if (!attitude_is_gyro_calibrated()) {
+                attitudeUpdated =
+                    attitude_calibrate_gyro_step(
+                        &attitudeRaw,
+                        MPU6050_GYRO_CALIB_SAMPLE_COUNT);
 
-                    lastUpdateMs = delay_get_ms();
+                if (gyroCalibProgress <
+                    MPU6050_GYRO_CALIB_SAMPLE_COUNT) {
+                    gyroCalibProgress++;
                 }
+
+                lastUpdateMs = delay_get_ms();
+            } else {
+                nowMs = delay_get_ms();
+                dt = (float)(nowMs - lastUpdateMs) / 1000.0f;
+                lastUpdateMs = nowMs;
+
+                attitudeUpdated =
+                    attitude_update_from_icm42688(
+                        &attitudeRaw,
+                        dt);
             }
+        } else {
+            attitudeUpdated = false;
         }
 
-        if (imuOk) {
-            /*
-             * 读取温度、加速度计和陀螺仪原始值。
-             */
-            icm42688_read_raw(&raw);
-
-            /*
-             * 新的 I2C 驱动读取失败时会把 whoAmI 设置为 0xFF。
-             * 因此可以通过 WHO_AM_I 判断运行中是否掉线。
-             */
-            if (raw.whoAmI != ICM42688_EXPECTED_WHO_AM_I) {
-                imuOk = false;
-
-                /*
-                 * 通信中断后不再使用当前错误数据进行姿态解算。
-                 */
-                raw.accelX = 0;
-                raw.accelY = 0;
-                raw.accelZ = 0;
-                raw.gyroX = 0;
-                raw.gyroY = 0;
-                raw.gyroZ = 0;
-            }
-        }
-
-        nowMs = delay_get_ms();
-
-        /*
-         * 根据实际执行间隔计算姿态更新时间。
-         *
-         * 使用实际 dt 比固定写死 0.01 秒更准确，因为 I2C 读取、
-         * 串口发送和程序执行本身也需要时间。
-         */
-        dt = (float)(nowMs - lastUpdateMs) / 1000.0f;
-        lastUpdateMs = nowMs;
-
-        /*
-         * 防止首次运行、系统阻塞或计时异常产生不合理 dt。
-         */
-        if ((dt < IMU_DT_MIN_S) || (dt > IMU_DT_MAX_S)) {
-            dt = IMU_DT_DEFAULT_S;
-        }
-
-        if (imuOk) {
-            /*
-             * 使用有效的 ICM42688 数据更新姿态。
-             */
-            attitude_update_from_icm42688(&raw, dt);
+        if (mpuOk && attitudeUpdated && attitude_is_gyro_calibrated()) {
             attitude_get_euler(&euler);
 
             /*
-             * VOFA+ FireWater：
-             *
-             * ch0：roll
-             * ch1：pitch
-             * ch2：yaw
-             * ch3：gyroX，单位 °/s
-             * ch4：gyroY，单位 °/s
-             * ch5：gyroZ，单位 °/s
+             * VOFA channels:
+             *   ch0 roll, ch1 pitch, ch2 yaw,
+             *   ch3 gyroZ dps, ch4 accelZ g, ch5 WHO_AM_I.
              */
             vofa_send_six_float(
                 euler.roll,
                 euler.pitch,
                 euler.yaw,
-                (float)raw.gyroX * IMU_GYRO_DPS_PER_LSB,
-                (float)raw.gyroY * IMU_GYRO_DPS_PER_LSB,
-                (float)raw.gyroZ * IMU_GYRO_DPS_PER_LSB,
+                attitude_get_gyro_z_dps(),
+                (float)mpuRaw.accelZ * MPU6050_ACCEL_G_PER_LSB,
+                (float)mpuRaw.whoAmI,
                 2U);
         } else {
+            mpu6050_get_diag(&diag);
+
             /*
-             * 通信失败时：
-             * ch0~ch4 输出 0；
-             * ch5 输出 WHO_AM_I，正常应为 71，即 0x47。
-             *
-             * 读取失败通常为 255，即 0xFF。
+             * Failure/calibration diagnostics:
+             *   ch0 current accepted address, 255 means not detected yet
+             *   ch1 MPU initialized flag
+             *   ch2 gyro calibration sample progress
+             *   ch3 last attempted address, 104 means 0x68, 105 means 0x69
+             *   ch4 error stage
+             *   ch5 WHO_AM_I when read succeeds, otherwise I2C status low byte
              */
             vofa_send_six_float(
-                0.0f,
-                0.0f,
-                0.0f,
-                0.0f,
-                0.0f,
-                (float)raw.whoAmI,
-                2U);
+                (float)diag.currentAddress,
+                diag.initialized ? 1.0f : 0.0f,
+                attitude_is_gyro_calibrated() ?
+                    (float)MPU6050_GYRO_CALIB_SAMPLE_COUNT :
+                    (float)gyroCalibProgress,
+                (float)diag.lastAddress,
+                (float)diag.lastError,
+                diag.lastWhoReadOk ?
+                    (float)diag.lastWhoAmI :
+                    (float)(diag.lastStatus & 0xFFU),
+                0U);
         }
 
-        delay_ms(IMU_UPDATE_PERIOD_MS);
+        delay_ms(MPU6050_UPDATE_PERIOD_MS);
     }
 }
 
-/*
- * SysTick 1 ms 中断。
- */
 void SysTick_Handler(void)
 {
     delay_tick();
+}
+
+static void mpu6050_to_attitude_raw(
+    const mpu6050_raw_t *mpu,
+    icm42688_raw_t *attRaw)
+{
+    if ((mpu == 0) ||
+        (attRaw == 0)) {
+        return;
+    }
+
+    attRaw->accelX =
+        (int16_t)(mpu->accelX / MPU6050_TO_ICM_ACCEL_DIVIDER);
+    attRaw->accelY =
+        (int16_t)(mpu->accelY / MPU6050_TO_ICM_ACCEL_DIVIDER);
+    attRaw->accelZ =
+        (int16_t)(mpu->accelZ / MPU6050_TO_ICM_ACCEL_DIVIDER);
+
+    attRaw->gyroX = mpu->gyroX;
+    attRaw->gyroY = mpu->gyroY;
+    attRaw->gyroZ = mpu->gyroZ;
+    attRaw->temp = mpu->temp;
+
+    attRaw->whoAmI =
+        (mpu->whoAmI == MPU6050_WHO_AM_I_VALUE) ? 0x47U : 0xFFU;
 }

@@ -10,6 +10,7 @@
 "./Src/icm42688.o"
 "./Src/line_track.o"
 "./Src/motor.o"
+"./Src/mpu6050.o"
 "./Src/oled.o"
 "./Src/pid.o"
 "./Src/uart_cmd.o"

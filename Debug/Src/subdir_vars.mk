@@ -15,6 +15,7 @@ C_SRCS += \
 ../Src/icm42688.c \
 ../Src/line_track.c \
 ../Src/motor.c \
+../Src/mpu6050.c \
 ../Src/oled.c \
 ../Src/pid.c \
 ../Src/uart_cmd.c \
@@ -30,6 +31,7 @@ C_DEPS += \
 ./Src/icm42688.d \
 ./Src/line_track.d \
 ./Src/motor.d \
+./Src/mpu6050.d \
 ./Src/oled.d \
 ./Src/pid.d \
 ./Src/uart_cmd.d \
@@ -45,6 +47,7 @@ OBJS += \
 ./Src/icm42688.o \
 ./Src/line_track.o \
 ./Src/motor.o \
+./Src/mpu6050.o \
 ./Src/oled.o \
 ./Src/pid.o \
 ./Src/uart_cmd.o \
@@ -60,6 +63,7 @@ OBJS__QUOTED += \
 "Src\icm42688.o" \
 "Src\line_track.o" \
 "Src\motor.o" \
+"Src\mpu6050.o" \
 "Src\oled.o" \
 "Src\pid.o" \
 "Src\uart_cmd.o" \
@@ -75,6 +79,7 @@ C_DEPS__QUOTED += \
 "Src\icm42688.d" \
 "Src\line_track.d" \
 "Src\motor.d" \
+"Src\mpu6050.d" \
 "Src\oled.d" \
 "Src\pid.d" \
 "Src\uart_cmd.d" \
@@ -90,6 +95,7 @@ C_SRCS__QUOTED += \
 "../Src/icm42688.c" \
 "../Src/line_track.c" \
 "../Src/motor.c" \
+"../Src/mpu6050.c" \
 "../Src/oled.c" \
 "../Src/pid.c" \
 "../Src/uart_cmd.c" \
