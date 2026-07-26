@@ -585,13 +585,11 @@
 #define ICM42688_WHO_AM_I_VALUE            (0x47U)
 
 /*
- * 当前硬件已经实测确认：
- *
- *     7 位 I2C 地址 = 0x68
- *
  * DriverLib 接收的是 7 位地址，不要左移，不要写成 0xD0。
+ * 初始化时会依次尝试 AD0=0 的 0x68 和 AD0=1 的 0x69。
  */
-#define ICM42688_I2C_ADDRESS               (0x68U)
+#define ICM42688_I2C_ADDRESS_AD0_LOW       (0x68U)
+#define ICM42688_I2C_ADDRESS_AD0_HIGH      (0x69U)
 #define ICM42688_I2C_ADDRESS_INVALID       (0xFFU)
 
 /*
@@ -606,7 +604,7 @@
 #define ICM42688_ACCEL_GYRO_LN             (0x0FU)
 
 /* 初始化时读取 WHO_AM_I 的最大尝试次数。 */
-#define ICM42688_INIT_RETRY_COUNT          (20U)
+#define ICM42688_INIT_RETRY_COUNT          (5U)
 
 /*
  * 软件轮询超时。
@@ -652,16 +650,23 @@ static void icm42688_clear_raw(icm42688_raw_t *raw);
  * 初始化 ICM42688。
  *
  * 返回：
- *   true ：0x68 地址读取 WHO_AM_I=0x47，并完成寄存器配置；
+ *   true ：0x68 或 0x69 地址读取 WHO_AM_I=0x47，并完成寄存器配置；
  *   false：I2C 通信或传感器初始化失败。
  */
 bool icm42688_init(void)
 {
+    static const uint8_t addressList[2] = {
+        ICM42688_I2C_ADDRESS_AD0_HIGH,
+        ICM42688_I2C_ADDRESS_AD0_LOW
+    };
+
     uint8_t who = 0xFFU;
     bool detected = false;
     uint8_t retry;
+    uint8_t addressIndex;
 
-    g_icm42688Address = ICM42688_I2C_ADDRESS;
+    g_icm42688Address =
+        ICM42688_I2C_ADDRESS_INVALID;
 
     /*
      * 等待传感器上电稳定约 100 ms。
@@ -669,26 +674,40 @@ bool icm42688_init(void)
     delay_cycles(CPUCLK_FREQ / 10U);
 
     /*
-     * 固定测试已经确认本模块地址为 0x68。
-     * 不再先访问错误地址 0x69，避免地址 NACK 干扰后续事务。
+     * 依次尝试 0x68 和 0x69，读到 WHO_AM_I=0x47 的地址会被保存。
      */
     for (retry = 0U;
-         retry < ICM42688_INIT_RETRY_COUNT;
+         (retry < ICM42688_INIT_RETRY_COUNT) &&
+         (detected == false);
          retry++) {
 
-        if ((icm42688_read_reg(
-                 ICM42688_WHO_AM_I,
-                 &who) == true) &&
-            (who == ICM42688_WHO_AM_I_VALUE)) {
+        for (addressIndex = 0U;
+             addressIndex < 2U;
+             addressIndex++) {
 
-            detected = true;
-            break;
+            g_icm42688Address =
+                addressList[addressIndex];
+
+            if ((icm42688_read_reg(
+                     ICM42688_WHO_AM_I,
+                     &who) == true) &&
+                (who == ICM42688_WHO_AM_I_VALUE)) {
+
+                detected = true;
+                break;
+            }
+
+            g_icm42688Address =
+                ICM42688_I2C_ADDRESS_INVALID;
+            icm42688_abort_transfer();
         }
 
         /*
          * 每次失败后留出约 10 ms，再重新发起完整事务。
          */
-        delay_cycles(CPUCLK_FREQ / 100U);
+        if (detected == false) {
+            delay_cycles(CPUCLK_FREQ / 100U);
+        }
     }
 
     if (detected == false) {
@@ -1054,7 +1073,6 @@ static bool icm42688_i2c_read_regs(
     uint16_t length)
 {
     uint8_t registerAddress = reg;
-    uint16_t written;
     uint16_t received = 0U;
     uint32_t timeout;
     uint32_t status;
@@ -1064,46 +1082,19 @@ static bool icm42688_i2c_read_regs(
         return false;
     }
 
-    if (icm42688_prepare_transfer() == false) {
-        return false;
-    }
-
-    written =
-        DL_I2C_fillControllerTXFIFO(
-            ICM42688_I2C_INST,
+    if (icm42688_i2c_write(
+            address,
             &registerAddress,
-            1U);
-
-    if (written != 1U) {
-        icm42688_abort_transfer();
+            1U) == false) {
         return false;
     }
 
     /*
-     * 第一阶段：
-     *
-     * START + 地址(W) + 寄存器地址
-     *
-     * 不产生 STOP，保留总线以便下一阶段产生 Repeated START。
-     *
-     * 该 ACK 参数组合已经通过 WHO_AM_I=0x47 实测验证。
+     * Use STOP between the register-address write and the data read. This is
+     * slower than repeated-start, but avoids the controller staying busy after
+     * reset on the current board.
      */
-    DL_I2C_startControllerTransferAdvanced(
-        ICM42688_I2C_INST,
-        address,
-        DL_I2C_CONTROLLER_DIRECTION_TX,
-        1U,
-        DL_I2C_CONTROLLER_START_ENABLE,
-        DL_I2C_CONTROLLER_STOP_DISABLE,
-        DL_I2C_CONTROLLER_ACK_DISABLE);
-
-    delay_cycles(
-        ICM42688_START_POLL_DELAY_CYCLES);
-
-    if (icm42688_wait_controller_done(
-            ICM42688_I2C_TIMEOUT_COUNT) == false) {
-
-        icm42688_abort_transfer();
+    if (icm42688_prepare_transfer() == false) {
         return false;
     }
 
@@ -1118,11 +1109,9 @@ static bool icm42688_i2c_read_regs(
      */
 
     /*
-     * 第二阶段：
+     * Read phase:
      *
-     * REPEATED START + 地址(R) + N 字节 + NACK + STOP
-     *
-     * ACK_ENABLE 是当前工程中已经实测成功读取 0x47 的组合。
+     * START + address(R) + N bytes + final NACK + STOP
      */
     DL_I2C_startControllerTransferAdvanced(
         ICM42688_I2C_INST,

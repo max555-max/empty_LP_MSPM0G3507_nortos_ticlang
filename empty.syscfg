@@ -152,7 +152,6 @@ GPIO10.associatedPins[0].pin.$assign  = "PA31";
 
 I2C1.$name                             = "I2C_ICM42688";
 I2C1.basicEnableController             = true;
-I2C1.basicControllerStandardBusSpeed   = "Fast";
 I2C1.peripheral.$assign                = "I2C0";
 I2C1.peripheral.sdaPin.$assign         = "PA0";
 I2C1.peripheral.sclPin.$assign         = "PA1";
@@ -235,4 +234,3 @@ GPIO2.associatedPins[1].pin.$suggestSolution = "PA17";
 GPIO4.associatedPins[0].pin.$suggestSolution = "PA25";
 GPIO4.associatedPins[2].pin.$suggestSolution = "PB20";
 GPIO4.associatedPins[3].pin.$suggestSolution = "PB24";
-GPIO5.associatedPins[0].pin.$suggestSolution = "PA22";
