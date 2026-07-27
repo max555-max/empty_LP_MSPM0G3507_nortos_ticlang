@@ -13,7 +13,8 @@ Use this reference when tracing current behavior. Re-check source files before f
 
 ## Sensor Input Paths
 
-- ICM42688 path: I2C read functions feed raw accel/gyro/temp data into attitude estimation and debug/display output. Evidence A when confirmed in `empty.c`, `Src/icm42688.c`, `Inc/icm42688.h`, `Src/attitude.c`, and `Inc/attitude.h`.
+- MPU6050 path: preferred future IMU path. MPU6050 raw accel/gyro/temp data should feed attitude estimation and debug/display output. Evidence A when confirmed in `empty.c`, `Src/mpu6050.c`, `Inc/mpu6050.h`, `Src/attitude.c`, and `Inc/attitude.h`; Evidence B for the user-directed MPU6050-only project policy.
+- ICM42688 path: legacy IMU path. If current source still calls `icm42688_*`, report it as active code only when `empty.c` confirms the calls, and also report that it conflicts with the user-directed MPU6050-only policy. Evidence A for code calls; Evidence B for policy conflict.
 - Encoder path: GPIO interrupt counting feeds speed calculation, then speed PID feedback. Evidence A for module behavior when confirmed in `Src/encoder.c`, `Inc/encoder.h`, `Src/pid.c`, and `Inc/pid.h`; active runtime use depends on `main()` and interrupt configuration.
 - Gray-sensor path: GPIO or bit-banged serial gray data feeds line-tracking error calculation. Evidence A for module behavior when confirmed in `Src/line_track.c`, `Inc/line_track.h`, `Src/gray_serial.c`, and `Inc/gray_serial.h`; active runtime use depends on calls from `main()` or other scheduler code.
 - Bluetooth path: UART1 receive ISR fills a buffer, while foreground processing parses commands and updates runtime parameters. Evidence A when confirmed in `Src/bluetooth.c` and `Inc/bluetooth.h`.

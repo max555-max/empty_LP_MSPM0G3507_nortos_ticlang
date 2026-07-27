@@ -8,7 +8,7 @@ KNOWN_DOC_CONFLICTS = {
     "motor": ["PA26", "PA24", "PA25", "PA27", "PB25", "PB24"],
     "encoder": ["PA14", "PA15", "PA16", "PA17"],
     "gray": ["PA22", "PB20"],
-    "icm42688": ["SPI1", "PB09", "PB08", "PB07", "PB06"],
+    "legacy_imu_icm42688_not_preferred": ["SPI1", "PB09", "PB08", "PB07", "PB06"],
     "buzzer": ["PB05"],
     "led": ["PB22"],
 }
@@ -51,12 +51,18 @@ def main() -> int:
         elif not in_source and name not in ("ENCODER_E1A_PIN", "GRAY_SERIAL_DAT_PIN"):
             warnings.append(f"Generated macro exists but was not observed in source usage: {name}")
 
-    if "UART2.peripheral.txPin.$assign         = \"PB6\"" in syscfg and "GPIO_UART_1_TX_PIN" in gen_h:
+    if ("UART2.peripheral.txPin.$assign" in syscfg and
+            "\"PB6\"" in syscfg and
+            "#define GPIO_UART_1_TX_PIN" in gen_h and
+            "DL_GPIO_PIN_6" in gen_h):
         print("OK software config: UART_1 TX PB6 present in SysConfig/generated files")
     else:
         errors.append("UART_1 PB6 software mapping not confirmed")
 
-    if "UART2.peripheral.rxPin.$assign         = \"PB7\"" in syscfg and "GPIO_UART_1_RX_PIN" in gen_h:
+    if ("UART2.peripheral.rxPin.$assign" in syscfg and
+            "\"PB7\"" in syscfg and
+            "#define GPIO_UART_1_RX_PIN" in gen_h and
+            "DL_GPIO_PIN_7" in gen_h):
         print("OK software config: UART_1 RX PB7 present in SysConfig/generated files")
     else:
         errors.append("UART_1 PB7 software mapping not confirmed")

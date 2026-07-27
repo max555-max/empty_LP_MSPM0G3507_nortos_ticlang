@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "angle_control.h"
+#include "attitude.h"
 #include "line_track.h"
 #include "ti_msp_dl_config.h"
 
@@ -194,6 +195,7 @@ static bool bluetooth_apply_indexed_command(uint8_t index, int32_t value)
 
 static bool bluetooth_apply_named_command(const char *packet, int32_t value)
 {
+    attitude_euler_t euler;
     char c0 = bluetooth_to_upper(packet[0]);
     char c1 = bluetooth_to_upper(packet[1]);
     char c2 = bluetooth_to_upper(packet[2]);
@@ -212,6 +214,12 @@ static bool bluetooth_apply_named_command(const char *packet, int32_t value)
     }
     if ((c0 == 'A') && (c1 == 'M') && (c2 == 'X')) {
         angle_control_set_max_correction(value);
+        return true;
+    }
+    if ((c0 == 'A') && (c1 == 'N') && (c2 == 'G')) {
+        attitude_get_euler(&euler);
+        angle_control_set_target_yaw(euler.yaw + (float)value);
+        angle_control_enable(true);
         return true;
     }
     if ((c0 == 'L') && (c1 == 'K') && (c2 == 'P')) {

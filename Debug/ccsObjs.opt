@@ -13,7 +13,9 @@
 "./Src/mpu6050.o"
 "./Src/oled.o"
 "./Src/pid.o"
+"./Src/square_track.o"
 "./Src/uart_cmd.o"
+"./Src/ultrasonic.o"
 "./Src/vofa.o"
 -l"./device_linker.cmd"
 -ldevice.cmd.genlibs

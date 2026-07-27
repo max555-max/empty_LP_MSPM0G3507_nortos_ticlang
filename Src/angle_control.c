@@ -29,6 +29,9 @@ static int32_t g_angleKdScaled =
     (int32_t)(ANGLE_CONTROL_KD_MM_S_PER_DPS * 1000.0f);
 static int32_t g_angleMaxCorrectionMmS = ANGLE_CONTROL_MAX_CORRECTION_MM_S;
 
+#define ANGLE_CONTROL_SETTLE_ERROR_DEG      (1.5f)
+#define ANGLE_CONTROL_SETTLE_GYRO_DPS       (8.0f)
+
 /*
  * 将角度归一化到 -180°～180°。
  *
@@ -270,6 +273,24 @@ void angle_control_update(float dt)
      */
     gyroZDps = attitude_get_gyro_z_dps();
     errorRateDps = -gyroZDps;
+
+    if ((g_angleControlStatus.baseSpeedMmS == 0) &&
+        (errorDeg > -ANGLE_CONTROL_SETTLE_ERROR_DEG) &&
+        (errorDeg < ANGLE_CONTROL_SETTLE_ERROR_DEG) &&
+        (gyroZDps > -ANGLE_CONTROL_SETTLE_GYRO_DPS) &&
+        (gyroZDps < ANGLE_CONTROL_SETTLE_GYRO_DPS)) {
+
+        g_angleControlStatus.targetYawDeg = euler.yaw;
+        speed_pid_set_speed(0, 0);
+
+        g_angleControlStatus.currentYawDeg = euler.yaw;
+        g_angleControlStatus.errorDeg = 0.0f;
+        g_angleControlStatus.errorRateDps = errorRateDps;
+        g_angleControlStatus.correctionMmS = 0;
+        g_angleControlStatus.leftTargetMmS = 0;
+        g_angleControlStatus.rightTargetMmS = 0;
+        return;
+    }
 
     /*
      * 角度 PD 控制。

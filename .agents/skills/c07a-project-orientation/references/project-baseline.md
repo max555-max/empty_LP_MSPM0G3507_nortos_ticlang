@@ -9,17 +9,17 @@ Evidence A, confirmed from current `empty.c`:
 - Generated system configuration: `SYSCFG_DL_init()`.
 - Bluetooth module: `bluetooth_init()` and `bluetooth_process()`.
 - OLED module: `oled_init()`, line clearing, cursor setting, string printing, hex printing, float printing.
-- Attitude module: `attitude_init()`, `attitude_calibrate_gyro()`, `attitude_update_from_icm42688()`, `attitude_get_euler()`.
-- ICM42688 module: `icm42688_init()` and `icm42688_read_raw()`.
+- Attitude module: `attitude_init()`, gyro calibration/update helpers, and yaw/euler accessors when called by `main()`.
+- IMU module: re-read `empty.c` each time. User direction as of 2026-07-26 is MPU6050-only for future IMU work. If `empty.c` still calls `icm42688_*`, report those calls as current code facts and a migration mismatch, not as the desired future architecture.
 - Delay module: `delay_ms()`, `delay_get_ms()`, and `delay_tick()` through `SysTick_Handler()`.
 - VOFA module: `vofa_send_six_float()`.
 
 Evidence A, confirmed from current `empty.c`, main-loop behavior:
 
 - Processes Bluetooth commands every loop iteration.
-- Retries ICM42688 initialization every 1000 ms when IMU status is false.
-- Reads ICM42688 raw data when IMU status is true.
-- Marks IMU status false when `raw.whoAmI` is not `0x47`.
+- Retries the active IMU initialization when IMU status is false.
+- Reads active IMU raw data when IMU status is true.
+- Checks the active IMU `WHO_AM_I` value according to the driver currently called by `empty.c`.
 - Updates attitude using measured `dt`, clamped to a default when outside the allowed range.
 - Sends six floats to VOFA for IMU telemetry or failure status.
 - Refreshes OLED every 250 ms when OLED initialization succeeded.
@@ -41,7 +41,8 @@ Evidence A for repository presence and absence of direct calls from current `mai
 
 - Code-confirmed state: the current `main()` is an IMU, attitude, OLED, Bluetooth processing, and VOFA telemetry integration loop. Evidence A.
 - Code-confirmed state: full motor closed-loop driving, encoder feedback, line tracking, angle control, gray serial reading, and UART command parsing are not directly connected by current `main()`. Evidence A.
-- Hardware state: OLED, Bluetooth, ICM42688, motors, encoders, gray sensors, and real-car behavior are not proven by repository files alone. Evidence C unless the user provides fresh hardware confirmation.
+- Hardware state: OLED, Bluetooth, MPU6050 physical wiring, motors, encoders, gray sensors, and real-car behavior are not proven by repository files alone. Evidence C unless the user provides fresh hardware confirmation.
+- Project direction: future IMU code should use MPU6050 only. Evidence B from user instruction; verify source files before claiming it has been fully migrated.
 - Validation state: code inspection and build artifacts can support software conclusions, but they do not prove real-car validation. Evidence C for real-car behavior.
 
 ## Baseline Update Rules

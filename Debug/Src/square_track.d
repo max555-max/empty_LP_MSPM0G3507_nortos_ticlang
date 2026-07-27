@@ -1,6 +1,8 @@
 # FIXED
 
-empty.o: ../empty.c \
+Src/square_track.o: ../Src/square_track.c \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/square_track.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/encoder.h \
  ti_msp_dl_config.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/DeviceFamily.h \
@@ -84,10 +86,11 @@ empty.o: ../empty.c \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h \
- C:/Users/gaofu/workspace_ccstheia/C07A/Inc/delay.h \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/gray_serial.h \
- C:/Users/gaofu/workspace_ccstheia/C07A/Inc/motor.h \
- C:/Users/gaofu/workspace_ccstheia/C07A/Inc/oled.h
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/line_track.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/pid.h
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/square_track.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/encoder.h:
 ti_msp_dl_config.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/DeviceFamily.h:
@@ -171,7 +174,6 @@ C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_vref.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h:
-C:/Users/gaofu/workspace_ccstheia/C07A/Inc/delay.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/gray_serial.h:
-C:/Users/gaofu/workspace_ccstheia/C07A/Inc/motor.h:
-C:/Users/gaofu/workspace_ccstheia/C07A/Inc/oled.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/line_track.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/pid.h:

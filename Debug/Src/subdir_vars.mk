@@ -18,7 +18,9 @@ C_SRCS += \
 ../Src/mpu6050.c \
 ../Src/oled.c \
 ../Src/pid.c \
+../Src/square_track.c \
 ../Src/uart_cmd.c \
+../Src/ultrasonic.c \
 ../Src/vofa.c 
 
 C_DEPS += \
@@ -34,7 +36,9 @@ C_DEPS += \
 ./Src/mpu6050.d \
 ./Src/oled.d \
 ./Src/pid.d \
+./Src/square_track.d \
 ./Src/uart_cmd.d \
+./Src/ultrasonic.d \
 ./Src/vofa.d 
 
 OBJS += \
@@ -50,7 +54,9 @@ OBJS += \
 ./Src/mpu6050.o \
 ./Src/oled.o \
 ./Src/pid.o \
+./Src/square_track.o \
 ./Src/uart_cmd.o \
+./Src/ultrasonic.o \
 ./Src/vofa.o 
 
 OBJS__QUOTED += \
@@ -66,7 +72,9 @@ OBJS__QUOTED += \
 "Src\mpu6050.o" \
 "Src\oled.o" \
 "Src\pid.o" \
+"Src\square_track.o" \
 "Src\uart_cmd.o" \
+"Src\ultrasonic.o" \
 "Src\vofa.o" 
 
 C_DEPS__QUOTED += \
@@ -82,7 +90,9 @@ C_DEPS__QUOTED += \
 "Src\mpu6050.d" \
 "Src\oled.d" \
 "Src\pid.d" \
+"Src\square_track.d" \
 "Src\uart_cmd.d" \
+"Src\ultrasonic.d" \
 "Src\vofa.d" 
 
 C_SRCS__QUOTED += \
@@ -98,7 +108,9 @@ C_SRCS__QUOTED += \
 "../Src/mpu6050.c" \
 "../Src/oled.c" \
 "../Src/pid.c" \
+"../Src/square_track.c" \
 "../Src/uart_cmd.c" \
+"../Src/ultrasonic.c" \
 "../Src/vofa.c" 
 
 

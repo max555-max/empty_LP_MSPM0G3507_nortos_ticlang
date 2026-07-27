@@ -29,7 +29,8 @@ Treat old wiring notes as secondary references. They may be outdated and cannot 
 ## Module Map
 
 - `delay`: millisecond delay, SysTick tick handling, and elapsed time access. Evidence A.
-- `icm42688`: I2C access to ICM42688, WHO_AM_I check, raw accel/gyro/temp reads. Evidence A.
+- `mpu6050`: preferred future IMU module after user direction to use MPU6050 only. It reuses the existing `I2C_ICM42688` SysConfig instance name unless the user explicitly approves a SysConfig rename. Evidence A for module presence when confirmed in `Src/mpu6050.c` and `Inc/mpu6050.h`; Evidence B for project direction from user instruction.
+- `icm42688`: legacy IMU module and legacy SysConfig naming source. Do not choose it for new IMU work unless the user explicitly asks to restore ICM42688. Evidence A for module presence; Evidence B for legacy-only policy from user instruction.
 - `attitude`: gyro calibration and attitude estimation from IMU data. Evidence A.
 - `angle_control`: yaw-angle control that writes speed targets through the speed PID interface. Evidence A.
 - `encoder`: encoder GPIO interrupt counting and wheel speed calculation. Evidence A.
@@ -44,7 +45,7 @@ Treat old wiring notes as secondary references. They may be outdated and cannot 
 
 ## Current Main Behavior Pattern
 
-The current `main()` should be inspected directly each time. At the time this reference was written, it initializes system config, Bluetooth, OLED, attitude, and ICM42688; calibrates gyro; loops through Bluetooth processing, IMU retry/read, attitude update, VOFA telemetry, OLED refresh, and a delay. Evidence A when re-confirmed in `empty.c`.
+The current `main()` should be inspected directly each time. Do not infer active IMU choice from module existence. User direction as of 2026-07-26: future IMU work should use MPU6050 only; treat ICM42688 calls in `main()` as a migration issue unless the user explicitly asks to use ICM42688. Evidence B for project direction; Evidence A only after re-confirming actual calls in `empty.c`.
 
 Modules may exist without being called by the current `main()`. Do not describe them as active runtime behavior unless call paths confirm that.
 
@@ -58,4 +59,4 @@ Separate software configuration facts from physical wiring facts.
 - Old wiring notes may be useful hints, but they may be outdated. Treat them as Evidence B unless confirmed by current hardware evidence.
 - When software configuration conflicts with old wiring notes, report the conflict instead of silently choosing one as physical truth.
 
-Known current software mappings must be re-checked before use. Previously observed mappings included I2C0 for ICM42688, UART0 for debug telemetry, UART1 on PB6/PB7 for Bluetooth, PWM and GPIO outputs for motors, GPIO inputs for encoders and gray sensors, and OLED software pins including PA28 and PA31. Treat these as software-configuration facts only after re-checking current SysConfig/generated files.
+Known current software mappings must be re-checked before use. Previously observed mappings included I2C0 under the legacy `I2C_ICM42688` SysConfig instance name for the IMU bus, UART0 for debug telemetry, UART1 on PB6/PB7 for Bluetooth, PWM and GPIO outputs for motors, GPIO inputs for encoders and gray sensors, and OLED software pins including PA28 and PA31. Treat these as software-configuration facts only after re-checking current SysConfig/generated files. The instance name may remain `I2C_ICM42688` even when the physical IMU module is MPU6050.

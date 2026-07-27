@@ -23,6 +23,8 @@
  *   {AKD=0}     angle Kd, /1000 scale
  *   {ABS=300}   angle base speed, mm/s
  *   {AMX=220}   angle max correction, mm/s
+ *   {ANG=90}    set target yaw to current yaw + 90 deg
+ *   {ANG=-90}   set target yaw to current yaw - 90 deg
  *
  * Line-track loop:
  *   {LKP=250}   line Kp, /1000 scale

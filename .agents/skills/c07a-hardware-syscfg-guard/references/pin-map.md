@@ -16,8 +16,8 @@ Evidence A means the item is confirmed by current `empty.syscfg`, `Debug/ti_msp_
 
 | Function | Software instance | Software pin or channel | Generated names or macros | Related modules | Evidence |
 |---|---|---|---|---|---|
-| ICM42688 I2C SDA | `I2C_ICM42688` / `I2C0` | PA0, 400 kHz I2C bus | `I2C_ICM42688_INST`, `GPIO_I2C_ICM42688_SDA_*`, `I2C_ICM42688_BUS_SPEED_HZ` | `Src/icm42688.c`, `Inc/icm42688.h` | A |
-| ICM42688 I2C SCL | `I2C_ICM42688` / `I2C0` | PA1, 400 kHz I2C bus | `GPIO_I2C_ICM42688_SCL_*` | `Src/icm42688.c`, `Inc/icm42688.h` | A |
+| IMU I2C SDA, legacy instance name | `I2C_ICM42688` / `I2C0` | PA0, 400 kHz I2C bus | `I2C_ICM42688_INST`, `GPIO_I2C_ICM42688_SDA_*`, `I2C_ICM42688_BUS_SPEED_HZ` | Preferred: `Src/mpu6050.c`, `Inc/mpu6050.h`; legacy: `Src/icm42688.c`, `Inc/icm42688.h` | A for software config and module references; B for MPU6050-only policy from user instruction |
+| IMU I2C SCL, legacy instance name | `I2C_ICM42688` / `I2C0` | PA1, 400 kHz I2C bus | `GPIO_I2C_ICM42688_SCL_*` | Preferred: `Src/mpu6050.c`, `Inc/mpu6050.h`; legacy: `Src/icm42688.c`, `Inc/icm42688.h` | A for software config and module references; B for MPU6050-only policy from user instruction |
 | UART0 TX | `UART0` | PA10, 115200 baud | `UART0_INST`, `GPIO_UART0_TX_*`, `UART0_BAUD_RATE` | `Src/vofa.c`, `Src/uart_cmd.c` | A |
 | UART0 RX | `UART0` | PA11, 115200 baud | `GPIO_UART0_RX_*`, `UART0_INST_INT_IRQN` | `Src/uart_cmd.c` if enabled by user code | A |
 | Bluetooth UART TX | `UART_1` / hardware `UART1` | PB6, 9600 baud | `UART_1_INST`, `GPIO_UART_1_TX_*`, `UART_1_BAUD_RATE` | `Src/bluetooth.c`, `Inc/bluetooth.h` | A |
@@ -44,7 +44,8 @@ Evidence A means the item is confirmed by current `empty.syscfg`, `Debug/ti_msp_
 ## Source Macro Usage Summary
 
 - `empty.c` calls only `SYSCFG_DL_init()` from generated config. Evidence A.
-- `Src/icm42688.c` requires `I2C_ICM42688_INST` and uses it through `ICM42688_I2C_INST`. Evidence A.
+- `Src/mpu6050.c` requires `I2C_ICM42688_INST` and uses it through `MPU6050_I2C_INST`. Evidence A when present.
+- `Src/icm42688.c` also uses `I2C_ICM42688_INST`; treat it as legacy unless the user explicitly asks for ICM42688. Evidence A for source usage; Evidence B for legacy-only policy.
 - `Src/vofa.c` uses `UART0_INST` for blocking UART0 transmit. Evidence A.
 - `Src/uart_cmd.c` uses `UART0_INST` and `UART0_INST_INT_IRQN` when that command module is initialized. Evidence A.
 - `Src/bluetooth.c` uses `UART_1_INST` and `UART_1_INST_INT_IRQN`, and defines `UART_1_INST_IRQHandler()`. Evidence A.

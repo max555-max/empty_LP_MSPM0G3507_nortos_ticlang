@@ -12,6 +12,7 @@ RISK_PATTERNS = [
     "vofa_send",
     "DL_I2C_",
     "icm42688_",
+    "mpu6050_",
     "parse",
     "printf",
 ]

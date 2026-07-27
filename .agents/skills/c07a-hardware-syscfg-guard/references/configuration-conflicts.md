@@ -23,12 +23,14 @@ This file records current inconsistencies observed between software configuratio
 | Buzzer pin | Current software config has buzzer PB17 | `接线说明.md` says buzzer PB05 | A for software config; B for old document claim; C for physical wiring | Do not change pin from document alone. Ask whether hardware was rewired or document is stale. | Yes |
 | LED pin | Current software config has LED PB9 | `接线说明.md` says LED PB22 | A for software config; B for old document claim; C for physical wiring | Do not change pin from document alone. Confirm hardware before updating docs or software. | Yes |
 
+Project IMU policy update, 2026-07-26: user directed future IMU work to use MPU6050 only. Treat old ICM42688 conflict entries as legacy context. The software I2C instance may still be named `I2C_ICM42688`; do not infer from that name that ICM42688 is still the desired module. Evidence B for project policy; Evidence A only after checking current source calls.
+
 ## SysConfig And Generated File Consistency
 
 Checked current resources:
 
 - PWM: `empty.syscfg` assigns `TIMG6`, PB2 CCP0, PB3 CCP1; generated macros match. Evidence A.
-- I2C: `empty.syscfg` assigns `I2C0`, PA0 SDA, PA1 SCL, Fast mode; generated macros show `I2C_ICM42688_INST I2C0` and 400000 Hz. Evidence A.
+- I2C: `empty.syscfg` assigns `I2C0`, PA0 SDA, PA1 SCL, Fast mode; generated macros show the legacy instance name `I2C_ICM42688_INST I2C0` and 400000 Hz. This is the preferred software bus for MPU6050 until the user explicitly approves a SysConfig rename. Evidence A for software config; Evidence B for naming policy.
 - UART0: `empty.syscfg` assigns PA10 TX, PA11 RX, 115200; generated macros match. Evidence A.
 - UART_1: `empty.syscfg` assigns UART1 PB6 TX, PB7 RX, 9600, RX interrupt priority 1; generated macros and generated init match. Evidence A.
 - GPIO groups AIN, BIN, LED, BUZZER, OLED, ENCODER, and GRAY_SERIAL match generated macros for checked pins. Evidence A.
@@ -39,7 +41,8 @@ No `empty.syscfg` versus generated-file conflict was observed in the checked res
 
 Checked current usage:
 
-- `Src/icm42688.c` uses `I2C_ICM42688_INST`.
+- `Src/mpu6050.c` uses `I2C_ICM42688_INST` through `MPU6050_I2C_INST` when present.
+- `Src/icm42688.c` also uses `I2C_ICM42688_INST`, but is legacy under the MPU6050-only project direction.
 - `Src/vofa.c` uses `UART0_INST`.
 - `Src/uart_cmd.c` uses `UART0_INST` and `UART0_INST_INT_IRQN`.
 - `Src/bluetooth.c` uses `UART_1_INST` and `UART_1_INST_INT_IRQN`.
@@ -55,5 +58,6 @@ No deleted or renamed generated macro usage was observed by the current search.
 - Which generated encoder group corresponds to the physical left and right wheels. Evidence C.
 - Whether the real motor driver wiring follows current software configuration or old wiring notes. Evidence C.
 - Whether gray sensor polarity is `1U` active as current code says or `0U` as old wiring notes say. Evidence C.
-- Whether physical ICM42688 wiring is now I2C on PA0/PA1 or still follows the old SPI note. Evidence C.
+- Whether physical MPU6050 wiring matches the legacy-named I2C0 PA0/PA1 software bus. Evidence C.
+- Whether remaining ICM42688 code should be migrated or removed from active paths. Evidence B from user direction; requires an explicit source-change task.
 - Whether wiring notes should be updated to match current software configuration. This is a documentation task and should not be done unless explicitly requested.
