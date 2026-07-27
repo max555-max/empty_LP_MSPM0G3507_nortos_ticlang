@@ -87,6 +87,7 @@ empty.o: ../empty.c \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/delay.h \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/attitude.h \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/icm42688.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/oled.h \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/vofa.h
 ti_msp_dl_config.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h:
@@ -174,4 +175,5 @@ C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/delay.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/attitude.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/icm42688.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/oled.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/vofa.h:

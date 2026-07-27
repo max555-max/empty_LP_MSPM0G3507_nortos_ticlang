@@ -8,6 +8,7 @@
 #include "delay.h"
 #include "attitude.h"
 #include "icm42688.h"
+#include "oled.h"
 #include "vofa.h"
 
 /* 姿态更新和调试输出周期。 */
@@ -34,12 +35,172 @@
 #define IMU_DT_MIN_S                     (0.001f)
 #define IMU_DT_MAX_S                     (0.050f)
 
+#define MENU_ITEM_COUNT                  (5U)
+#define MENU_KEY_DEBOUNCE_MS             (30U)
+
+#define MENU_KEY_PORT                    (GPIOA)
+#define MENU_KEY_UP_PIN                  (DL_GPIO_PIN_9)
+#define MENU_KEY_UP_IOMUX                (IOMUX_PINCM20)
+#define MENU_KEY_DOWN_PIN                (DL_GPIO_PIN_27)
+#define MENU_KEY_DOWN_IOMUX              (IOMUX_PINCM60)
+#define MENU_KEY_OK_PIN                  (DL_GPIO_PIN_24)
+#define MENU_KEY_OK_IOMUX                (IOMUX_PINCM54)
+
+typedef enum {
+    MENU_KEY_NONE = 0,
+    MENU_KEY_UP,
+    MENU_KEY_DOWN,
+    MENU_KEY_OK
+} menu_key_event_t;
+
+typedef struct {
+    uint32_t pin;
+    bool stablePressed;
+    bool lastSamplePressed;
+    uint32_t lastChangeMs;
+} menu_key_state_t;
+
+typedef struct {
+    uint8_t selected;
+    uint8_t confirmed;
+    bool hasConfirmed;
+    bool needsRedraw;
+} menu_state_t;
+
+static const char *const g_menuItems[MENU_ITEM_COUNT] = {
+    "Option 1",
+    "Option 2",
+    "Option 3",
+    "Option 4",
+    "Option 5"
+};
+
+static menu_key_state_t g_menuKeys[3];
+static menu_state_t g_menu;
+
+static bool menu_key_is_pressed(uint32_t pin)
+{
+    return (DL_GPIO_readPins(MENU_KEY_PORT, pin) == 0U);
+}
+
+static void menu_key_load_state(menu_key_state_t *key, uint32_t pin)
+{
+    key->pin = pin;
+    key->stablePressed = menu_key_is_pressed(pin);
+    key->lastSamplePressed = key->stablePressed;
+    key->lastChangeMs = delay_get_ms();
+}
+
+static void menu_keys_init(void)
+{
+    DL_GPIO_initDigitalInputFeatures(MENU_KEY_UP_IOMUX,
+        DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_PULL_UP,
+        DL_GPIO_HYSTERESIS_ENABLE, DL_GPIO_WAKEUP_DISABLE);
+    DL_GPIO_initDigitalInputFeatures(MENU_KEY_DOWN_IOMUX,
+        DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_PULL_UP,
+        DL_GPIO_HYSTERESIS_ENABLE, DL_GPIO_WAKEUP_DISABLE);
+    DL_GPIO_initDigitalInputFeatures(MENU_KEY_OK_IOMUX,
+        DL_GPIO_INVERSION_DISABLE, DL_GPIO_RESISTOR_PULL_UP,
+        DL_GPIO_HYSTERESIS_ENABLE, DL_GPIO_WAKEUP_DISABLE);
+
+    menu_key_load_state(&g_menuKeys[0], MENU_KEY_UP_PIN);
+    menu_key_load_state(&g_menuKeys[1], MENU_KEY_DOWN_PIN);
+    menu_key_load_state(&g_menuKeys[2], MENU_KEY_OK_PIN);
+}
+
+static menu_key_event_t menu_keys_update(void)
+{
+    const menu_key_event_t events[3] = {
+        MENU_KEY_UP,
+        MENU_KEY_DOWN,
+        MENU_KEY_OK
+    };
+    uint32_t nowMs = delay_get_ms();
+
+    for (uint8_t i = 0U; i < 3U; i++) {
+        bool pressed = menu_key_is_pressed(g_menuKeys[i].pin);
+
+        if (pressed != g_menuKeys[i].lastSamplePressed) {
+            g_menuKeys[i].lastSamplePressed = pressed;
+            g_menuKeys[i].lastChangeMs = nowMs;
+        }
+
+        if ((pressed != g_menuKeys[i].stablePressed) &&
+            ((uint32_t)(nowMs - g_menuKeys[i].lastChangeMs) >=
+                MENU_KEY_DEBOUNCE_MS)) {
+            g_menuKeys[i].stablePressed = pressed;
+
+            if (pressed) {
+                return events[i];
+            }
+        }
+    }
+
+    return MENU_KEY_NONE;
+}
+
+static void menu_init(void)
+{
+    g_menu.selected = 0U;
+    g_menu.confirmed = 0U;
+    g_menu.hasConfirmed = false;
+    g_menu.needsRedraw = true;
+}
+
+static void menu_handle_key(menu_key_event_t event)
+{
+    if (event == MENU_KEY_UP) {
+        if (g_menu.selected == 0U) {
+            g_menu.selected = MENU_ITEM_COUNT - 1U;
+        } else {
+            g_menu.selected--;
+        }
+        g_menu.needsRedraw = true;
+    } else if (event == MENU_KEY_DOWN) {
+        g_menu.selected++;
+        if (g_menu.selected >= MENU_ITEM_COUNT) {
+            g_menu.selected = 0U;
+        }
+        g_menu.needsRedraw = true;
+    } else if (event == MENU_KEY_OK) {
+        g_menu.confirmed = g_menu.selected;
+        g_menu.hasConfirmed = true;
+        g_menu.needsRedraw = true;
+    }
+}
+
+static void menu_render(void)
+{
+    oled_clear();
+
+    oled_set_cursor(0U, 0U);
+    oled_print_string("Menu");
+
+    for (uint8_t i = 0U; i < MENU_ITEM_COUNT; i++) {
+        oled_set_cursor((uint8_t)(i + 1U), 0U);
+        oled_print_char((i == g_menu.selected) ? '>' : ' ');
+        oled_print_char(' ');
+        oled_print_string(g_menuItems[i]);
+    }
+
+    oled_set_cursor(7U, 0U);
+    oled_print_string("OK: ");
+    if (g_menu.hasConfirmed) {
+        oled_print_string(g_menuItems[g_menu.confirmed]);
+    } else {
+        oled_print_string("--");
+    }
+
+    g_menu.needsRedraw = false;
+}
+
 int main(void)
 {
     icm42688_raw_t raw = {0};
     attitude_euler_t euler = {0};
 
     bool imuOk;
+    bool oledOk;
 
     uint32_t lastUpdateMs;
     uint32_t lastRetryMs;
@@ -54,6 +215,13 @@ int main(void)
      * 因为硬件 I2C0、PA0 和 PA1 都由 SysConfig 初始化。
      */
     SYSCFG_DL_init();
+
+    menu_keys_init();
+    menu_init();
+    oledOk = oled_init();
+    if (oledOk) {
+        menu_render();
+    }
 
     /* 初始化姿态解算器内部状态。 */
     attitude_init();
@@ -81,6 +249,11 @@ int main(void)
 
     while (1) {
         nowMs = delay_get_ms();
+
+        menu_handle_key(menu_keys_update());
+        if (oledOk && g_menu.needsRedraw) {
+            menu_render();
+        }
 
         /*
          * 初始化失败或运行中掉线后，每隔 1 秒重新初始化一次。
