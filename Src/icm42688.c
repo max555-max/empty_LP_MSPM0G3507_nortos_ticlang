@@ -586,10 +586,11 @@
 
 /*
  * DriverLib 接收的是 7 位地址，不要左移，不要写成 0xD0。
- * 初始化时会依次尝试 AD0=0 的 0x68 和 AD0=1 的 0x69。
+ * 初始化时只使用 ICM42688_I2C_ADDRESS 指定的 7 位地址。
  */
 #define ICM42688_I2C_ADDRESS_AD0_LOW       (0x68U)
 #define ICM42688_I2C_ADDRESS_AD0_HIGH      (0x69U)
+#define ICM42688_I2C_ADDRESS               (ICM42688_I2C_ADDRESS_AD0_HIGH)
 #define ICM42688_I2C_ADDRESS_INVALID       (0xFFU)
 
 /*
@@ -655,15 +656,9 @@ static void icm42688_clear_raw(icm42688_raw_t *raw);
  */
 bool icm42688_init(void)
 {
-    static const uint8_t addressList[2] = {
-        ICM42688_I2C_ADDRESS_AD0_HIGH,
-        ICM42688_I2C_ADDRESS_AD0_LOW
-    };
-
     uint8_t who = 0xFFU;
     bool detected = false;
     uint8_t retry;
-    uint8_t addressIndex;
 
     g_icm42688Address =
         ICM42688_I2C_ADDRESS_INVALID;
@@ -673,34 +668,27 @@ bool icm42688_init(void)
      */
     delay_cycles(CPUCLK_FREQ / 10U);
 
-    /*
-     * 依次尝试 0x68 和 0x69，读到 WHO_AM_I=0x47 的地址会被保存。
-     */
+    /* 只使用一个固定 7 位 I2C 地址；需要切换时修改 ICM42688_I2C_ADDRESS。 */
     for (retry = 0U;
          (retry < ICM42688_INIT_RETRY_COUNT) &&
          (detected == false);
          retry++) {
 
-        for (addressIndex = 0U;
-             addressIndex < 2U;
-             addressIndex++) {
+        g_icm42688Address =
+            ICM42688_I2C_ADDRESS;
 
-            g_icm42688Address =
-                addressList[addressIndex];
+        if ((icm42688_read_reg(
+                 ICM42688_WHO_AM_I,
+                 &who) == true) &&
+            (who == ICM42688_WHO_AM_I_VALUE)) {
 
-            if ((icm42688_read_reg(
-                     ICM42688_WHO_AM_I,
-                     &who) == true) &&
-                (who == ICM42688_WHO_AM_I_VALUE)) {
-
-                detected = true;
-                break;
-            }
-
-            g_icm42688Address =
-                ICM42688_I2C_ADDRESS_INVALID;
-            icm42688_abort_transfer();
+            detected = true;
+            break;
         }
+
+        g_icm42688Address =
+            ICM42688_I2C_ADDRESS_INVALID;
+        icm42688_abort_transfer();
 
         /*
          * 每次失败后留出约 10 ms，再重新发起完整事务。
@@ -1074,6 +1062,7 @@ static bool icm42688_i2c_read_regs(
 {
     uint8_t registerAddress = reg;
     uint16_t received = 0U;
+    uint16_t written;
     uint32_t timeout;
     uint32_t status;
 
@@ -1082,21 +1071,43 @@ static bool icm42688_i2c_read_regs(
         return false;
     }
 
-    if (icm42688_i2c_write(
-            address,
-            &registerAddress,
-            1U) == false) {
-        return false;
-    }
-
-    /*
-     * Use STOP between the register-address write and the data read. This is
-     * slower than repeated-start, but avoids the controller staying busy after
-     * reset on the current board.
-     */
     if (icm42688_prepare_transfer() == false) {
         return false;
     }
+
+    written =
+        DL_I2C_fillControllerTXFIFO(
+            ICM42688_I2C_INST,
+            &registerAddress,
+            1U);
+
+    if (written != 1U) {
+        icm42688_abort_transfer();
+        return false;
+    }
+
+    /* Write register address, then keep the bus active for repeated START. */
+    DL_I2C_startControllerTransferAdvanced(
+        ICM42688_I2C_INST,
+        address,
+        DL_I2C_CONTROLLER_DIRECTION_TX,
+        1U,
+        DL_I2C_CONTROLLER_START_ENABLE,
+        DL_I2C_CONTROLLER_STOP_DISABLE,
+        DL_I2C_CONTROLLER_ACK_DISABLE);
+
+    delay_cycles(
+        ICM42688_START_POLL_DELAY_CYCLES);
+
+    if (icm42688_wait_controller_done(
+            ICM42688_I2C_TIMEOUT_COUNT) == false) {
+
+        icm42688_abort_transfer();
+        return false;
+    }
+
+    DL_I2C_flushControllerRXFIFO(
+        ICM42688_I2C_INST);
 
     /*
      * 第一阶段结束时 BUSY_BUS=1 是正常现象。
@@ -1120,7 +1131,7 @@ static bool icm42688_i2c_read_regs(
         length,
         DL_I2C_CONTROLLER_START_ENABLE,
         DL_I2C_CONTROLLER_STOP_ENABLE,
-        DL_I2C_CONTROLLER_ACK_ENABLE);
+        DL_I2C_CONTROLLER_ACK_DISABLE);
 
     delay_cycles(
         ICM42688_START_POLL_DELAY_CYCLES);
@@ -1161,6 +1172,25 @@ static bool icm42688_i2c_read_regs(
     if (icm42688_wait_controller_done(
             ICM42688_I2C_TIMEOUT_COUNT) == false) {
 
+        icm42688_abort_transfer();
+        return false;
+    }
+
+    while ((DL_I2C_isControllerRXFIFOEmpty(
+                ICM42688_I2C_INST) == false) &&
+           (received < length)) {
+
+        data[received] =
+            DL_I2C_receiveControllerData(
+                ICM42688_I2C_INST);
+
+        received++;
+    }
+
+    DL_I2C_flushControllerTXFIFO(
+        ICM42688_I2C_INST);
+
+    if (received != length) {
         icm42688_abort_transfer();
         return false;
     }

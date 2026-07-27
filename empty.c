@@ -6,107 +6,203 @@
 #include "ti_msp_dl_config.h"
 
 #include "delay.h"
-#include "encoder.h"
-#include "gray_serial.h"
-#include "oled.h"
-#include "pid.h"
-#include "square_track.h"
+#include "attitude.h"
+#include "icm42688.h"
+#include "vofa.h"
 
-#include <stdint.h>
+/* 姿态更新和调试输出周期。 */
+#define IMU_UPDATE_PERIOD_MS             (10U)
 
-#define SQUARE_MAIN_PERIOD_MS       (SPEED_PID_CONTROL_PERIOD_MS)
-#define SQUARE_MAIN_OLED_PERIOD_MS  (100U)
+/* 陀螺仪零偏校准采样次数。 */
+#define IMU_GYRO_CALIB_SAMPLE_COUNT      (1000U)
 
-static void square_main_update_oled(void);
+/*
+ * 当前 ICM42688 驱动配置为 ±2000 dps。
+ * 原始值转换为 °/s：
+ *     gyroDps = raw × 2000 / 32768
+ */
+#define IMU_GYRO_DPS_PER_LSB             (2000.0f / 32768.0f)
+
+/* 初始化失败或掉线后的重新尝试周期。 */
+#define IMU_RETRY_PERIOD_MS              (1000U)
+
+/* ICM42688 正常 WHO_AM_I。 */
+#define ICM42688_EXPECTED_WHO_AM_I       (0x47U)
+
+/* 姿态解算允许的 dt 范围。 */
+#define IMU_DT_DEFAULT_S                 (0.010f)
+#define IMU_DT_MIN_S                     (0.001f)
+#define IMU_DT_MAX_S                     (0.050f)
 
 int main(void)
 {
-    uint32_t lastOledMs;
+    icm42688_raw_t raw = {0};
+    attitude_euler_t euler = {0};
+
+    bool imuOk;
+
+    uint32_t lastUpdateMs;
+    uint32_t lastRetryMs;
     uint32_t nowMs;
 
-    SYSCFG_DL_init();
+    float dt;
 
     /*
-     * 正方形循迹依赖顺序：
-     * 灰度传感器 -> 正方形状态机 -> 速度环 -> 电机 PWM。
+     * 初始化 MCU 外设。
+     *
+     * 必须先执行 SYSCFG_DL_init()，
+     * 因为硬件 I2C0、PA0 和 PA1 都由 SysConfig 初始化。
      */
-    gray_serial_init();
-    encoder_init();
-    speed_pid_init();
-    square_track_init();
-    (void)oled_init();
+    SYSCFG_DL_init();
 
-    lastOledMs = delay_get_ms();
+    /* 初始化姿态解算器内部状态。 */
+    attitude_init();
+
+    /* 初始化 ICM42688 硬件 I2C 通信。 */
+    imuOk = icm42688_init();
+
+    if (imuOk) {
+        /*
+         * 传感器刚启动后先等待输出稳定。
+         */
+        delay_ms(200U);
+
+        /*
+         * 校准期间必须保持小车和传感器静止。
+         *
+         * 如果 attitude_calibrate_gyro() 内部每次采样延时 2 ms，
+         * 1000 次采样大约需要 2 秒。
+         */
+        attitude_calibrate_gyro(IMU_GYRO_CALIB_SAMPLE_COUNT);
+    }
+
+    lastUpdateMs = delay_get_ms();
+    lastRetryMs = lastUpdateMs;
 
     while (1) {
-        /*
-         * 主循环调度顺序不要随便调换：
-         * 1. square_track_update() 先判断状态并写入左右轮目标速度；
-         * 2. speed_pid_control_update() 再根据目标速度输出最终 PWM。
-         */
-        square_track_update();
-        speed_pid_control_update();
-
         nowMs = delay_get_ms();
-        if ((uint32_t)(nowMs - lastOledMs) >=
-            SQUARE_MAIN_OLED_PERIOD_MS) {
 
-            lastOledMs = nowMs;
-            square_main_update_oled();
+        /*
+         * 初始化失败或运行中掉线后，每隔 1 秒重新初始化一次。
+         *
+         * 避免传感器启动失败后，程序永久停留在错误状态。
+         */
+        if (imuOk == false) {
+            if ((uint32_t)(nowMs - lastRetryMs) >= IMU_RETRY_PERIOD_MS) {
+                lastRetryMs = nowMs;
+
+                imuOk = icm42688_init();
+
+                if (imuOk) {
+                    delay_ms(200U);
+
+                    /*
+                     * 重新连接后重新校准零偏。
+                     * 校准期间必须保持传感器静止。
+                     */
+                    attitude_init();
+                    attitude_calibrate_gyro(
+                        IMU_GYRO_CALIB_SAMPLE_COUNT);
+
+                    lastUpdateMs = delay_get_ms();
+                }
+            }
         }
 
-        delay_ms(SQUARE_MAIN_PERIOD_MS);
+        if (imuOk) {
+            /*
+             * 读取温度、加速度计和陀螺仪原始值。
+             */
+            icm42688_read_raw(&raw);
+
+            /*
+             * 新的 I2C 驱动读取失败时会把 whoAmI 设置为 0xFF。
+             * 因此可以通过 WHO_AM_I 判断运行中是否掉线。
+             */
+            if (raw.whoAmI != ICM42688_EXPECTED_WHO_AM_I) {
+                imuOk = false;
+
+                /*
+                 * 通信中断后不再使用当前错误数据进行姿态解算。
+                 */
+                raw.accelX = 0;
+                raw.accelY = 0;
+                raw.accelZ = 0;
+                raw.gyroX = 0;
+                raw.gyroY = 0;
+                raw.gyroZ = 0;
+            }
+        }
+
+        nowMs = delay_get_ms();
+
+        /*
+         * 根据实际执行间隔计算姿态更新时间。
+         *
+         * 使用实际 dt 比固定写死 0.01 秒更准确，因为 I2C 读取、
+         * 串口发送和程序执行本身也需要时间。
+         */
+        dt = (float)(nowMs - lastUpdateMs) / 1000.0f;
+        lastUpdateMs = nowMs;
+
+        /*
+         * 防止首次运行、系统阻塞或计时异常产生不合理 dt。
+         */
+        if ((dt < IMU_DT_MIN_S) || (dt > IMU_DT_MAX_S)) {
+            dt = IMU_DT_DEFAULT_S;
+        }
+
+        if (imuOk) {
+            /*
+             * 使用有效的 ICM42688 数据更新姿态。
+             */
+            attitude_update_from_icm42688(&raw, dt);
+            attitude_get_euler(&euler);
+
+            /*
+             * VOFA+ FireWater：
+             *
+             * ch0：roll
+             * ch1：pitch
+             * ch2：yaw
+             * ch3：gyroX，单位 °/s
+             * ch4：gyroY，单位 °/s
+             * ch5：gyroZ，单位 °/s
+             */
+            vofa_send_six_float(
+                euler.roll,
+                euler.pitch,
+                euler.yaw,
+                (float)raw.gyroX * IMU_GYRO_DPS_PER_LSB,
+                (float)raw.gyroY * IMU_GYRO_DPS_PER_LSB,
+                (float)raw.gyroZ * IMU_GYRO_DPS_PER_LSB,
+                2U);
+        } else {
+            /*
+             * 通信失败时：
+             * ch0~ch4 输出 0；
+             * ch5 输出 WHO_AM_I，正常应为 71，即 0x47。
+             *
+             * 读取失败通常为 255，即 0xFF。
+             */
+            vofa_send_six_float(
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f,
+                (float)raw.whoAmI,
+                2U);
+        }
+
+        delay_ms(IMU_UPDATE_PERIOD_MS);
     }
 }
 
+/*
+ * SysTick 1 ms 中断。
+ */
 void SysTick_Handler(void)
 {
-    /* 1 ms 时间基准：给 delay_get_ms() 和编码器测速使用。 */
     delay_tick();
-    encoder_tick_1ms();
-}
-
-static void square_main_update_oled(void)
-{
-    square_track_status_t status;
-
-    square_track_get_status(&status);
-
-    oled_clear_line(0U);
-    oled_print_string("SQUARE TRACE");
-
-    oled_clear_line(1U);
-    oled_print_string("SEG:");
-    oled_print_char(square_track_get_segment_start_label());
-    oled_print_string("->");
-    oled_print_char(square_track_get_segment_end_label());
-
-    oled_clear_line(2U);
-    oled_print_string("ST:");
-    oled_print_int((int32_t)status.state);
-    oled_print_string(" ACT:");
-    oled_print_int(status.activeCount);
-
-    oled_clear_line(3U);
-    oled_print_string("RAW:");
-    oled_print_hex_u8(status.sensorRaw);
-    oled_print_string(" MID:");
-    oled_print_int(status.centerDetected);
-
-    oled_clear_line(4U);
-    oled_print_string("D:");
-    oled_print_int(status.advanceDistanceMm);
-    oled_print_string("mm");
-
-    oled_clear_line(5U);
-    oled_print_string("L:");
-    oled_print_int(status.leftTargetMmS);
-
-    oled_clear_line(6U);
-    oled_print_string("R:");
-    oled_print_int(status.rightTargetMmS);
-
-    oled_clear_line(7U);
-    /* 状态说明：0=循迹，1=丢线后前进，2=原地右转。 */
-    oled_print_string("0TR 1FWD 2RIGHT");
 }
