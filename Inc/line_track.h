@@ -40,7 +40,7 @@ typedef struct {
  * 如果小车明显把白底当线，优先检查/修改这个宏。
  */
 /* 当前实测：黑线输出 0，白底输出 1。 */
-#define LINE_TRACK_ACTIVE_LEVEL           (1U)
+#define LINE_TRACK_ACTIVE_LEVEL           (0U)
 
 /* 默认循迹基础速度，单位 mm/s。上层任务可动态覆盖。 */
 #define LINE_TRACK_BASE_SPEED_MM_S        (300)

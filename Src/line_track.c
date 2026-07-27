@@ -241,10 +241,10 @@ static void line_track_update_with_raw_impl(uint8_t raw, bool stopOnLost)
         /*
          * 差速混控：
          *   error 为正表示线偏左，需要向左修正；
-         *   左轮加速、右轮减速。
+         *   左轮减速、右轮加速。
          */
-        leftTarget = g_baseSpeedMmS + correction;
-        rightTarget = g_baseSpeedMmS - correction;
+        leftTarget = g_baseSpeedMmS - correction;
+        rightTarget = g_baseSpeedMmS + correction;
     } else {
         correction = 0;
 
@@ -261,12 +261,12 @@ static void line_track_update_with_raw_impl(uint8_t raw, bool stopOnLost)
             rightTarget = 0;
         } else if (g_lastError < 0) {
             /* 上次线在右边：原地向右侧找线。 */
-            leftTarget = -LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
-            rightTarget = LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
-        } else if (g_lastError > 0) {
-            /* 上次线在左边：原地向左侧找线。 */
             leftTarget = LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
             rightTarget = -LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
+        } else if (g_lastError > 0) {
+            /* 上次线在左边：原地向左侧找线。 */
+            leftTarget = -LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
+            rightTarget = LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
         } else {
             /* 没有历史方向时，不盲目找线。 */
             leftTarget = 0;

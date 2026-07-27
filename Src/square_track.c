@@ -20,9 +20,8 @@
 #define SQUARE_TRACK_BASE_SPEED_MM_S       (300)
 #define SQUARE_TRACK_TURN_SPEED_MM_S       (180)
 #define SQUARE_TRACK_FORWARD_AFTER_LOST_MM (140)
-/* 4 个及以上通道检测到黑线时，认为压到横线/交叉线，直接直行。 */
-/* 7+ channels: force straight only for a very wide marker/cross line. */
-#define SQUARE_TRACK_STRAIGHT_ACTIVE_MIN   (7U)
+/* 3+ black channels: treat as a wide line/cross line and go straight. */
+#define SQUARE_TRACK_STRAIGHT_ACTIVE_MIN   (3U)
 
 /* 物理通道下标：按小车从左到右排列，经过 g_squareChannelBitMap 映射后使用。 */
 #define SQUARE_TRACK_CENTER_LEFT_INDEX     (3U)
@@ -179,7 +178,7 @@ void square_track_update(void)
         g_squareStatus.advanceDistanceMm = 0;
 
         if (activeCount == 0U) {
-            /* 当前边走到末端：8 路都看不到黑线，进入丢线后前进阶段。 */
+            /* 当前边走到末端：没有任何通道看到黑线，进入丢线后前进阶段。 */
             square_track_start_advance();
         } else if (activeCount >= SQUARE_TRACK_STRAIGHT_ACTIVE_MIN) {
             /* 压到较宽黑线/横线：不做循迹修正，左右轮保持同速直行。 */
