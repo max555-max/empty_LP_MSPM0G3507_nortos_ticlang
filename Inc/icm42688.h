@@ -1,5 +1,3 @@
-
-
 #ifndef __ICM42688_H_
 #define __ICM42688_H_
 

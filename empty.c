@@ -225,6 +225,7 @@ int main(void)
    
     /* 初始化姿态解算器内部状态。 */
     attitude_init();
+    DL_GPIO_setPins(ICM42688_PORT, ICM42688_ADO_PIN);
     delay_ms(2000);
     /* 初始化 ICM42688 硬件 I2C 通信。 */
     imuOk = icm42688_init();

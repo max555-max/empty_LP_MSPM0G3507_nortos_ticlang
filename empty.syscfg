@@ -20,6 +20,7 @@ const GPIO7   = GPIO.addInstance();
 const GPIO8   = GPIO.addInstance();
 const GPIO9   = GPIO.addInstance();
 const GPIO10  = GPIO.addInstance();
+const GPIO11  = GPIO.addInstance();
 const I2C     = scripting.addModule("/ti/driverlib/I2C", {}, false);
 const I2C1    = I2C.addInstance();
 const PWM     = scripting.addModule("/ti/driverlib/PWM", {}, false);
@@ -150,6 +151,13 @@ GPIO10.associatedPins[0].initialValue = "SET";
 GPIO10.associatedPins[0].assignedPort = "PORTA";
 GPIO10.associatedPins[0].assignedPin  = "31";
 GPIO10.associatedPins[0].pin.$assign  = "PA31";
+
+GPIO11.$name                          = "ICM42688";
+GPIO11.associatedPins[0].$name        = "ADO";
+GPIO11.associatedPins[0].assignedPort = "PORTA";
+GPIO11.associatedPins[0].assignedPin  = "7";
+GPIO11.associatedPins[0].initialValue = "SET";
+GPIO11.associatedPins[0].pin.$assign  = "PA7";
 
 I2C1.$name                             = "I2C_ICM42688";
 I2C1.basicEnableController             = true;

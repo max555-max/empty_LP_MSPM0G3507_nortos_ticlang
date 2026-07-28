@@ -1,6 +1,10 @@
 #include "icm42688.h"
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #include "ti_msp_dl_config.h"
+#include "delay.h"
 #include "vofa.h"
 
 /*
@@ -25,13 +29,13 @@
 #define ICM42688_WHO_AM_I_VALUE            (0x47U)
 
 /*
- * DriverLib 接收的是 7 位地址，不要左移，不要写成 0xD0/0xD1。
+ * AD0/SDO 固定接高电平时，ICM42688 的 7 位 I2C 地址固定为 0x69。
  *
- * 因硬件地址脚状态不稳定，本驱动支持在 0x68 和 0x69 之间
- * 自动探测并锁定当前可用地址。
+ * DriverLib 接收的是 7 位地址：
+ *   正确：0x69
+ *   错误：0xD2 / 0xD3
  */
-#define ICM42688_I2C_ADDRESS_AD0_LOW       (0x68U)
-#define ICM42688_I2C_ADDRESS_AD0_HIGH      (0x69U)
+#define ICM42688_I2C_ADDRESS               (0x69U)
 #define ICM42688_I2C_ADDRESS_INVALID       (0xFFU)
 
 /*
@@ -45,34 +49,34 @@
 #define ICM42688_GYRO_2000_1KHZ            (0x06U)
 #define ICM42688_ACCEL_GYRO_LN             (0x0FU)
 
-/* 初始化时扫描两个地址的最大尝试次数。 */
-#define ICM42688_INIT_RETRY_COUNT          (5U)
+/* 初始化时在固定地址 0x69 上的最大探测次数。 */
+#define ICM42688_INIT_RETRY_COUNT           (5U)
 
-/* 每轮地址选择时，0x68/0x69 各尝试的轮数。 */
-#define ICM42688_ADDRESS_PROBE_ROUNDS      (2U)
-
-/* 正常读写先在当前已确认地址上重试的次数。 */
-#define ICM42688_CURRENT_ADDRESS_RETRY     (2U)
+/* 正常读写在固定地址 0x69 上的重试次数。 */
+#define ICM42688_TRANSFER_RETRY_COUNT       (2U)
 
 /* 错误事务恢复后，再发起下一笔事务前的等待时间。 */
-#define ICM42688_RECOVERY_DELAY_CYCLES     (CPUCLK_FREQ / 1000U)
-#define ICM42688_ABORT_SETTLE_CYCLES       (CPUCLK_FREQ / 10000U)
+#define ICM42688_RECOVERY_DELAY_CYCLES      (CPUCLK_FREQ / 1000U)
+#define ICM42688_ABORT_SETTLE_CYCLES        (CPUCLK_FREQ / 10000U)
 
 /*
  * 软件轮询超时。
  *
  * 该值是循环次数，不是毫秒。
  */
-#define ICM42688_I2C_TIMEOUT_COUNT         (200000U)
+#define ICM42688_I2C_TIMEOUT_COUNT          (200000U)
 
 /*
- * 启动控制器传输后，至少等待 3 个 I2C 功能时钟，
- * 再读取 BUSY 状态，用于规避 MSPM0 I2C_ERR_13。
- *
- * 当前已经使用 128 个 CPU 周期完成实测验证。
+ * 启动控制器传输后，先等待一小段时间再轮询 BUSY，
+ * 避免启动后过早读取状态。
  */
-#define ICM42688_START_POLL_DELAY_CYCLES   (128U)
+#define ICM42688_START_POLL_DELAY_CYCLES    (128U)
 
+/*
+ * 该变量同时表示：
+ *   1. 当前使用的 7 位 I2C 地址；
+ *   2. ICM42688 是否已经成功完成初始化。
+ */
 static uint8_t g_icm42688Address =
     ICM42688_I2C_ADDRESS_INVALID;
 
@@ -92,11 +96,6 @@ static bool icm42688_i2c_read_regs(
     uint8_t *data,
     uint16_t length);
 
-static bool icm42688_is_valid_address(uint8_t address);
-static uint8_t icm42688_get_other_address(uint8_t address);
-static bool icm42688_probe_address(uint8_t address);
-static bool icm42688_select_address(void);
-
 static bool icm42688_read_regs_safe(
     uint8_t reg,
     uint8_t *data,
@@ -111,8 +110,13 @@ static void icm42688_clear_raw(icm42688_raw_t *raw);
 /*
  * 初始化 ICM42688。
  *
+ * 硬件前提：
+ *   AD0/SDO 接高电平，地址固定为 0x69；
+ *   CS 接 VDDIO，使器件工作在 I2C 模式；
+ *   SDA、SCL 有合适的上拉电阻。
+ *
  * 返回：
- *   true ：0x68 或 0x69 地址读取 WHO_AM_I=0x47，并完成寄存器配置；
+ *   true ：0x69 地址读取 WHO_AM_I=0x47，并完成寄存器配置；
  *   false：I2C 通信或传感器初始化失败。
  */
 bool icm42688_init(void)
@@ -124,47 +128,47 @@ bool icm42688_init(void)
     g_icm42688Address =
         ICM42688_I2C_ADDRESS_INVALID;
 
-    /*
-     * 等待传感器上电稳定约 100 ms。
-     */
+    /* 等待传感器上电稳定约 100 ms。 */
     delay_cycles(CPUCLK_FREQ / 10U);
 
     /*
-     * 每轮都会依次探测 0x68 和 0x69。
-     *
-     * 错误地址产生 NACK 后，底层会复位传输状态、清空 FIFO，
-     * 等待一小段时间后才探测另一个地址，避免错误状态污染
-     * 下一笔事务。
+     * AD0/SDO 已固定接高，因此只探测固定地址 0x69。
+     * 探测失败时只恢复 I2C Controller，不切换到 0x68。
      */
     for (retry = 0U;
          retry < ICM42688_INIT_RETRY_COUNT;
          retry++) {
 
-        if (icm42688_select_address()) {
+        who = 0xFFU;
+
+        if (icm42688_i2c_read_regs(
+                ICM42688_I2C_ADDRESS,
+                ICM42688_WHO_AM_I,
+                &who,
+                1U) &&
+            (who == ICM42688_WHO_AM_I_VALUE)) {
+
             detected = true;
             break;
         }
 
         icm42688_abort_transfer();
+
+        /* 失败后等待约 10 ms，再重新探测 0x69。 */
         delay_cycles(CPUCLK_FREQ / 100U);
     }
 
     if (!detected) {
         g_icm42688Address =
             ICM42688_I2C_ADDRESS_INVALID;
+
+        icm42688_abort_transfer();
         return false;
     }
 
-    /*
-     * 再读取一次 WHO_AM_I，确认当前锁定地址仍然有效。
-     */
-    if ((!icm42688_read_reg(
-             ICM42688_WHO_AM_I,
-             &who)) ||
-        (who != ICM42688_WHO_AM_I_VALUE)) {
-
-        goto init_failed;
-    }
+    /* 探测成功后才正式锁定固定地址。 */
+    g_icm42688Address =
+        ICM42688_I2C_ADDRESS;
 
     /*
      * 初始化顺序：
@@ -173,8 +177,6 @@ bool icm42688_init(void)
      *   2. 配置加速度计量程和 ODR；
      *   3. 配置陀螺仪量程和 ODR；
      *   4. 开启 accel/gyro 低噪声模式。
-     *
-     * 每个写操作都带当前地址重试和双地址重新探测。
      */
     if (!icm42688_write_reg(
             ICM42688_PWR_MGMT0,
@@ -183,6 +185,7 @@ bool icm42688_init(void)
         goto init_failed;
     }
 
+    /* 等待模式关闭完成约 10 ms。 */
     delay_cycles(CPUCLK_FREQ / 100U);
 
     if (!icm42688_write_reg(
@@ -206,11 +209,10 @@ bool icm42688_init(void)
         goto init_failed;
     }
 
-    /*
-     * 等待 accel/gyro 进入低噪声模式并输出稳定数据。
-     */
+    /* 等待 accel/gyro 进入低噪声模式并输出稳定数据。 */
     delay_cycles(CPUCLK_FREQ / 10U);
 
+    /* 配置完成后再次确认固定地址仍能正常通信。 */
     who = 0xFFU;
 
     if ((!icm42688_read_reg(
@@ -226,6 +228,7 @@ bool icm42688_init(void)
 init_failed:
     g_icm42688Address =
         ICM42688_I2C_ADDRESS_INVALID;
+
     icm42688_abort_transfer();
     return false;
 }
@@ -256,7 +259,7 @@ uint8_t icm42688_get_who_am_i(void)
  *   gyroYH,gyroYL,
  *   gyroZH,gyroZL。
  */
-void icm42688_read_raw(icm42688_raw_t *raw)     //读取原始数据
+void icm42688_read_raw(icm42688_raw_t *raw)
 {
     uint8_t data[14];
 
@@ -295,10 +298,8 @@ void icm42688_read_raw(icm42688_raw_t *raw)     //读取原始数据
         icm42688_to_i16(data[12], data[13]);
 
     /*
-     * 14 字节连续读取已经成功，说明本帧通信正常。
-     *
-     * 不再额外发起一次 WHO_AM_I 读取，避免每帧产生第二个
-     * I2C 事务并降低总线稳定性。
+     * 14 字节连续读取成功，表示本帧通信正常。
+     * 不再额外读取一次 WHO_AM_I，以减少总线事务。
      */
     raw->whoAmI = ICM42688_WHO_AM_I_VALUE;
 }
@@ -332,8 +333,8 @@ void icm42688_print_raw(const icm42688_raw_t *raw)
 /*
  * 等待控制器事务结束，并等待物理总线释放。
  *
- * 不能只检查 IDLE 位。
- * 实测中成功事务结束后状态可能为 0，而不一定保持 IDLE=1。
+ * BUSY=0：控制器当前事务已结束；
+ * BUSY_BUS=0：START 到 STOP 的物理总线事务已结束。
  */
 static bool icm42688_wait_bus_released(uint32_t timeout)
 {
@@ -344,23 +345,18 @@ static bool icm42688_wait_bus_released(uint32_t timeout)
             DL_I2C_getControllerStatus(
                 ICM42688_I2C_INST);
 
-        /*
-         * BUSY=0：控制器当前事务已结束；
-         * BUSY_BUS=0：START 到 STOP 的物理总线事务已结束。
-         */
+        if ((status &
+             DL_I2C_CONTROLLER_STATUS_ERROR) != 0U) {
+
+            return false;
+        }
+
         if (((status &
               DL_I2C_CONTROLLER_STATUS_BUSY) == 0U) &&
             ((status &
               DL_I2C_CONTROLLER_STATUS_BUSY_BUS) == 0U)) {
 
-            return
-                (status &
-                 DL_I2C_CONTROLLER_STATUS_ERROR) == 0U;
-        }
-
-        if ((status &
-             DL_I2C_CONTROLLER_STATUS_ERROR) != 0U) {
-            return false;
+            return true;
         }
 
         if (timeout == 0U) {
@@ -374,8 +370,8 @@ static bool icm42688_wait_bus_released(uint32_t timeout)
 /*
  * 只等待控制器当前阶段完成。
  *
- * 第一阶段发送寄存器地址时故意不产生 STOP，
- * 所以此处不能等待 BUSY_BUS 清零。
+ * 发送寄存器地址的第一阶段故意不产生 STOP，
+ * 因此这里不能等待 BUSY_BUS 清零。
  */
 static bool icm42688_wait_controller_done(uint32_t timeout)
 {
@@ -388,11 +384,13 @@ static bool icm42688_wait_controller_done(uint32_t timeout)
 
         if ((status &
              DL_I2C_CONTROLLER_STATUS_ERROR) != 0U) {
+
             return false;
         }
 
         if ((status &
              DL_I2C_CONTROLLER_STATUS_BUSY) == 0U) {
+
             return true;
         }
 
@@ -407,9 +405,9 @@ static bool icm42688_wait_controller_done(uint32_t timeout)
 /*
  * 开始一个全新的 I2C 事务前：
  *
- *   1. 复位控制器传输状态；
+ *   1. 复位控制器传输寄存器；
  *   2. 清空 TX/RX FIFO；
- *   3. 确认物理总线已释放。
+ *   3. 确认物理总线已经释放。
  */
 static bool icm42688_prepare_transfer(void)
 {
@@ -422,8 +420,8 @@ static bool icm42688_prepare_transfer(void)
     DL_I2C_flushControllerRXFIFO(
         ICM42688_I2C_INST);
 
-    if (icm42688_wait_bus_released(
-            ICM42688_I2C_TIMEOUT_COUNT) == false) {
+    if (!icm42688_wait_bus_released(
+            ICM42688_I2C_TIMEOUT_COUNT)) {
 
         icm42688_abort_transfer();
         return false;
@@ -435,8 +433,7 @@ static bool icm42688_prepare_transfer(void)
 /*
  * 传输失败时恢复 I2C Controller。
  *
- * 错误地址通常会产生 NACK。这里不仅复位事务和清空 FIFO，
- * 还等待 BUSY/BUSY_BUS 尽量释放，并在返回前留出恢复时间。
+ * 固定地址版本只恢复控制器和 FIFO，绝不切换设备地址。
  */
 static void icm42688_abort_transfer(void)
 {
@@ -473,9 +470,7 @@ static void icm42688_abort_transfer(void)
         timeout--;
     }
 
-    /*
-     * 再复位一次，清除恢复过程中可能残留的错误和 FIFO 状态。
-     */
+    /* 再复位一次，清除可能残留的传输和 FIFO 状态。 */
     DL_I2C_resetControllerTransfer(
         ICM42688_I2C_INST);
 
@@ -501,13 +496,15 @@ static bool icm42688_i2c_write(
 {
     uint16_t written;
 
-    if ((data == 0) ||
+    if ((address != ICM42688_I2C_ADDRESS) ||
+        (data == 0) ||
         (length == 0U) ||
         (length > 8U)) {
+
         return false;
     }
 
-    if (icm42688_prepare_transfer() == false) {
+    if (!icm42688_prepare_transfer()) {
         return false;
     }
 
@@ -531,19 +528,16 @@ static bool icm42688_i2c_write(
     delay_cycles(
         ICM42688_START_POLL_DELAY_CYCLES);
 
-    if (icm42688_wait_controller_done(
-            ICM42688_I2C_TIMEOUT_COUNT) == false) {
+    if (!icm42688_wait_controller_done(
+            ICM42688_I2C_TIMEOUT_COUNT)) {
 
         icm42688_abort_transfer();
         return false;
     }
 
-    /*
-     * startControllerTransfer() 自动产生 STOP，
-     * 所以还要等待 BUSY_BUS 清零。
-     */
-    if (icm42688_wait_bus_released(
-            ICM42688_I2C_TIMEOUT_COUNT) == false) {
+    /* startControllerTransfer() 自动产生 STOP。 */
+    if (!icm42688_wait_bus_released(
+            ICM42688_I2C_TIMEOUT_COUNT)) {
 
         icm42688_abort_transfer();
         return false;
@@ -576,12 +570,14 @@ static bool icm42688_i2c_read_regs(
     uint32_t timeout;
     uint32_t status;
 
-    if ((data == 0) ||
+    if ((address != ICM42688_I2C_ADDRESS) ||
+        (data == 0) ||
         (length == 0U)) {
+
         return false;
     }
 
-    if (icm42688_prepare_transfer() == false) {
+    if (!icm42688_prepare_transfer()) {
         return false;
     }
 
@@ -596,7 +592,10 @@ static bool icm42688_i2c_read_regs(
         return false;
     }
 
-    /* Write register address, then keep the bus active for repeated START. */
+    /*
+     * 第一阶段：发送寄存器地址，但不发送 STOP，
+     * 为第二阶段的 Repeated START 保留总线。
+     */
     DL_I2C_startControllerTransferAdvanced(
         ICM42688_I2C_INST,
         address,
@@ -609,30 +608,26 @@ static bool icm42688_i2c_read_regs(
     delay_cycles(
         ICM42688_START_POLL_DELAY_CYCLES);
 
-    if (icm42688_wait_controller_done(
-            ICM42688_I2C_TIMEOUT_COUNT) == false) {
+    if (!icm42688_wait_controller_done(
+            ICM42688_I2C_TIMEOUT_COUNT)) {
 
         icm42688_abort_transfer();
         return false;
     }
 
+    /*
+     * 第一阶段结束时 BUSY_BUS=1 是正常现象。
+     * TX 和 RX 两阶段之间不能复位控制器、不能等待总线释放、
+     * 也不能产生 STOP。
+     */
     DL_I2C_flushControllerRXFIFO(
         ICM42688_I2C_INST);
 
     /*
-     * 第一阶段结束时 BUSY_BUS=1 是正常现象。
+     * 第二阶段：Repeated START + 地址(R) + N字节 + NACK + STOP。
      *
-     * TX 与 RX 之间严禁：
-     *
-     *   1. resetControllerTransfer；
-     *   2. 等待 BUSY_BUS 清零；
-     *   3. 产生 STOP。
-     */
-
-    /*
-     * Read phase:
-     *
-     * START + address(R) + N bytes + final NACK + STOP
+     * DriverLib 中 ACK_ENABLE 的含义是：
+     * 最后一个接收字节不被自动 ACK，即以 NACK 结束读取。
      */
     DL_I2C_startControllerTransferAdvanced(
         ICM42688_I2C_INST,
@@ -641,7 +636,7 @@ static bool icm42688_i2c_read_regs(
         length,
         DL_I2C_CONTROLLER_START_ENABLE,
         DL_I2C_CONTROLLER_STOP_ENABLE,
-        DL_I2C_CONTROLLER_ACK_DISABLE);
+        DL_I2C_CONTROLLER_ACK_ENABLE);
 
     delay_cycles(
         ICM42688_START_POLL_DELAY_CYCLES);
@@ -649,8 +644,8 @@ static bool icm42688_i2c_read_regs(
     timeout = ICM42688_I2C_TIMEOUT_COUNT;
 
     while (received < length) {
-        while ((DL_I2C_isControllerRXFIFOEmpty(
-                    ICM42688_I2C_INST) == false) &&
+        while ((!DL_I2C_isControllerRXFIFOEmpty(
+                    ICM42688_I2C_INST)) &&
                (received < length)) {
 
             data[received] =
@@ -679,15 +674,16 @@ static bool icm42688_i2c_read_regs(
         timeout--;
     }
 
-    if (icm42688_wait_controller_done(
-            ICM42688_I2C_TIMEOUT_COUNT) == false) {
+    if (!icm42688_wait_controller_done(
+            ICM42688_I2C_TIMEOUT_COUNT)) {
 
         icm42688_abort_transfer();
         return false;
     }
 
-    while ((DL_I2C_isControllerRXFIFOEmpty(
-                ICM42688_I2C_INST) == false) &&
+    /* 防止最后时刻仍有数据留在 RX FIFO。 */
+    while ((!DL_I2C_isControllerRXFIFOEmpty(
+                ICM42688_I2C_INST)) &&
            (received < length)) {
 
         data[received] =
@@ -697,19 +693,14 @@ static bool icm42688_i2c_read_regs(
         received++;
     }
 
-    DL_I2C_flushControllerTXFIFO(
-        ICM42688_I2C_INST);
-
     if (received != length) {
         icm42688_abort_transfer();
         return false;
     }
 
-    /*
-     * 第二阶段启用了 STOP，所以最终等待物理总线释放。
-     */
-    if (icm42688_wait_bus_released(
-            ICM42688_I2C_TIMEOUT_COUNT) == false) {
+    /* 第二阶段启用了 STOP，最终等待物理总线释放。 */
+    if (!icm42688_wait_bus_released(
+            ICM42688_I2C_TIMEOUT_COUNT)) {
 
         icm42688_abort_transfer();
         return false;
@@ -719,124 +710,9 @@ static bool icm42688_i2c_read_regs(
 }
 
 /*
- * 判断地址是否是 ICM42688 的两个合法 7 位地址之一。
- */
-static bool icm42688_is_valid_address(
-    uint8_t address)
-{
-    return
-        (address == ICM42688_I2C_ADDRESS_AD0_LOW) ||
-        (address == ICM42688_I2C_ADDRESS_AD0_HIGH);
-}
-
-/*
- * 返回另一个候选地址。
- */
-static uint8_t icm42688_get_other_address(
-    uint8_t address)
-{
-    if (address == ICM42688_I2C_ADDRESS_AD0_LOW) {
-        return ICM42688_I2C_ADDRESS_AD0_HIGH;
-    }
-
-    return ICM42688_I2C_ADDRESS_AD0_LOW;
-}
-
-/*
- * 只探测指定地址：
+ * 使用固定地址 0x69 连续读取寄存器。
  *
- *   读取 WHO_AM_I；
- *   只有通信成功且返回 0x47，才认为该地址有效。
- */
-static bool icm42688_probe_address(
-    uint8_t address)
-{
-    uint8_t who = 0xFFU;
-
-    if (!icm42688_is_valid_address(address)) {
-        return false;
-    }
-
-    if (!icm42688_i2c_read_regs(
-            address,
-            ICM42688_WHO_AM_I,
-            &who,
-            1U)) {
-
-        icm42688_abort_transfer();
-        return false;
-    }
-
-    return who == ICM42688_WHO_AM_I_VALUE;
-}
-
-/*
- * 自动选择当前可用地址。
- *
- * 如果已经保存了一个地址，优先探测该地址；
- * 否则先探测 0x68，再探测 0x69。
- *
- * 第一个地址失败后，会完整恢复 I2C Controller，
- * 再探测第二个地址。
- */
-static bool icm42688_select_address(void)
-{
-    uint8_t firstAddress;
-    uint8_t secondAddress;
-    uint8_t round;
-
-    if (icm42688_is_valid_address(
-            g_icm42688Address)) {
-
-        firstAddress = g_icm42688Address;
-    } else {
-        firstAddress =
-            ICM42688_I2C_ADDRESS_AD0_LOW;
-    }
-
-    secondAddress =
-        icm42688_get_other_address(
-            firstAddress);
-
-    for (round = 0U;
-         round < ICM42688_ADDRESS_PROBE_ROUNDS;
-         round++) {
-
-        if (icm42688_probe_address(
-                firstAddress)) {
-
-            g_icm42688Address =
-                firstAddress;
-            return true;
-        }
-
-        icm42688_abort_transfer();
-        delay_cycles(
-            ICM42688_RECOVERY_DELAY_CYCLES);
-
-        if (icm42688_probe_address(
-                secondAddress)) {
-
-            g_icm42688Address =
-                secondAddress;
-            return true;
-        }
-
-        icm42688_abort_transfer();
-        delay_cycles(CPUCLK_FREQ / 200U);
-    }
-
-    g_icm42688Address =
-        ICM42688_I2C_ADDRESS_INVALID;
-
-    return false;
-}
-
-/*
- * 带地址容错的连续读取。
- *
- * 正常情况下只使用当前已确认地址。
- * 当前地址连续失败后，才重新探测 0x68/0x69。
+ * 通信失败后只恢复控制器并继续重试 0x69，绝不切换到 0x68。
  */
 static bool icm42688_read_regs_safe(
     uint8_t reg,
@@ -844,7 +720,6 @@ static bool icm42688_read_regs_safe(
     uint16_t length)
 {
     uint8_t retry;
-    uint8_t failedAddress;
 
     if ((data == 0) ||
         (length == 0U)) {
@@ -852,57 +727,19 @@ static bool icm42688_read_regs_safe(
         return false;
     }
 
-    if (!icm42688_is_valid_address(
-            g_icm42688Address)) {
+    /* 未完成初始化时不允许进行正常数据读取。 */
+    if (g_icm42688Address !=
+        ICM42688_I2C_ADDRESS) {
 
-        if (!icm42688_select_address()) {
-            return false;
-        }
-    }
-
-    /*
-     * 优先使用当前地址重试。
-     */
-    for (retry = 0U;
-         retry < ICM42688_CURRENT_ADDRESS_RETRY;
-         retry++) {
-
-        if (icm42688_i2c_read_regs(
-                g_icm42688Address,
-                reg,
-                data,
-                length)) {
-
-            return true;
-        }
-
-        icm42688_abort_transfer();
-        delay_cycles(
-            ICM42688_RECOVERY_DELAY_CYCLES);
-    }
-
-    /*
-     * 当前地址连续失败，优先从另一个地址开始重新探测。
-     */
-    failedAddress = g_icm42688Address;
-
-    g_icm42688Address =
-        icm42688_get_other_address(
-            failedAddress);
-
-    if (!icm42688_select_address()) {
         return false;
     }
 
-    /*
-     * 地址重新确认后，再执行原来的连续读取。
-     */
     for (retry = 0U;
-         retry < ICM42688_CURRENT_ADDRESS_RETRY;
+         retry < ICM42688_TRANSFER_RETRY_COUNT;
          retry++) {
 
         if (icm42688_i2c_read_regs(
-                g_icm42688Address,
+                ICM42688_I2C_ADDRESS,
                 reg,
                 data,
                 length)) {
@@ -911,18 +748,18 @@ static bool icm42688_read_regs_safe(
         }
 
         icm42688_abort_transfer();
+
         delay_cycles(
             ICM42688_RECOVERY_DELAY_CYCLES);
     }
-
-    g_icm42688Address =
-        ICM42688_I2C_ADDRESS_INVALID;
 
     return false;
 }
 
 /*
- * 写一个寄存器，带当前地址重试和双地址重新探测。
+ * 使用固定地址 0x69 写一个寄存器。
+ *
+ * 通信失败后只恢复控制器并继续重试 0x69，绝不切换到 0x68。
  */
 static bool icm42688_write_reg(
     uint8_t reg,
@@ -930,28 +767,22 @@ static bool icm42688_write_reg(
 {
     uint8_t tx[2];
     uint8_t retry;
-    uint8_t failedAddress;
+
+    if (g_icm42688Address !=
+        ICM42688_I2C_ADDRESS) {
+
+        return false;
+    }
 
     tx[0] = reg;
     tx[1] = data;
 
-    if (!icm42688_is_valid_address(
-            g_icm42688Address)) {
-
-        if (!icm42688_select_address()) {
-            return false;
-        }
-    }
-
-    /*
-     * 优先使用当前已确认地址。
-     */
     for (retry = 0U;
-         retry < ICM42688_CURRENT_ADDRESS_RETRY;
+         retry < ICM42688_TRANSFER_RETRY_COUNT;
          retry++) {
 
         if (icm42688_i2c_write(
-                g_icm42688Address,
+                ICM42688_I2C_ADDRESS,
                 tx,
                 (uint16_t)sizeof(tx))) {
 
@@ -959,50 +790,15 @@ static bool icm42688_write_reg(
         }
 
         icm42688_abort_transfer();
+
         delay_cycles(
             ICM42688_RECOVERY_DELAY_CYCLES);
     }
-
-    /*
-     * 当前地址连续写失败，优先探测另一个地址。
-     */
-    failedAddress = g_icm42688Address;
-
-    g_icm42688Address =
-        icm42688_get_other_address(
-            failedAddress);
-
-    if (!icm42688_select_address()) {
-        return false;
-    }
-
-    /*
-     * 地址重新确认后，再重试寄存器写入。
-     */
-    for (retry = 0U;
-         retry < ICM42688_CURRENT_ADDRESS_RETRY;
-         retry++) {
-
-        if (icm42688_i2c_write(
-                g_icm42688Address,
-                tx,
-                (uint16_t)sizeof(tx))) {
-
-            return true;
-        }
-
-        icm42688_abort_transfer();
-        delay_cycles(
-            ICM42688_RECOVERY_DELAY_CYCLES);
-    }
-
-    g_icm42688Address =
-        ICM42688_I2C_ADDRESS_INVALID;
 
     return false;
 }
 
-/* 读一个寄存器，复用带地址容错的连续读取。 */
+/* 读一个寄存器，复用固定地址连续读取函数。 */
 static bool icm42688_read_reg(
     uint8_t reg,
     uint8_t *data)
@@ -1025,11 +821,16 @@ static int16_t icm42688_to_i16(
 }
 
 /*
- * 读取失败时清零原始数据并把 WHO_AM_I 设置为 0xFF。
+ * 读取失败时清零原始数据，
+ * 并把 WHO_AM_I 字段设置为 0xFF 表示本帧无效。
  */
 static void icm42688_clear_raw(
     icm42688_raw_t *raw)
 {
+    if (raw == 0) {
+        return;
+    }
+
     raw->accelX = 0;
     raw->accelY = 0;
     raw->accelZ = 0;

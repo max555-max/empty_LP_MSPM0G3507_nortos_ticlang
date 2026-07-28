@@ -194,6 +194,12 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 /* Defines for PIN_SDA: GPIOA.31 with pinCMx 6 on package pin 39 */
 #define OLED_SDA_PIN_SDA_PIN                                    (DL_GPIO_PIN_31)
 #define OLED_SDA_PIN_SDA_IOMUX                                    (IOMUX_PINCM6)
+/* Port definition for Pin Group ICM42688 */
+#define ICM42688_PORT                                                    (GPIOA)
+
+/* Defines for ADO: GPIOA.7 with pinCMx 14 on package pin 49 */
+#define ICM42688_ADO_PIN                                         (DL_GPIO_PIN_7)
+#define ICM42688_ADO_IOMUX                                       (IOMUX_PINCM14)
 /* Port definition for Pin Group AIN */
 #define AIN_PORT                                                         (GPIOA)
 
