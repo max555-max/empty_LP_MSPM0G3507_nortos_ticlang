@@ -165,11 +165,11 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 #define LED_LED1_PIN                                             (DL_GPIO_PIN_9)
 #define LED_LED1_IOMUX                                           (IOMUX_PINCM26)
 /* Port definition for Pin Group BUZZER */
-#define BUZZER_PORT                                                      (GPIOB)
+#define BUZZER_PORT                                                      (GPIOA)
 
-/* Defines for BZ: GPIOB.16 with pinCMx 33 on package pin 4 */
-#define BUZZER_BZ_PIN                                           (DL_GPIO_PIN_16)
-#define BUZZER_BZ_IOMUX                                          (IOMUX_PINCM33)
+/* Defines for BZ: GPIOA.8 with pinCMx 19 on package pin 54 */
+#define BUZZER_BZ_PIN                                            (DL_GPIO_PIN_8)
+#define BUZZER_BZ_IOMUX                                          (IOMUX_PINCM19)
 /* Port definition for Pin Group OLED_RST */
 #define OLED_RST_PORT                                                    (GPIOB)
 

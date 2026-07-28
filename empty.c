@@ -222,10 +222,10 @@ int main(void)
     if (oledOk) {
         menu_render();
     }
-
+   
     /* 初始化姿态解算器内部状态。 */
     attitude_init();
-
+    delay_ms(2000);
     /* 初始化 ICM42688 硬件 I2C 通信。 */
     imuOk = icm42688_init();
 
@@ -379,3 +379,23 @@ void SysTick_Handler(void)
 {
     delay_tick();
 }
+
+// #include "ti_msp_dl_config.h"
+// #include "delay.h"
+
+// int main()
+// {
+//     SYSCFG_DL_init();
+//     while(1)
+//     {
+//         DL_GPIO_clearPins(BUZZER_PORT, BUZZER_BZ_PIN);
+//         delay_ms(2000);
+//         DL_GPIO_setPins(BUZZER_PORT, BUZZER_BZ_PIN);
+//         delay_ms(2000);
+//     }
+// }
+
+// void SysTick_Handler(void)
+// {
+//     delay_tick();
+// }

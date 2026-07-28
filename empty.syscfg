@@ -118,9 +118,10 @@ GPIO5.associatedPins[1].pin.$assign  = "PB17";
 
 GPIO6.$name                          = "BUZZER";
 GPIO6.associatedPins[0].$name        = "BZ";
-GPIO6.associatedPins[0].assignedPort = "PORTB";
-GPIO6.associatedPins[0].assignedPin  = "16";
-GPIO6.associatedPins[0].pin.$assign  = "PB16";
+GPIO6.associatedPins[0].initialValue = "SET";
+GPIO6.associatedPins[0].assignedPort = "PORTA";
+GPIO6.associatedPins[0].assignedPin  = "8";
+GPIO6.associatedPins[0].pin.$assign  = "PA8";
 
 GPIO7.$name                          = "OLED_RST";
 GPIO7.associatedPins[0].$name        = "PIN_RST";

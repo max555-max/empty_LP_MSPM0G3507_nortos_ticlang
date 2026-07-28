@@ -34,7 +34,7 @@
  *
  * Example: actual 90 deg, reported 80 deg -> 90 / 80 = 1.125f.
  */
-#define ATTITUDE_YAW_SCALE                  (0.991000f)
+#define ATTITUDE_YAW_SCALE                  (1.000000f)
 
 /*
  * roll、pitch 互补滤波。
