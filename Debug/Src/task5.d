@@ -1,8 +1,8 @@
 # FIXED
 
-Src/uart_cmd.o: ../Src/uart_cmd.c \
- C:/Users/gaofu/workspace_ccstheia/C07A/Inc/uart_cmd.h \
- C:/Users/gaofu/workspace_ccstheia/C07A/Inc/pid.h \
+Src/task5.o: ../Src/task5.c \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/bluetooth.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/delay.h \
  ti_msp_dl_config.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/DeviceFamily.h \
@@ -86,9 +86,14 @@ Src/uart_cmd.o: ../Src/uart_cmd.c \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h \
- C:/Users/gaofu/workspace_ccstheia/C07A/Inc/vofa.h
-C:/Users/gaofu/workspace_ccstheia/C07A/Inc/uart_cmd.h:
-C:/Users/gaofu/workspace_ccstheia/C07A/Inc/pid.h:
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/encoder.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/gray_serial.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/line_track.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/oled.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/pid.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/task5.h
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/bluetooth.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/delay.h:
 ti_msp_dl_config.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/DeviceFamily.h:
@@ -172,4 +177,9 @@ C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_vref.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h:
-C:/Users/gaofu/workspace_ccstheia/C07A/Inc/vofa.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/encoder.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/gray_serial.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/line_track.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/oled.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/pid.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/task5.h:

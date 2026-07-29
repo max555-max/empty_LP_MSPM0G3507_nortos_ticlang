@@ -164,12 +164,6 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 /* Defines for LED1: GPIOB.9 with pinCMx 26 on package pin 61 */
 #define LED_LED1_PIN                                             (DL_GPIO_PIN_9)
 #define LED_LED1_IOMUX                                           (IOMUX_PINCM26)
-/* Port definition for Pin Group BUZZER */
-#define BUZZER_PORT                                                      (GPIOA)
-
-/* Defines for BZ: GPIOA.8 with pinCMx 19 on package pin 54 */
-#define BUZZER_BZ_PIN                                            (DL_GPIO_PIN_8)
-#define BUZZER_BZ_IOMUX                                          (IOMUX_PINCM19)
 /* Port definition for Pin Group OLED_RST */
 #define OLED_RST_PORT                                                    (GPIOB)
 
@@ -194,12 +188,6 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 /* Defines for PIN_SDA: GPIOA.31 with pinCMx 6 on package pin 39 */
 #define OLED_SDA_PIN_SDA_PIN                                    (DL_GPIO_PIN_31)
 #define OLED_SDA_PIN_SDA_IOMUX                                    (IOMUX_PINCM6)
-/* Port definition for Pin Group ICM42688 */
-#define ICM42688_PORT                                                    (GPIOA)
-
-/* Defines for ADO: GPIOA.7 with pinCMx 14 on package pin 49 */
-#define ICM42688_ADO_PIN                                         (DL_GPIO_PIN_7)
-#define ICM42688_ADO_IOMUX                                       (IOMUX_PINCM14)
 /* Port definition for Pin Group AIN */
 #define AIN_PORT                                                         (GPIOA)
 

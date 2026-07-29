@@ -300,3 +300,106 @@ void oled_print_hex_u8(uint8_t value)
     oled_print_char(hex[(value >> 4) & 0x0FU]);
     oled_print_char(hex[value & 0x0FU]);
 }
+
+void oled_print_char_x2(char ch)
+{
+    const uint8_t *glyph;
+    uint8_t topPage = g_cursorPage;
+    uint8_t bottomPage;
+    uint8_t startColumn = g_cursorColumn;
+
+    if ((ch < ' ') || (ch > '~')) {
+        ch = '?';
+    }
+
+    if (topPage >= (OLED_PAGES - 1U)) {
+        topPage = OLED_PAGES - 2U;
+    }
+    bottomPage = (uint8_t)(topPage + 1U);
+
+    if ((startColumn + (OLED_CHAR_W * 2U)) > OLED_WIDTH) {
+        return;
+    }
+
+    glyph = g_font5x7[(uint8_t)ch - (uint8_t)' '];
+
+    oled_set_cursor(topPage, startColumn);
+    for (uint8_t i = 0U; i < OLED_FONT_W; i++) {
+        uint16_t expanded = 0U;
+
+        for (uint8_t row = 0U; row < 7U; row++) {
+            if ((glyph[i] & (uint8_t)(1U << row)) != 0U) {
+                expanded |= (uint16_t)(1U << (row * 2U));
+                expanded |= (uint16_t)(1U << ((row * 2U) + 1U));
+            }
+        }
+
+        oled_write_data(oled_reverse_bits((uint8_t)(expanded & 0xFFU)));
+        oled_write_data(oled_reverse_bits((uint8_t)(expanded & 0xFFU)));
+    }
+    oled_write_data(0x00U);
+    oled_write_data(0x00U);
+
+    oled_set_cursor(bottomPage, startColumn);
+    for (uint8_t i = 0U; i < OLED_FONT_W; i++) {
+        uint16_t expanded = 0U;
+
+        for (uint8_t row = 0U; row < 7U; row++) {
+            if ((glyph[i] & (uint8_t)(1U << row)) != 0U) {
+                expanded |= (uint16_t)(1U << (row * 2U));
+                expanded |= (uint16_t)(1U << ((row * 2U) + 1U));
+            }
+        }
+
+        oled_write_data(oled_reverse_bits((uint8_t)((expanded >> 8) & 0xFFU)));
+        oled_write_data(oled_reverse_bits((uint8_t)((expanded >> 8) & 0xFFU)));
+    }
+    oled_write_data(0x00U);
+    oled_write_data(0x00U);
+
+    oled_set_cursor(topPage, (uint8_t)(startColumn + (OLED_CHAR_W * 2U)));
+}
+
+void oled_print_string_x2(const char *text)
+{
+    while ((text != 0) && (*text != '\0')) {
+        oled_print_char_x2(*text);
+        text++;
+    }
+}
+
+void oled_print_time_large(uint32_t elapsedMs)
+{
+    char text[8];
+    uint32_t totalSeconds = elapsedMs / 1000U;
+    uint32_t minutes = totalSeconds / 60U;
+    uint32_t seconds = totalSeconds % 60U;
+    uint8_t index = 0U;
+    uint8_t charCount;
+    uint8_t column;
+
+    if (minutes > 99U) {
+        minutes = 99U;
+        seconds = 59U;
+    }
+
+    if (minutes >= 10U) {
+        text[index++] = (char)('0' + (minutes / 10U));
+        text[index++] = (char)('0' + (minutes % 10U));
+    } else {
+        text[index++] = (char)('0' + minutes);
+    }
+
+    text[index++] = ':';
+    text[index++] = (char)('0' + (seconds / 10U));
+    text[index++] = (char)('0' + (seconds % 10U));
+    text[index] = '\0';
+
+    charCount = index;
+    column = (uint8_t)((OLED_WIDTH - (charCount * OLED_CHAR_W * 2U)) / 2U);
+
+    oled_clear_line(6U);
+    oled_clear_line(7U);
+    oled_set_cursor(6U, column);
+    oled_print_string_x2(text);
+}

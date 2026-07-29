@@ -135,8 +135,6 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 
     DL_GPIO_initDigitalOutput(LED_LED1_IOMUX);
 
-    DL_GPIO_initDigitalOutput(BUZZER_BZ_IOMUX);
-
     DL_GPIO_initDigitalOutput(OLED_RST_PIN_RST_IOMUX);
 
     DL_GPIO_initDigitalOutput(OLED_DC_PIN_DC_IOMUX);
@@ -144,8 +142,6 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
     DL_GPIO_initDigitalOutput(OLED_SCL_PIN_SCL_IOMUX);
 
     DL_GPIO_initDigitalOutput(OLED_SDA_PIN_SDA_IOMUX);
-
-    DL_GPIO_initDigitalOutput(ICM42688_ADO_IOMUX);
 
     DL_GPIO_initDigitalOutput(AIN_AIN2_IOMUX);
 
@@ -177,18 +173,14 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
 
     DL_GPIO_initDigitalOutput(GRAY_SERIAL_CLK_IOMUX);
 
-    DL_GPIO_setPins(GPIOA, BUZZER_BZ_PIN |
-		OLED_SCL_PIN_SCL_PIN |
+    DL_GPIO_setPins(GPIOA, OLED_SCL_PIN_SCL_PIN |
 		OLED_SDA_PIN_SDA_PIN |
-		ICM42688_ADO_PIN |
 		AIN_AIN2_PIN |
 		AIN_AIN1_PIN |
 		BIN_BIN2_PIN |
 		BIN_BIN1_PIN);
-    DL_GPIO_enableOutput(GPIOA, BUZZER_BZ_PIN |
-		OLED_SCL_PIN_SCL_PIN |
+    DL_GPIO_enableOutput(GPIOA, OLED_SCL_PIN_SCL_PIN |
 		OLED_SDA_PIN_SDA_PIN |
-		ICM42688_ADO_PIN |
 		AIN_AIN2_PIN |
 		AIN_AIN1_PIN |
 		BIN_BIN2_PIN |
