@@ -9,6 +9,7 @@
 #include "oled.h"
 #include "pid.h"
 #include "task5.h"
+#include "uart_cmd.h"
 
 #define TASK5_OLED_REFRESH_PERIOD_MS      (200U)
 #define TASK5_STOP_ACTIVE_SENSOR_COUNT    (3U)
@@ -211,11 +212,13 @@ void task5_run(void)
     line_track_init();
     task5_apply_stable_line_params();
     bluetooth_init();
+    uart_cmd_init();
     oledOk = oled_init();
     taskStartMs = delay_get_ms();
 
     while (1) {
         bluetooth_process();
+        uart_cmd_process();
 
         nowMs = delay_get_ms();
         grayRaw = gray_serial_read();

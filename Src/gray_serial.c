@@ -24,7 +24,7 @@ static void gray_serial_delay_us(uint32_t us)
  */
 void gray_serial_init(void)
 {
-    DL_GPIO_setPins(GRAY_SERIAL_CLK_PORT, GRAY_SERIAL_CLK_PIN);
+    DL_GPIO_setPins(GRAY_SERIAL_PORT, GRAY_SERIAL_CLK_PIN);
 }
 
 /*
@@ -42,17 +42,17 @@ uint8_t gray_serial_read(void)
     /* 连续读取 8bit，每个时钟周期读取一位 DAT。 */
     for (i = 0U; i < 8U; i++) {
         /* CLK 拉低后等待数据稳定。 */
-        DL_GPIO_clearPins(GRAY_SERIAL_CLK_PORT, GRAY_SERIAL_CLK_PIN);
+        DL_GPIO_clearPins(GRAY_SERIAL_PORT, GRAY_SERIAL_CLK_PIN);
         gray_serial_delay_us(2U);
 
         /* DAT 为高电平则置位当前 bit。 */
-        if ((DL_GPIO_readPins(GRAY_SERIAL_DAT_PORT, GRAY_SERIAL_DAT_PIN) &
+        if ((DL_GPIO_readPins(GRAY_SERIAL_PORT, GRAY_SERIAL_DAT_PIN) &
              GRAY_SERIAL_DAT_PIN) != 0U) {
             value |= (uint8_t) (1U << i);
         }
 
         /* CLK 拉高，准备下一位。 */
-        DL_GPIO_setPins(GRAY_SERIAL_CLK_PORT, GRAY_SERIAL_CLK_PIN);
+        DL_GPIO_setPins(GRAY_SERIAL_PORT, GRAY_SERIAL_CLK_PIN);
         gray_serial_delay_us(5U);
     }
 

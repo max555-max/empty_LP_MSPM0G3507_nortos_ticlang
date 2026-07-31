@@ -13,5 +13,8 @@ void oled_print_string(const char *text);
 void oled_print_int(int32_t value);
 void oled_print_float(float value, uint8_t decimals);
 void oled_print_hex_u8(uint8_t value);
+void oled_print_char_x2(char ch);
+void oled_print_string_x2(const char *text);
+void oled_print_time_large(uint32_t elapsedMs);
 
 #endif

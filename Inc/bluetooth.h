@@ -31,6 +31,8 @@
  *   {LKD=120}   line Kd, /1000 scale
  *   {LBS=300}   line base speed, mm/s
  *   {LMX=280}   line max correction, mm/s
+ *   {LLB=40}    line left base bias, mm/s
+ *   {LRB=0}     line right base bias, mm/s
  *
  * Query:
  *   {GET}
@@ -38,6 +40,7 @@
  * Indexed commands are also accepted:
  *   {0:value}=AKP, {1:value}=AKD, {2:value}=ABS, {3:value}=AMX
  *   {4:value}=LKP, {5:value}=LKD, {6:value}=LBS, {7:value}=LMX
+ *   {8:value}=LLB, {9:value}=LRB
  */
 void bluetooth_init(void);
 void bluetooth_process(void);

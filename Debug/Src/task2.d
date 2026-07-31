@@ -91,7 +91,9 @@ Src/task2.o: ../Src/task2.c \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/line_track.h \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/oled.h \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/pid.h \
- C:/Users/gaofu/workspace_ccstheia/C07A/Inc/task2.h
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/stepper.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/task2.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/uart_cmd.h
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/bluetooth.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/delay.h:
 ti_msp_dl_config.h:
@@ -182,4 +184,6 @@ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/gray_serial.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/line_track.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/oled.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/pid.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/stepper.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/task2.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/uart_cmd.h:

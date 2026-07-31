@@ -18,8 +18,10 @@ C_SRCS += \
 ../Src/mpu6050.c \
 ../Src/oled.c \
 ../Src/pid.c \
+../Src/stepper.c \
 ../Src/task2.c \
 ../Src/task5.c \
+../Src/uart_cmd.c \
 ../Src/ultrasonic.c \
 ../Src/vofa.c 
 
@@ -36,8 +38,10 @@ C_DEPS += \
 ./Src/mpu6050.d \
 ./Src/oled.d \
 ./Src/pid.d \
+./Src/stepper.d \
 ./Src/task2.d \
 ./Src/task5.d \
+./Src/uart_cmd.d \
 ./Src/ultrasonic.d \
 ./Src/vofa.d 
 
@@ -54,8 +58,10 @@ OBJS += \
 ./Src/mpu6050.o \
 ./Src/oled.o \
 ./Src/pid.o \
+./Src/stepper.o \
 ./Src/task2.o \
 ./Src/task5.o \
+./Src/uart_cmd.o \
 ./Src/ultrasonic.o \
 ./Src/vofa.o 
 
@@ -72,8 +78,10 @@ OBJS__QUOTED += \
 "Src\mpu6050.o" \
 "Src\oled.o" \
 "Src\pid.o" \
+"Src\stepper.o" \
 "Src\task2.o" \
 "Src\task5.o" \
+"Src\uart_cmd.o" \
 "Src\ultrasonic.o" \
 "Src\vofa.o" 
 
@@ -90,8 +98,10 @@ C_DEPS__QUOTED += \
 "Src\mpu6050.d" \
 "Src\oled.d" \
 "Src\pid.d" \
+"Src\stepper.d" \
 "Src\task2.d" \
 "Src\task5.d" \
+"Src\uart_cmd.d" \
 "Src\ultrasonic.d" \
 "Src\vofa.d" 
 
@@ -108,8 +118,10 @@ C_SRCS__QUOTED += \
 "../Src/mpu6050.c" \
 "../Src/oled.c" \
 "../Src/pid.c" \
+"../Src/stepper.c" \
 "../Src/task2.c" \
 "../Src/task5.c" \
+"../Src/uart_cmd.c" \
 "../Src/ultrasonic.c" \
 "../Src/vofa.c" 
 

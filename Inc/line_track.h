@@ -55,6 +55,10 @@ typedef struct {
 /* 默认稳定循迹最大差速修正量，单位 mm/s。 */
 #define LINE_TRACK_MAX_CORRECTION_MM_S    (300)
 
+/* 左侧负重补偿：在循迹基础速度上分别给左右轮叠加偏置，单位 mm/s。 */
+#define LINE_TRACK_LEFT_BASE_BIAS_MM_S    (100)
+#define LINE_TRACK_RIGHT_BASE_BIAS_MM_S   (0)
+
 /* 丢线后旋转找线速度。Task1 使用丢线停车，不使用该找线模式。 */
 #define LINE_TRACK_LOST_SEARCH_SPEED_MM_S (180)
 
@@ -71,11 +75,16 @@ void line_track_set_turn_kd(int32_t kd);
 
 /* 设置最大差速修正量，单位 mm/s；蓝牙 LMX 命令会调用这里。 */
 void line_track_set_max_correction(int32_t maxCorrectionMmS);
+void line_track_set_left_base_bias(int32_t leftBiasMmS);
+void line_track_set_right_base_bias(int32_t rightBiasMmS);
+void line_track_set_base_bias(int32_t leftBiasMmS, int32_t rightBiasMmS);
 
 int32_t line_track_get_base_speed(void);
 int32_t line_track_get_turn_kp(void);
 int32_t line_track_get_turn_kd(void);
 int32_t line_track_get_max_correction(void);
+int32_t line_track_get_left_base_bias(void);
+int32_t line_track_get_right_base_bias(void);
 
 /* 读取一次灰度并循迹；默认丢线后按方向找线。 */
 void line_track_update(void);
@@ -85,6 +94,9 @@ void line_track_update_with_raw(uint8_t raw);
 
 /* 使用外部传入的 raw 循迹；丢线时按最后误差方向旋转找线。 */
 void line_track_update_with_raw_search_on_lost(uint8_t raw);
+
+/* 使用外部传入的 raw 循迹；丢线时按上一帧有效误差继续行驶。 */
+void line_track_update_with_raw_hold_on_lost(uint8_t raw);
 
 /* 读取循迹状态，供 OLED/串口/蓝牙调试显示。 */
 void line_track_get_status(line_track_status_t *status);

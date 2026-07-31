@@ -103,6 +103,18 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 #define GPIO_PWM_C1_IOMUX_FUNC                       IOMUX_PINCM16_PF_TIMG6_CCP1
 #define GPIO_PWM_C1_IDX                                      DL_TIMER_CC_1_INDEX
 
+/* Defines for STEPPER_PWM */
+#define STEPPER_PWM_INST                                                   TIMA1
+#define STEPPER_PWM_INST_IRQHandler                             TIMA1_IRQHandler
+#define STEPPER_PWM_INST_INT_IRQN                               (TIMA1_INT_IRQn)
+#define STEPPER_PWM_INST_CLK_FREQ                                        1000000
+/* GPIO defines for channel 0 */
+#define GPIO_STEPPER_PWM_C0_PORT                                           GPIOB
+#define GPIO_STEPPER_PWM_C0_PIN                                   DL_GPIO_PIN_17
+#define GPIO_STEPPER_PWM_C0_IOMUX                                (IOMUX_PINCM43)
+#define GPIO_STEPPER_PWM_C0_IOMUX_FUNC               IOMUX_PINCM43_PF_TIMA1_CCP0
+#define GPIO_STEPPER_PWM_C0_IDX                              DL_TIMER_CC_0_INDEX
+
 
 
 
@@ -150,9 +162,9 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 #define GPIO_UART_1_IOMUX_TX                                     (IOMUX_PINCM23)
 #define GPIO_UART_1_IOMUX_RX_FUNC                      IOMUX_PINCM24_PF_UART1_RX
 #define GPIO_UART_1_IOMUX_TX_FUNC                      IOMUX_PINCM23_PF_UART1_TX
-#define UART_1_BAUD_RATE                                                  (9600)
-#define UART_1_IBRD_40_MHZ_9600_BAUD                                       (260)
-#define UART_1_FBRD_40_MHZ_9600_BAUD                                        (27)
+#define UART_1_BAUD_RATE                                                (115200)
+#define UART_1_IBRD_40_MHZ_115200_BAUD                                      (21)
+#define UART_1_FBRD_40_MHZ_115200_BAUD                                      (45)
 
 
 
@@ -188,6 +200,18 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 /* Defines for PIN_SDA: GPIOA.31 with pinCMx 6 on package pin 39 */
 #define OLED_SDA_PIN_SDA_PIN                                    (DL_GPIO_PIN_31)
 #define OLED_SDA_PIN_SDA_IOMUX                                    (IOMUX_PINCM6)
+/* Port definition for Pin Group STEPPER_DIR */
+#define STEPPER_DIR_PORT                                                 (GPIOB)
+
+/* Defines for PIN_DIR: GPIOB.16 with pinCMx 33 on package pin 4 */
+#define STEPPER_DIR_PIN_DIR_PIN                                 (DL_GPIO_PIN_16)
+#define STEPPER_DIR_PIN_DIR_IOMUX                                (IOMUX_PINCM33)
+/* Port definition for Pin Group STEPPER_EN */
+#define STEPPER_EN_PORT                                                  (GPIOA)
+
+/* Defines for PIN_EN: GPIOA.12 with pinCMx 34 on package pin 5 */
+#define STEPPER_EN_PIN_EN_PIN                                   (DL_GPIO_PIN_12)
+#define STEPPER_EN_PIN_EN_IOMUX                                  (IOMUX_PINCM34)
 /* Port definition for Pin Group AIN */
 #define AIN_PORT                                                         (GPIOA)
 
@@ -232,14 +256,15 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 #define ENCODER_E2A_IIDX                                    (DL_GPIO_IIDX_DIO24)
 #define ENCODER_E2A_PIN                                         (DL_GPIO_PIN_24)
 #define ENCODER_E2A_IOMUX                                        (IOMUX_PINCM52)
-/* Defines for DAT: GPIOA.22 with pinCMx 47 on package pin 18 */
-#define GRAY_SERIAL_DAT_PORT                                             (GPIOA)
-#define GRAY_SERIAL_DAT_PIN                                     (DL_GPIO_PIN_22)
-#define GRAY_SERIAL_DAT_IOMUX                                    (IOMUX_PINCM47)
-/* Defines for CLK: GPIOB.17 with pinCMx 43 on package pin 14 */
-#define GRAY_SERIAL_CLK_PORT                                             (GPIOB)
-#define GRAY_SERIAL_CLK_PIN                                     (DL_GPIO_PIN_17)
-#define GRAY_SERIAL_CLK_IOMUX                                    (IOMUX_PINCM43)
+/* Port definition for Pin Group GRAY_SERIAL */
+#define GRAY_SERIAL_PORT                                                 (GPIOA)
+
+/* Defines for DAT: GPIOA.24 with pinCMx 54 on package pin 25 */
+#define GRAY_SERIAL_DAT_PIN                                     (DL_GPIO_PIN_24)
+#define GRAY_SERIAL_DAT_IOMUX                                    (IOMUX_PINCM54)
+/* Defines for CLK: GPIOA.9 with pinCMx 20 on package pin 55 */
+#define GRAY_SERIAL_CLK_PIN                                      (DL_GPIO_PIN_9)
+#define GRAY_SERIAL_CLK_IOMUX                                    (IOMUX_PINCM20)
 
 
 
@@ -253,6 +278,7 @@ void SYSCFG_DL_SYSCTL_init(void);
 
 bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 void SYSCFG_DL_PWM_init(void);
+void SYSCFG_DL_STEPPER_PWM_init(void);
 void SYSCFG_DL_I2C_ICM42688_init(void);
 void SYSCFG_DL_UART0_init(void);
 void SYSCFG_DL_UART_1_init(void);

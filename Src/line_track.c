@@ -11,6 +11,8 @@ static int32_t g_baseSpeedMmS = LINE_TRACK_BASE_SPEED_MM_S;
 static int32_t g_turnKp = LINE_TRACK_TURN_KP;
 static int32_t g_turnKd = LINE_TRACK_TURN_KD;
 static int32_t g_maxCorrectionMmS = LINE_TRACK_MAX_CORRECTION_MM_S;
+static int32_t g_leftBaseBiasMmS = LINE_TRACK_LEFT_BASE_BIAS_MM_S;
+static int32_t g_rightBaseBiasMmS = LINE_TRACK_RIGHT_BASE_BIAS_MM_S;
 
 /* 历史误差，用于 D 项和丢线找线方向判断。 */
 static int32_t g_lastError = 0;
@@ -46,15 +48,12 @@ static int32_t line_track_limit(int32_t value, int32_t limit)
 /* 中心死区：小偏差不参与控制，超过死区后只保留超出的部分。 */
 static int32_t line_track_apply_deadband(int32_t error)
 {
-    if (error > LINE_TRACK_ERROR_DEADBAND) {
-        return error - LINE_TRACK_ERROR_DEADBAND;
+    if ((error > -LINE_TRACK_ERROR_DEADBAND) &&
+        (error < LINE_TRACK_ERROR_DEADBAND)) {
+        return 0;
     }
 
-    if (error < -LINE_TRACK_ERROR_DEADBAND) {
-        return error + LINE_TRACK_ERROR_DEADBAND;
-    }
-
-    return 0;
+    return error;
 }
 
 /* 大弯增强：线压到外侧传感器附近时，临时增加差速余量。 */
@@ -139,6 +138,8 @@ void line_track_init(void)
     g_lineTrackStatus.rightTargetMmS = 0;
 
     g_baseSpeedMmS = LINE_TRACK_BASE_SPEED_MM_S;
+    g_leftBaseBiasMmS = LINE_TRACK_LEFT_BASE_BIAS_MM_S;
+    g_rightBaseBiasMmS = LINE_TRACK_RIGHT_BASE_BIAS_MM_S;
 
     g_lastError = 0;
     g_previousError = 0;
@@ -176,6 +177,22 @@ void line_track_set_max_correction(int32_t maxCorrectionMmS)
     g_maxCorrectionMmS = maxCorrectionMmS;
 }
 
+void line_track_set_left_base_bias(int32_t leftBiasMmS)
+{
+    g_leftBaseBiasMmS = leftBiasMmS;
+}
+
+void line_track_set_right_base_bias(int32_t rightBiasMmS)
+{
+    g_rightBaseBiasMmS = rightBiasMmS;
+}
+
+void line_track_set_base_bias(int32_t leftBiasMmS, int32_t rightBiasMmS)
+{
+    g_leftBaseBiasMmS = leftBiasMmS;
+    g_rightBaseBiasMmS = rightBiasMmS;
+}
+
 int32_t line_track_get_base_speed(void)
 {
     return g_baseSpeedMmS;
@@ -194,6 +211,16 @@ int32_t line_track_get_turn_kd(void)
 int32_t line_track_get_max_correction(void)
 {
     return g_maxCorrectionMmS;
+}
+
+int32_t line_track_get_left_base_bias(void)
+{
+    return g_leftBaseBiasMmS;
+}
+
+int32_t line_track_get_right_base_bias(void)
+{
+    return g_rightBaseBiasMmS;
 }
 
 void line_track_update(void)
@@ -254,8 +281,8 @@ static void line_track_update_with_raw_impl(uint8_t raw, bool stopOnLost)
         correction = pTerm + dTerm;
         correction = line_track_limit(correction, correctionLimit);
 
-        leftTarget = mixedBaseSpeed - correction;
-        rightTarget = mixedBaseSpeed + correction;
+        leftTarget = mixedBaseSpeed + g_leftBaseBiasMmS - correction;
+        rightTarget = mixedBaseSpeed + g_rightBaseBiasMmS + correction;
     } else {
         correction = 0;
         WEIFEN = 0;
@@ -296,6 +323,47 @@ void line_track_update_with_raw_search_on_lost(uint8_t raw)
     line_track_update_with_raw_impl(raw, false);
 }
 
+
+void line_track_update_with_raw_hold_on_lost(uint8_t raw)
+{
+    bool lineDetected;
+    int32_t error = line_track_calculate_error(raw, &lineDetected);
+
+    if (lineDetected) {
+        line_track_update_with_raw_impl(raw, true);
+        return;
+    }
+
+    error = g_lastError;
+
+    int32_t controlError = line_track_apply_deadband(error);
+    int32_t curveExtraCorrection = line_track_curve_extra_correction(error);
+    int32_t curveBaseReduce = line_track_curve_base_reduce(error);
+    int32_t correctionLimit = g_maxCorrectionMmS + curveExtraCorrection;
+    int32_t mixedBaseSpeed =
+        line_track_reduce_forward_base(g_baseSpeedMmS, curveBaseReduce);
+    int32_t pTerm = (int32_t)(((int64_t)controlError * g_turnKp) / 1000);
+    int32_t dTerm = 0;
+    int32_t correction;
+    int32_t leftTarget;
+    int32_t rightTarget;
+
+    pTerm = line_track_limit(pTerm, correctionLimit);
+    correction = pTerm + dTerm;
+    correction = line_track_limit(correction, correctionLimit);
+
+    leftTarget = mixedBaseSpeed + g_leftBaseBiasMmS - correction;
+    rightTarget = mixedBaseSpeed + g_rightBaseBiasMmS + correction;
+
+    speed_pid_set_speed(leftTarget, rightTarget);
+
+    g_lineTrackStatus.sensorRaw = raw;
+    g_lineTrackStatus.lineDetected = false;
+    g_lineTrackStatus.error = error;
+    g_lineTrackStatus.correction = correction;
+    g_lineTrackStatus.leftTargetMmS = leftTarget;
+    g_lineTrackStatus.rightTargetMmS = rightTarget;
+}
 void line_track_get_status(line_track_status_t *status)
 {
     if (status == 0) {

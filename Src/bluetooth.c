@@ -158,6 +158,10 @@ void bluetooth_send_params(void)
     bluetooth_send_int32(line_track_get_base_speed());
     bluetooth_send_char(':');
     bluetooth_send_int32(line_track_get_max_correction());
+    bluetooth_send_char(':');
+    bluetooth_send_int32(line_track_get_left_base_bias());
+    bluetooth_send_char(':');
+    bluetooth_send_int32(line_track_get_right_base_bias());
     bluetooth_send_string("}$\r\n");
 }
 
@@ -187,6 +191,12 @@ static bool bluetooth_apply_indexed_command(uint8_t index, int32_t value)
         return true;
     case 7U:
         line_track_set_max_correction(value);
+        return true;
+    case 8U:
+        line_track_set_left_base_bias(value);
+        return true;
+    case 9U:
+        line_track_set_right_base_bias(value);
         return true;
     default:
         return false;
@@ -236,6 +246,14 @@ static bool bluetooth_apply_named_command(const char *packet, int32_t value)
     }
     if ((c0 == 'L') && (c1 == 'M') && (c2 == 'X')) {
         line_track_set_max_correction(value);
+        return true;
+    }
+    if ((c0 == 'L') && (c1 == 'L') && (c2 == 'B')) {
+        line_track_set_left_base_bias(value);
+        return true;
+    }
+    if ((c0 == 'L') && (c1 == 'R') && (c2 == 'B')) {
+        line_track_set_right_base_bias(value);
         return true;
     }
 
