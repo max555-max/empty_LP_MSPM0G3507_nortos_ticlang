@@ -24,8 +24,27 @@
 #define UART_CMD_VISION_POSITION_INVERT        (0U)
 #define UART_CMD_VISION_POSITION_ZERO_X10      (0)
 
+/*
+ * Debug mirror: copy every byte received by UART0 to UART1 TX.
+ * This is intended only for observing raw vision frames on a PC.
+ * The ISR uses a non-blocking UART1 mirror buffer, so UART0 parsing is not
+ * blocked. Bytes are dropped only if the mirror buffer is full.
+ */
+#define UART_CMD_UART0_RX_MIRROR_TO_UART1_ENABLE (1U)
+
+/*
+ * UART0 is owned by the vision module in the ball-balance build.
+ * Keep command-line text replies disabled so the MCU only parses incoming
+ * vision frames and does not send unsolicited bytes back to the vision side.
+ */
+#define UART_CMD_UART0_TEXT_REPLY_ENABLE        (0U)
+
 typedef struct {
-    /* CMD 0x01: signed big-endian values, 0.1 mm and 0.1 mm/s per LSB. */
+    /*
+     * Binary CMD 0x01: signed big-endian values, 0.1 mm and 0.1 mm/s per LSB.
+     * Text vision frame: V,position_mm,velocity_mm_s,unused,detected
+     * Example: V,-40.0,+0.2,+0.0,1 -> positionX10=-400, velocityX10=2.
+     */
     int16_t positionX10;
     int16_t velocityX10;
     uint32_t dataTimestampMs;

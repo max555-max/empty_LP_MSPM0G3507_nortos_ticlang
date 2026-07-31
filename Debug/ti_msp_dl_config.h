@@ -117,20 +117,19 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 
 
 
+/* Defines for BEAM_ENCODER_PWM */
+#define BEAM_ENCODER_PWM_INST                                            (TIMA0)
+#define BEAM_ENCODER_PWM_INST_IRQHandler                        TIMA0_IRQHandler
+#define BEAM_ENCODER_PWM_INST_INT_IRQN                          (TIMA0_INT_IRQn)
+#define BEAM_ENCODER_PWM_INST_LOAD_VALUE                                (64999U)
+/* GPIO defines for channel 0 */
+#define GPIO_BEAM_ENCODER_PWM_C0_PORT                                      GPIOA
+#define GPIO_BEAM_ENCODER_PWM_C0_PIN                               DL_GPIO_PIN_8
+#define GPIO_BEAM_ENCODER_PWM_C0_IOMUX                           (IOMUX_PINCM19)
+#define GPIO_BEAM_ENCODER_PWM_C0_IOMUX_FUNC             IOMUX_PINCM19_PF_TIMA0_CCP0
 
-/* Defines for I2C_ICM42688 */
-#define I2C_ICM42688_INST                                                   I2C0
-#define I2C_ICM42688_INST_IRQHandler                             I2C0_IRQHandler
-#define I2C_ICM42688_INST_INT_IRQN                                 I2C0_INT_IRQn
-#define I2C_ICM42688_BUS_SPEED_HZ                                         100000
-#define GPIO_I2C_ICM42688_SDA_PORT                                         GPIOA
-#define GPIO_I2C_ICM42688_SDA_PIN                                  DL_GPIO_PIN_0
-#define GPIO_I2C_ICM42688_IOMUX_SDA                               (IOMUX_PINCM1)
-#define GPIO_I2C_ICM42688_IOMUX_SDA_FUNC                IOMUX_PINCM1_PF_I2C0_SDA
-#define GPIO_I2C_ICM42688_SCL_PORT                                         GPIOA
-#define GPIO_I2C_ICM42688_SCL_PIN                                  DL_GPIO_PIN_1
-#define GPIO_I2C_ICM42688_IOMUX_SCL                               (IOMUX_PINCM2)
-#define GPIO_I2C_ICM42688_IOMUX_SCL_FUNC                IOMUX_PINCM2_PF_I2C0_SCL
+
+
 
 
 /* Defines for UART0 */
@@ -140,12 +139,12 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 #define UART0_INST_INT_IRQN                                       UART0_INT_IRQn
 #define GPIO_UART0_RX_PORT                                                 GPIOA
 #define GPIO_UART0_TX_PORT                                                 GPIOA
-#define GPIO_UART0_RX_PIN                                         DL_GPIO_PIN_11
-#define GPIO_UART0_TX_PIN                                         DL_GPIO_PIN_10
-#define GPIO_UART0_IOMUX_RX                                      (IOMUX_PINCM22)
-#define GPIO_UART0_IOMUX_TX                                      (IOMUX_PINCM21)
-#define GPIO_UART0_IOMUX_RX_FUNC                       IOMUX_PINCM22_PF_UART0_RX
-#define GPIO_UART0_IOMUX_TX_FUNC                       IOMUX_PINCM21_PF_UART0_TX
+#define GPIO_UART0_RX_PIN                                          DL_GPIO_PIN_1
+#define GPIO_UART0_TX_PIN                                          DL_GPIO_PIN_0
+#define GPIO_UART0_IOMUX_RX                                       (IOMUX_PINCM2)
+#define GPIO_UART0_IOMUX_TX                                       (IOMUX_PINCM1)
+#define GPIO_UART0_IOMUX_RX_FUNC                        IOMUX_PINCM2_PF_UART0_RX
+#define GPIO_UART0_IOMUX_TX_FUNC                        IOMUX_PINCM1_PF_UART0_TX
 #define UART0_BAUD_RATE                                                 (115200)
 #define UART0_IBRD_40_MHZ_115200_BAUD                                       (21)
 #define UART0_FBRD_40_MHZ_115200_BAUD                                       (45)
@@ -279,7 +278,7 @@ void SYSCFG_DL_SYSCTL_init(void);
 bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 void SYSCFG_DL_PWM_init(void);
 void SYSCFG_DL_STEPPER_PWM_init(void);
-void SYSCFG_DL_I2C_ICM42688_init(void);
+void SYSCFG_DL_BEAM_ENCODER_PWM_init(void);
 void SYSCFG_DL_UART0_init(void);
 void SYSCFG_DL_UART_1_init(void);
 

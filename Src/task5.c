@@ -1,7 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "bluetooth.h"
 #include "delay.h"
 #include "encoder.h"
 #include "gray_serial.h"
@@ -211,13 +210,11 @@ void task5_run(void)
     speed_pid_init();
     line_track_init();
     task5_apply_stable_line_params();
-    bluetooth_init();
     uart_cmd_init();
     oledOk = oled_init();
     taskStartMs = delay_get_ms();
 
     while (1) {
-        bluetooth_process();
         uart_cmd_process();
 
         nowMs = delay_get_ms();

@@ -42,6 +42,7 @@
 
 DL_TimerG_backupConfig gPWMBackup;
 DL_TimerA_backupConfig gSTEPPER_PWMBackup;
+DL_TimerA_backupConfig gBEAM_ENCODER_PWMBackup;
 
 /*
  *  ======== SYSCFG_DL_init ========
@@ -55,13 +56,14 @@ SYSCONFIG_WEAK void SYSCFG_DL_init(void)
     SYSCFG_DL_SYSCTL_init();
     SYSCFG_DL_PWM_init();
     SYSCFG_DL_STEPPER_PWM_init();
-    SYSCFG_DL_I2C_ICM42688_init();
+    SYSCFG_DL_BEAM_ENCODER_PWM_init();
     SYSCFG_DL_UART0_init();
     SYSCFG_DL_UART_1_init();
     SYSCFG_DL_SYSTICK_init();
     /* Ensure backup structures have no valid state */
 	gPWMBackup.backupRdy 	= false;
 	gSTEPPER_PWMBackup.backupRdy 	= false;
+	gBEAM_ENCODER_PWMBackup.backupRdy 	= false;
 
 
 }
@@ -75,6 +77,7 @@ SYSCONFIG_WEAK bool SYSCFG_DL_saveConfiguration(void)
 
 	retStatus &= DL_TimerG_saveConfiguration(PWM_INST, &gPWMBackup);
 	retStatus &= DL_TimerA_saveConfiguration(STEPPER_PWM_INST, &gSTEPPER_PWMBackup);
+	retStatus &= DL_TimerA_saveConfiguration(BEAM_ENCODER_PWM_INST, &gBEAM_ENCODER_PWMBackup);
 
     return retStatus;
 }
@@ -86,6 +89,7 @@ SYSCONFIG_WEAK bool SYSCFG_DL_restoreConfiguration(void)
 
 	retStatus &= DL_TimerG_restoreConfiguration(PWM_INST, &gPWMBackup, false);
 	retStatus &= DL_TimerA_restoreConfiguration(STEPPER_PWM_INST, &gSTEPPER_PWMBackup, false);
+	retStatus &= DL_TimerA_restoreConfiguration(BEAM_ENCODER_PWM_INST, &gBEAM_ENCODER_PWMBackup, false);
 
     return retStatus;
 }
@@ -96,7 +100,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_initPower(void)
     DL_GPIO_reset(GPIOB);
     DL_TimerG_reset(PWM_INST);
     DL_TimerA_reset(STEPPER_PWM_INST);
-    DL_I2C_reset(I2C_ICM42688_INST);
+    DL_TimerA_reset(BEAM_ENCODER_PWM_INST);
     DL_UART_Main_reset(UART0_INST);
     DL_UART_Main_reset(UART_1_INST);
 
@@ -105,7 +109,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_initPower(void)
     DL_GPIO_enablePower(GPIOB);
     DL_TimerG_enablePower(PWM_INST);
     DL_TimerA_enablePower(STEPPER_PWM_INST);
-    DL_I2C_enablePower(I2C_ICM42688_INST);
+    DL_TimerA_enablePower(BEAM_ENCODER_PWM_INST);
     DL_UART_Main_enablePower(UART0_INST);
     DL_UART_Main_enablePower(UART_1_INST);
 
@@ -122,16 +126,7 @@ SYSCONFIG_WEAK void SYSCFG_DL_GPIO_init(void)
     DL_GPIO_initPeripheralOutputFunction(GPIO_STEPPER_PWM_C0_IOMUX,GPIO_STEPPER_PWM_C0_IOMUX_FUNC);
     DL_GPIO_enableOutput(GPIO_STEPPER_PWM_C0_PORT, GPIO_STEPPER_PWM_C0_PIN);
 
-    DL_GPIO_initPeripheralInputFunctionFeatures(GPIO_I2C_ICM42688_IOMUX_SDA,
-        GPIO_I2C_ICM42688_IOMUX_SDA_FUNC, DL_GPIO_INVERSION_DISABLE,
-        DL_GPIO_RESISTOR_NONE, DL_GPIO_HYSTERESIS_DISABLE,
-        DL_GPIO_WAKEUP_DISABLE);
-    DL_GPIO_initPeripheralInputFunctionFeatures(GPIO_I2C_ICM42688_IOMUX_SCL,
-        GPIO_I2C_ICM42688_IOMUX_SCL_FUNC, DL_GPIO_INVERSION_DISABLE,
-        DL_GPIO_RESISTOR_NONE, DL_GPIO_HYSTERESIS_DISABLE,
-        DL_GPIO_WAKEUP_DISABLE);
-    DL_GPIO_enableHiZ(GPIO_I2C_ICM42688_IOMUX_SDA);
-    DL_GPIO_enableHiZ(GPIO_I2C_ICM42688_IOMUX_SCL);
+    DL_GPIO_initPeripheralInputFunction(GPIO_BEAM_ENCODER_PWM_C0_IOMUX,GPIO_BEAM_ENCODER_PWM_C0_IOMUX_FUNC);
 
     DL_GPIO_initPeripheralOutputFunction(
         GPIO_UART0_IOMUX_TX, GPIO_UART0_IOMUX_TX_FUNC);
@@ -433,31 +428,41 @@ SYSCONFIG_WEAK void SYSCFG_DL_STEPPER_PWM_init(void) {
 }
 
 
-static const DL_I2C_ClockConfig gI2C_ICM42688ClockConfig = {
-    .clockSel = DL_I2C_CLOCK_BUSCLK,
-    .divideRatio = DL_I2C_CLOCK_DIVIDE_1,
+
+/*
+ * Timer clock configuration to be sourced by BUSCLK /  (80000000 Hz)
+ * timerClkFreq = (timerClkSrc / (timerClkDivRatio * (timerClkPrescale + 1)))
+ *   1000000 Hz = 80000000 Hz / (1 * (79 + 1))
+ */
+static const DL_TimerA_ClockConfig gBEAM_ENCODER_PWMClockConfig = {
+    .clockSel    = DL_TIMER_CLOCK_BUSCLK,
+    .divideRatio = DL_TIMER_CLOCK_DIVIDE_1,
+    .prescale = 79U
 };
 
-SYSCONFIG_WEAK void SYSCFG_DL_I2C_ICM42688_init(void) {
+/*
+ * Timer load value (where the counter starts from) is calculated as (timerPeriod * timerClockFreq) - 1
+ * BEAM_ENCODER_PWM_INST_LOAD_VALUE = (65 ms * 1000000 Hz) - 1
+ */
+static const DL_TimerA_CaptureCombinedConfig gBEAM_ENCODER_PWMCaptureConfig = {
+    .captureMode    = DL_TIMER_CAPTURE_COMBINED_MODE_PULSE_WIDTH_AND_PERIOD,
+    .period         = BEAM_ENCODER_PWM_INST_LOAD_VALUE,
+    .startTimer     = DL_TIMER_STOP,
+    .inputChan      = DL_TIMER_INPUT_CHAN_0,
+    .inputInvMode   = DL_TIMER_CC_INPUT_INV_NOINVERT,
+};
 
-    DL_I2C_setClockConfig(I2C_ICM42688_INST,
-        (DL_I2C_ClockConfig *) &gI2C_ICM42688ClockConfig);
-    DL_I2C_setAnalogGlitchFilterPulseWidth(I2C_ICM42688_INST,
-        DL_I2C_ANALOG_GLITCH_FILTER_WIDTH_50NS);
-    DL_I2C_enableAnalogGlitchFilter(I2C_ICM42688_INST);
+SYSCONFIG_WEAK void SYSCFG_DL_BEAM_ENCODER_PWM_init(void) {
 
-    /* Configure Controller Mode */
-    DL_I2C_resetControllerTransfer(I2C_ICM42688_INST);
-    /* Set frequency to 100000 Hz*/
-    DL_I2C_setTimerPeriod(I2C_ICM42688_INST, 39);
-    DL_I2C_setControllerTXFIFOThreshold(I2C_ICM42688_INST, DL_I2C_TX_FIFO_LEVEL_EMPTY);
-    DL_I2C_setControllerRXFIFOThreshold(I2C_ICM42688_INST, DL_I2C_RX_FIFO_LEVEL_BYTES_1);
-    DL_I2C_enableControllerClockStretching(I2C_ICM42688_INST);
+    DL_TimerA_setClockConfig(BEAM_ENCODER_PWM_INST,
+        (DL_TimerA_ClockConfig *) &gBEAM_ENCODER_PWMClockConfig);
 
+    DL_TimerA_initCaptureCombinedMode(BEAM_ENCODER_PWM_INST,
+        (DL_TimerA_CaptureCombinedConfig *) &gBEAM_ENCODER_PWMCaptureConfig);
+    DL_TimerA_enableInterrupt(BEAM_ENCODER_PWM_INST , DL_TIMERA_INTERRUPT_CC1_DN_EVENT |
+		DL_TIMERA_INTERRUPT_ZERO_EVENT);
 
-    /* Enable module */
-    DL_I2C_enableController(I2C_ICM42688_INST);
-
+    DL_TimerA_enableClock(BEAM_ENCODER_PWM_INST);
 
 }
 

@@ -1,7 +1,6 @@
 # FIXED
 
 Src/task5.o: ../Src/task5.c \
- C:/Users/gaofu/workspace_ccstheia/C07A/Inc/bluetooth.h \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/delay.h \
  ti_msp_dl_config.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h \
@@ -93,7 +92,6 @@ Src/task5.o: ../Src/task5.c \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/pid.h \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/task5.h \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/uart_cmd.h
-C:/Users/gaofu/workspace_ccstheia/C07A/Inc/bluetooth.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/delay.h:
 ti_msp_dl_config.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/devices/msp/msp.h:

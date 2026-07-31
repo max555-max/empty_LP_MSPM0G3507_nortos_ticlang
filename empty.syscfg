@@ -21,8 +21,8 @@ const GPIO8    = GPIO.addInstance();
 const GPIO9    = GPIO.addInstance();
 const GPIO10   = GPIO.addInstance();
 const GPIO11   = GPIO.addInstance();
-const I2C      = scripting.addModule("/ti/driverlib/I2C", {}, false);
-const I2C1     = I2C.addInstance();
+const CAPTURE  = scripting.addModule("/ti/driverlib/CAPTURE", {}, false);
+const CAPTURE1 = CAPTURE.addInstance();
 const PWM      = scripting.addModule("/ti/driverlib/PWM", {}, false);
 const PWM1     = PWM.addInstance();
 const PWM2     = PWM.addInstance();
@@ -162,20 +162,6 @@ GPIO11.associatedPins[0].assignedPort = "PORTA";
 GPIO11.associatedPins[0].assignedPin  = "12";
 GPIO11.associatedPins[0].pin.$assign  = "PA12";
 
-I2C1.$name                             = "I2C_ICM42688";
-I2C1.basicEnableController             = true;
-I2C1.peripheral.$assign                = "I2C0";
-I2C1.peripheral.sdaPin.$assign         = "PA0";
-I2C1.peripheral.sclPin.$assign         = "PA1";
-I2C1.sdaPinConfig.hideOutputInversion  = scripting.forceWrite(false);
-I2C1.sdaPinConfig.onlyInternalResistor = scripting.forceWrite(false);
-I2C1.sdaPinConfig.passedPeripheralType = scripting.forceWrite("Digital");
-I2C1.sdaPinConfig.$name                = "ti_driverlib_gpio_GPIOPinGeneric4";
-I2C1.sclPinConfig.hideOutputInversion  = scripting.forceWrite(false);
-I2C1.sclPinConfig.onlyInternalResistor = scripting.forceWrite(false);
-I2C1.sclPinConfig.passedPeripheralType = scripting.forceWrite("Digital");
-I2C1.sclPinConfig.$name                = "ti_driverlib_gpio_GPIOPinGeneric5";
-
 PWM1.$name                              = "PWM";
 PWM1.timerCount                         = 4000;
 PWM1.timerStartTimer                    = true;
@@ -214,6 +200,16 @@ PWM2.ccp0PinConfig.onlyInternalResistor = scripting.forceWrite(false);
 PWM2.ccp0PinConfig.passedPeripheralType = scripting.forceWrite("Digital");
 PWM2.ccp0PinConfig.$name                = "ti_driverlib_gpio_GPIOPinGeneric8";
 
+CAPTURE1.$name                      = "BEAM_ENCODER_PWM";
+CAPTURE1.ccIndex                    = 0;
+CAPTURE1.captMode                   = "COMBINED";
+CAPTURE1.timerClkPrescale           = 80;
+CAPTURE1.timerPeriod                = "65 ms";
+CAPTURE1.interrupts                 = ["CC1_DN","ZERO"];
+CAPTURE1.peripheral.$assign         = "TIMA0";
+CAPTURE1.peripheral.ccp0Pin.$assign = "PA8";
+CAPTURE1.ccp0PinConfig.$name        = "BEAM_ENCODER_PWM_PIN";
+
 SYSCTL.forceDefaultClkConfig = true;
 SYSCTL.clockTreeEn           = true;
 
@@ -225,8 +221,8 @@ SYSTICK.systickEnable   = true;
 UART1.$name                            = "UART0";
 UART1.targetBaudRate                   = 115200;
 UART1.peripheral.$assign               = "UART0";
-UART1.peripheral.rxPin.$assign         = "PA11";
-UART1.peripheral.txPin.$assign         = "PA10";
+UART1.peripheral.rxPin.$assign         = "PA1";
+UART1.peripheral.txPin.$assign         = "PA0";
 UART1.txPinConfig.direction            = scripting.forceWrite("OUTPUT");
 UART1.txPinConfig.hideOutputInversion  = scripting.forceWrite(false);
 UART1.txPinConfig.onlyInternalResistor = scripting.forceWrite(false);
@@ -253,6 +249,7 @@ UART2.rxPinConfig.$name        = "ti_driverlib_gpio_GPIOPinGeneric7";
  * re-solve from scratch.
  */
 PWM2.peripheral.$suggestSolution            = "TIMA1";
+CAPTURE1.peripheral.$suggestSolution         = "TIMA0";
 Board.peripheral.$suggestSolution            = "DEBUGSS";
 Board.peripheral.swclkPin.$suggestSolution   = "PA20";
 Board.peripheral.swdioPin.$suggestSolution   = "PA19";

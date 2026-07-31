@@ -18,6 +18,11 @@ static volatile float g_speedCurrentHz;
 static float g_speedLimitHz;
 static float g_beamTargetDeg;
 static float g_beamPidIntegralMmS;
+static float g_beamPidTargetMm;
+static float g_beamPidKpDegPerMm;
+static float g_beamPidKiDegPerMmS;
+static float g_beamPidKdDegSPerMm;
+static float g_beamPidOutputDeg;
 
 static uint32_t stepper_enter_critical(void)
 {
@@ -46,6 +51,11 @@ static float stepper_clamp(float value, float low, float high)
         return high;
     }
     return value;
+}
+
+static bool stepper_is_finite_float(float value)
+{
+    return (value == value) && (value <= 3.4e38f) && (value >= -3.4e38f);
 }
 
 static uint32_t stepper_limit_frequency(uint32_t frequencyHz)
@@ -279,6 +289,11 @@ void stepper_init(void)
     g_speedLimitHz = (float)STEPPER_MAX_FREQ_HZ;
     g_beamTargetDeg = 0.0f;
     g_beamPidIntegralMmS = 0.0f;
+    g_beamPidTargetMm = STEPPER_BEAM_PID_POSITION_TARGET_MM;
+    g_beamPidKpDegPerMm = STEPPER_BEAM_PID_KP_DEG_PER_MM;
+    g_beamPidKiDegPerMmS = STEPPER_BEAM_PID_KI_DEG_PER_MM_S;
+    g_beamPidKdDegSPerMm = STEPPER_BEAM_PID_KD_DEG_S_PER_MM;
+    g_beamPidOutputDeg = 0.0f;
 
     NVIC_ClearPendingIRQ(STEPPER_PWM_INST_INT_IRQN);
     NVIC_EnableIRQ(STEPPER_PWM_INST_INT_IRQN);
@@ -421,6 +436,24 @@ int32_t stepper_get_position_steps(void)
     return value;
 }
 
+void stepper_sync_position_from_beam_angle_x10(int32_t beamAngleDegX10)
+{
+    float beamAngleDeg = (float)beamAngleDegX10 * 0.1f;
+    float positionSteps = beamAngleDeg * STEPPER_STEPS_PER_BEAM_DEGREE;
+    int32_t syncedPosition =
+        (positionSteps >= 0.0f) ? (int32_t)(positionSteps + 0.5f) :
+                                  (int32_t)(positionSteps - 0.5f);
+    uint32_t primask = stepper_enter_critical();
+
+    g_positionSteps = syncedPosition;
+    if ((g_positionSteps < STEPPER_MAX_POSITION_STEPS) &&
+        (g_positionSteps > -STEPPER_MAX_POSITION_STEPS)) {
+        g_limitActive = false;
+    }
+
+    stepper_exit_critical(primask);
+}
+
 bool stepper_set_zero_position(void)
 {
     uint32_t primask = stepper_enter_critical();
@@ -438,6 +471,7 @@ bool stepper_set_zero_position(void)
     g_speedCurrentHz = 0.0f;
     g_beamTargetDeg = 0.0f;
     g_beamPidIntegralMmS = 0.0f;
+    g_beamPidOutputDeg = 0.0f;
     stepper_exit_critical(primask);
     return true;
 }
@@ -500,6 +534,63 @@ void stepper_update_beam_position_loop(void)
 void stepper_reset_beam_pid(void)
 {
     g_beamPidIntegralMmS = 0.0f;
+    g_beamPidOutputDeg = 0.0f;
+}
+
+bool stepper_set_beam_pid_target_mm(float targetMm)
+{
+    if (!stepper_is_finite_float(targetMm) ||
+        (targetMm > STEPPER_BEAM_PID_TARGET_LIMIT_MM) ||
+        (targetMm < -STEPPER_BEAM_PID_TARGET_LIMIT_MM)) {
+        return false;
+    }
+
+    g_beamPidTargetMm = targetMm;
+    stepper_reset_beam_pid();
+    return true;
+}
+
+float stepper_get_beam_pid_target_mm(void)
+{
+    return g_beamPidTargetMm;
+}
+
+bool stepper_set_beam_pid_gains(float kpDegPerMm,
+                                float kiDegPerMmS,
+                                float kdDegSPerMm)
+{
+    if (!stepper_is_finite_float(kpDegPerMm) ||
+        !stepper_is_finite_float(kiDegPerMmS) ||
+        !stepper_is_finite_float(kdDegSPerMm) ||
+        (kpDegPerMm < 0.0f) ||
+        (kiDegPerMmS < 0.0f) ||
+        (kdDegSPerMm < 0.0f) ||
+        (kpDegPerMm > STEPPER_BEAM_PID_GAIN_LIMIT) ||
+        (kiDegPerMmS > STEPPER_BEAM_PID_GAIN_LIMIT) ||
+        (kdDegSPerMm > STEPPER_BEAM_PID_GAIN_LIMIT)) {
+        return false;
+    }
+
+    g_beamPidKpDegPerMm = kpDegPerMm;
+    g_beamPidKiDegPerMmS = kiDegPerMmS;
+    g_beamPidKdDegSPerMm = kdDegSPerMm;
+    stepper_reset_beam_pid();
+    return true;
+}
+
+void stepper_get_beam_pid_gains(float *kpDegPerMm,
+                                float *kiDegPerMmS,
+                                float *kdDegSPerMm)
+{
+    if (kpDegPerMm != 0) {
+        *kpDegPerMm = g_beamPidKpDegPerMm;
+    }
+    if (kiDegPerMmS != 0) {
+        *kiDegPerMmS = g_beamPidKiDegPerMmS;
+    }
+    if (kdDegSPerMm != 0) {
+        *kdDegSPerMm = g_beamPidKdDegSPerMm;
+    }
 }
 
 void stepper_update_beam_pid(float ballPositionMm, float ballVelocityMmS,
@@ -507,10 +598,15 @@ void stepper_update_beam_pid(float ballPositionMm, float ballVelocityMmS,
 {
     float errorMm;
     float integralMmS;
-    float outputHz;
+    float targetBeamDeg;
+    float outputGain;
+    float outputLimitDeg;
+    float maxOutputStepDeg;
+    float outputDeltaDeg;
 
     if (!visionValid || !g_enabled || g_emergencyInhibit) {
         stepper_reset_beam_pid();
+        stepper_set_beam_target_deg(0.0f);
         stepper_set_speed_target(0.0f);
         return;
     }
@@ -519,24 +615,82 @@ void stepper_update_beam_pid(float ballPositionMm, float ballVelocityMmS,
         dtSeconds = 0.01f;
     }
 
-    errorMm = STEPPER_BEAM_PID_POSITION_TARGET_MM - ballPositionMm;
+    errorMm = g_beamPidTargetMm - ballPositionMm;
     integralMmS = g_beamPidIntegralMmS + errorMm * dtSeconds;
     integralMmS = stepper_clamp(integralMmS,
                                  -STEPPER_BEAM_PID_INTEGRAL_LIMIT_MM_S,
                                  STEPPER_BEAM_PID_INTEGRAL_LIMIT_MM_S);
 
     /* With a constant position target, error derivative is -ball velocity. */
-    outputHz = STEPPER_BEAM_PID_KP_HZ_PER_MM * errorMm +
-               STEPPER_BEAM_PID_KI_HZ_PER_MM_S * integralMmS -
-               STEPPER_BEAM_PID_KD_HZ_S_PER_MM * ballVelocityMmS;
+    targetBeamDeg = g_beamPidKpDegPerMm * errorMm +
+                    g_beamPidKiDegPerMmS * integralMmS -
+                    g_beamPidKdDegSPerMm * ballVelocityMmS;
 #if (STEPPER_BEAM_PID_OUTPUT_INVERT != 0U)
-    outputHz = -outputHz;
+    targetBeamDeg = -targetBeamDeg;
 #endif
+    if (targetBeamDeg > 0.0f) {
+        outputGain = STEPPER_BEAM_PID_POS_OUTPUT_GAIN;
+    } else if (targetBeamDeg < 0.0f) {
+        outputGain = STEPPER_BEAM_PID_NEG_OUTPUT_GAIN;
+    } else {
+        outputGain = 1.0f;
+    }
+    if (outputGain < 0.0f) {
+        outputGain = 0.0f;
+    }
+    targetBeamDeg *= outputGain;
+
+    outputLimitDeg = STEPPER_BEAM_PID_OUTPUT_LIMIT_DEG;
+    targetBeamDeg = stepper_clamp(targetBeamDeg, -outputLimitDeg,
+                                  outputLimitDeg);
+    maxOutputStepDeg = STEPPER_BEAM_PID_OUTPUT_RATE_LIMIT_DEG_S * dtSeconds;
+    if (maxOutputStepDeg < 0.0f) {
+        maxOutputStepDeg = 0.0f;
+    }
+    outputDeltaDeg = targetBeamDeg - g_beamPidOutputDeg;
+    outputDeltaDeg = stepper_clamp(outputDeltaDeg, -maxOutputStepDeg,
+                                   maxOutputStepDeg);
+    g_beamPidOutputDeg += outputDeltaDeg;
 
     g_beamPidIntegralMmS = integralMmS;
-    stepper_set_speed_target(stepper_clamp(outputHz,
-                                            -STEPPER_BEAM_PID_OUTPUT_LIMIT_HZ,
-                                            STEPPER_BEAM_PID_OUTPUT_LIMIT_HZ));
+    stepper_set_beam_target_deg(g_beamPidOutputDeg);
+}
+
+void stepper_update_beam_encoder_position_loop(int32_t beamAngleDegX10,
+                                               bool angleValid)
+{
+    float actualBeamDeg;
+    float errorDeg;
+    float outputHz;
+    float minOutputHz;
+
+    if (!angleValid || !g_enabled || g_emergencyInhibit) {
+        stepper_set_speed_target(0.0f);
+        return;
+    }
+
+    stepper_sync_position_from_beam_angle_x10(beamAngleDegX10);
+    actualBeamDeg = (float)beamAngleDegX10 * 0.1f;
+    errorDeg = g_beamTargetDeg - actualBeamDeg;
+    if (stepper_abs(errorDeg) <= STEPPER_ENCODER_POSITION_DEADBAND_DEG) {
+        stepper_set_speed_target(0.0f);
+        return;
+    }
+
+    outputHz = errorDeg * STEPPER_ENCODER_POSITION_KP_HZ_PER_DEG;
+#if (STEPPER_ENCODER_POSITION_OUTPUT_INVERT != 0U)
+    outputHz = -outputHz;
+#endif
+    minOutputHz = STEPPER_ENCODER_POSITION_MIN_OUTPUT_HZ;
+    if (minOutputHz > STEPPER_ENCODER_POSITION_OUTPUT_LIMIT_HZ) {
+        minOutputHz = STEPPER_ENCODER_POSITION_OUTPUT_LIMIT_HZ;
+    }
+    if (stepper_abs(outputHz) < minOutputHz) {
+        outputHz = (outputHz >= 0.0f) ? minOutputHz : -minOutputHz;
+    }
+    stepper_set_speed_target(
+        stepper_clamp(outputHz, -STEPPER_ENCODER_POSITION_OUTPUT_LIMIT_HZ,
+                      STEPPER_ENCODER_POSITION_OUTPUT_LIMIT_HZ));
 }
 
 bool stepper_start(int32_t steps, uint32_t frequencyHz)

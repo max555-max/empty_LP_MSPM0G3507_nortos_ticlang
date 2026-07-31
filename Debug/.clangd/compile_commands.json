@@ -37,37 +37,12 @@
    {
       "directory" : "C:/Users/gaofu/workspace_ccstheia/C07A/Debug",
       "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/Users/gaofu/workspace_ccstheia/C07A\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Inc\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Src\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
-      "file"      : "C:/Users/gaofu/workspace_ccstheia/C07A/Src/icm42688.c"
-   },
-   {
-      "directory" : "C:/Users/gaofu/workspace_ccstheia/C07A/Debug",
-      "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/Users/gaofu/workspace_ccstheia/C07A\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Inc\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Src\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
-      "file"      : "C:/Users/gaofu/workspace_ccstheia/C07A/Src/attitude.c"
-   },
-   {
-      "directory" : "C:/Users/gaofu/workspace_ccstheia/C07A/Debug",
-      "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/Users/gaofu/workspace_ccstheia/C07A\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Inc\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Src\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
       "file"      : "C:/Users/gaofu/workspace_ccstheia/C07A/Debug/ti_msp_dl_config.c"
    },
    {
       "directory" : "C:/Users/gaofu/workspace_ccstheia/C07A/Debug",
       "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/Users/gaofu/workspace_ccstheia/C07A\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Inc\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Src\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
-      "file"      : "C:/Users/gaofu/workspace_ccstheia/C07A/Src/angle_control.c"
-   },
-   {
-      "directory" : "C:/Users/gaofu/workspace_ccstheia/C07A/Debug",
-      "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/Users/gaofu/workspace_ccstheia/C07A\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Inc\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Src\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
-      "file"      : "C:/Users/gaofu/workspace_ccstheia/C07A/Src/bluetooth.c"
-   },
-   {
-      "directory" : "C:/Users/gaofu/workspace_ccstheia/C07A/Debug",
-      "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/Users/gaofu/workspace_ccstheia/C07A\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Inc\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Src\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
       "file"      : "C:/Users/gaofu/workspace_ccstheia/C07A/Src/oled.c"
-   },
-   {
-      "directory" : "C:/Users/gaofu/workspace_ccstheia/C07A/Debug",
-      "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/Users/gaofu/workspace_ccstheia/C07A\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Inc\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Src\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
-      "file"      : "C:/Users/gaofu/workspace_ccstheia/C07A/Src/mpu6050.c"
    },
    {
       "directory" : "C:/Users/gaofu/workspace_ccstheia/C07A/Debug",
@@ -98,5 +73,15 @@
       "directory" : "C:/Users/gaofu/workspace_ccstheia/C07A/Debug",
       "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/Users/gaofu/workspace_ccstheia/C07A\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Inc\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Src\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
       "file"      : "C:/Users/gaofu/workspace_ccstheia/C07A/Src/uart_cmd.c"
+   },
+   {
+      "directory" : "C:/Users/gaofu/workspace_ccstheia/C07A/Debug",
+      "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/Users/gaofu/workspace_ccstheia/C07A\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Inc\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Src\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
+      "file"      : "C:/Users/gaofu/workspace_ccstheia/C07A/Src/encoder_pwm_angle.c"
+   },
+   {
+      "directory" : "C:/Users/gaofu/workspace_ccstheia/C07A/Debug",
+      "command"   : "clang++ -D__MSPM0G3507__ -D__USE_SYSCONFIG__ -I\"C:/Users/gaofu/workspace_ccstheia/C07A\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Debug\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source/third_party/CMSIS/Core/Include\" -I\"C:/TI/mspm0_sdk_2_10_00_04/source\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Inc\" -I\"C:/Users/gaofu/workspace_ccstheia/C07A/Src\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c++/v1\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib/clang/18/include\" -isystem\"D:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/include/c\" -xc",
+      "file"      : "C:/Users/gaofu/workspace_ccstheia/C07A/Src/task3.c"
    }
 ]

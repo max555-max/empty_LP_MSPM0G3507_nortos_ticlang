@@ -13,6 +13,7 @@
 #define UART_CMD_LINE_SIZE           (80U)
 #define UART_CMD_WORD_SIZE           (8U)
 #define UART_CMD_VISION_MAX_DATA      (4U)
+#define UART_CMD_UART1_MIRROR_BUFFER_SIZE (256U)
 
 typedef enum {
     UART_CMD_VISION_WAIT_HEAD = 0,
@@ -27,6 +28,10 @@ static volatile uint8_t g_rxBuffer[UART_CMD_RX_BUFFER_SIZE];
 static volatile uint8_t g_rxHead = 0U;
 static volatile uint8_t g_rxTail = 0U;
 static volatile uint16_t g_rxOverflowCount;
+static volatile uint8_t g_uart1MirrorBuffer[UART_CMD_UART1_MIRROR_BUFFER_SIZE];
+static volatile uint16_t g_uart1MirrorHead;
+static volatile uint16_t g_uart1MirrorTail;
+static volatile uint16_t g_uart1MirrorDropCount;
 
 static char g_line[UART_CMD_LINE_SIZE];
 static uint8_t g_lineIndex = 0U;
@@ -61,6 +66,54 @@ static int16_t uart_cmd_read_i16_be(const uint8_t *data)
     uint16_t value = ((uint16_t)data[0] << 8) | (uint16_t)data[1];
 
     return (int16_t)value;
+}
+
+static void uart_cmd_mirror_uart1_flush_unlocked(void)
+{
+#if (UART_CMD_UART0_RX_MIRROR_TO_UART1_ENABLE != 0U)
+    while ((g_uart1MirrorTail != g_uart1MirrorHead) &&
+           (DL_UART_Main_isTXFIFOFull(UART_1_INST) == false)) {
+        uint8_t byte = g_uart1MirrorBuffer[g_uart1MirrorTail];
+
+        g_uart1MirrorTail =
+            (uint16_t)((g_uart1MirrorTail + 1U) %
+                       UART_CMD_UART1_MIRROR_BUFFER_SIZE);
+        DL_UART_Main_transmitData(UART_1_INST, byte);
+    }
+#endif
+}
+
+static void uart_cmd_mirror_uart1_flush(void)
+{
+#if (UART_CMD_UART0_RX_MIRROR_TO_UART1_ENABLE != 0U)
+    uint32_t primask = __get_PRIMASK();
+
+    __disable_irq();
+    uart_cmd_mirror_uart1_flush_unlocked();
+    __set_PRIMASK(primask);
+#endif
+}
+
+static void uart_cmd_mirror_uart0_rx_byte(uint8_t byte)
+{
+#if (UART_CMD_UART0_RX_MIRROR_TO_UART1_ENABLE != 0U)
+    uint16_t nextHead =
+        (uint16_t)((g_uart1MirrorHead + 1U) %
+                   UART_CMD_UART1_MIRROR_BUFFER_SIZE);
+
+    if (nextHead != g_uart1MirrorTail) {
+        g_uart1MirrorBuffer[g_uart1MirrorHead] = byte;
+        g_uart1MirrorHead = nextHead;
+        uart_cmd_mirror_uart1_flush_unlocked();
+        return;
+    }
+
+    if (g_uart1MirrorDropCount != UINT16_MAX) {
+        g_uart1MirrorDropCount++;
+    }
+#else
+    (void)byte;
+#endif
 }
 
 static int32_t uart_cmd_abs_i16(int16_t value)
@@ -186,10 +239,10 @@ static bool uart_cmd_vision_has_expected_length(uint8_t command, uint8_t length)
     return false;
 }
 
-static bool uart_cmd_vision_publish_ball_state(uint32_t nowMs)
+static bool uart_cmd_vision_publish_values(int16_t positionX10,
+                                           int16_t velocityX10,
+                                           uint32_t nowMs)
 {
-    int16_t positionX10 = uart_cmd_read_i16_be(&g_visionData[0]);
-    int16_t velocityX10 = uart_cmd_read_i16_be(&g_visionData[2]);
     int16_t calibratedPositionX10;
 
     if ((uart_cmd_abs_i16(positionX10) > UART_CMD_VISION_POSITION_LIMIT_X10) ||
@@ -214,6 +267,14 @@ static bool uart_cmd_vision_publish_ball_state(uint32_t nowMs)
     g_visionHasPosition = true;
     g_visionDetectionValid = true;
     return true;
+}
+
+static bool uart_cmd_vision_publish_ball_state(uint32_t nowMs)
+{
+    int16_t positionX10 = uart_cmd_read_i16_be(&g_visionData[0]);
+    int16_t velocityX10 = uart_cmd_read_i16_be(&g_visionData[2]);
+
+    return uart_cmd_vision_publish_values(positionX10, velocityX10, nowMs);
 }
 
 static void uart_cmd_vision_execute_frame(uint32_t nowMs)
@@ -438,6 +499,111 @@ static bool uart_cmd_parse_bool(const char **text, bool *value)
     return true;
 }
 
+static bool uart_cmd_parse_scaled_x10(const char **text, int16_t *value)
+{
+    const char *p = uart_cmd_skip_separators(*text);
+    bool negative = false;
+    bool hasDigit = false;
+    int32_t whole = 0;
+    int32_t scaled;
+    int32_t firstDecimal = 0;
+    int32_t secondDecimal = 0;
+
+    if (*p == '-') {
+        negative = true;
+        p++;
+    } else if (*p == '+') {
+        p++;
+    }
+
+    while (uart_cmd_is_digit(*p)) {
+        int32_t digit = (int32_t)(*p - '0');
+
+        if (whole > ((INT16_MAX / 10) - digit) / 10) {
+            return false;
+        }
+        hasDigit = true;
+        whole = (whole * 10) + digit;
+        p++;
+    }
+
+    if (*p == '.') {
+        p++;
+        if (uart_cmd_is_digit(*p)) {
+            firstDecimal = (int32_t)(*p - '0');
+            hasDigit = true;
+            p++;
+        }
+        if (uart_cmd_is_digit(*p)) {
+            secondDecimal = (int32_t)(*p - '0');
+            p++;
+        }
+        while (uart_cmd_is_digit(*p)) {
+            p++;
+        }
+    }
+
+    if (!hasDigit) {
+        return false;
+    }
+
+    scaled = (whole * 10) + firstDecimal;
+    if (secondDecimal >= 5) {
+        scaled++;
+    }
+    if (negative) {
+        scaled = -scaled;
+    }
+    if ((scaled > INT16_MAX) || (scaled < INT16_MIN)) {
+        return false;
+    }
+
+    *value = (int16_t)scaled;
+    *text = p;
+    return true;
+}
+
+static bool uart_cmd_has_no_more(const char *text)
+{
+    return *uart_cmd_skip_separators(text) == '\0';
+}
+
+static bool uart_cmd_parse_vision_text_frame(const char *text)
+{
+    int16_t positionX10;
+    int16_t velocityX10;
+    int16_t unusedX10;
+    bool detected;
+    uint32_t nowMs;
+
+    if (!uart_cmd_parse_scaled_x10(&text, &positionX10) ||
+        !uart_cmd_parse_scaled_x10(&text, &velocityX10) ||
+        !uart_cmd_parse_scaled_x10(&text, &unusedX10) ||
+        !uart_cmd_parse_bool(&text, &detected) ||
+        !uart_cmd_has_no_more(text)) {
+        uart_cmd_vision_record_bad(delay_get_ms());
+        return false;
+    }
+
+    (void)unusedX10;
+    nowMs = delay_get_ms();
+    g_visionHasLink = true;
+    g_visionLinkTimestampMs = nowMs;
+    if (!detected) {
+        g_visionDetectionValid = false;
+        uart_cmd_vision_record_good(UART_CMD_VISION_CMD_DETECTION_STATE,
+                                    nowMs);
+        return true;
+    }
+
+    if (!uart_cmd_vision_publish_values(positionX10, velocityX10, nowMs)) {
+        uart_cmd_vision_record_bad(nowMs);
+        return false;
+    }
+    uart_cmd_vision_record_good(UART_CMD_VISION_CMD_BALL_STATE, nowMs);
+    return true;
+}
+
 static uint32_t uart_cmd_abs_to_u32(int32_t value)
 {
     if (value >= 0) {
@@ -445,6 +611,15 @@ static uint32_t uart_cmd_abs_to_u32(int32_t value)
     }
 
     return (uint32_t)(-(value + 1)) + 1U;
+}
+
+static void uart_cmd_send_string(const char *text)
+{
+#if (UART_CMD_UART0_TEXT_REPLY_ENABLE != 0U)
+    uart0_send_string(text);
+#else
+    (void)text;
+#endif
 }
 
 static void uart_cmd_send_uint32(uint32_t value)
@@ -461,14 +636,14 @@ static void uart_cmd_send_uint32(uint32_t value)
         char out[2];
         out[0] = digits[--index];
         out[1] = '\0';
-        uart0_send_string(out);
+        uart_cmd_send_string(out);
     }
 }
 
 static void uart_cmd_send_int32(int32_t value)
 {
     if (value < 0) {
-        uart0_send_string("-");
+        uart_cmd_send_string("-");
         uart_cmd_send_uint32((uint32_t)(-(value + 1)) + 1U);
     } else {
         uart_cmd_send_uint32((uint32_t)value);
@@ -477,38 +652,38 @@ static void uart_cmd_send_int32(int32_t value)
 
 static void uart_cmd_send_ok(void)
 {
-    uart0_send_string("OK\r\n");
+    uart_cmd_send_string("OK\r\n");
 }
 
 static void uart_cmd_send_error(void)
 {
-    uart0_send_string("ERR\r\n");
+    uart_cmd_send_string("ERR\r\n");
 }
 
 static void uart_cmd_send_status(void)
 {
-    uart0_send_string("STEP EN:");
+    uart_cmd_send_string("STEP EN:");
     uart_cmd_send_int32(stepper_is_enabled() ? 1 : 0);
-    uart0_send_string(" BUSY:");
+    uart_cmd_send_string(" BUSY:");
     uart_cmd_send_int32(stepper_is_busy() ? 1 : 0);
-    uart0_send_string(" DIR:");
+    uart_cmd_send_string(" DIR:");
     uart_cmd_send_int32(stepper_get_direction() ? 1 : 0);
-    uart0_send_string(" F:");
+    uart_cmd_send_string(" F:");
     uart_cmd_send_uint32(stepper_get_frequency_hz());
-    uart0_send_string(" REM:");
+    uart_cmd_send_string(" REM:");
     uart_cmd_send_uint32(stepper_get_remaining_steps());
-    uart0_send_string(" LOCK:");
+    uart_cmd_send_string(" LOCK:");
     uart_cmd_send_int32(stepper_is_emergency_inhibited() ? 1 : 0);
-    uart0_send_string(" LIM:");
+    uart_cmd_send_string(" LIM:");
     uart_cmd_send_int32(stepper_is_limit_active() ? 1 : 0);
-    uart0_send_string(" POS:");
+    uart_cmd_send_string(" POS:");
     uart_cmd_send_int32(stepper_get_position_steps());
-    uart0_send_string("\r\n");
+    uart_cmd_send_string("\r\n");
 }
 
 static void uart_cmd_send_help(void)
 {
-    uart0_send_string("CMD: GET | S steps freq | SD steps freq dir | RUN freq dir | STOP | EN 0/1 | ESTOP | RESET\r\n");
+    uart_cmd_send_string("CMD: GET | S steps freq | SD steps freq dir | RUN freq dir | STOP | EN 0/1 | ESTOP | RESET\r\n");
 }
 
 static void uart_cmd_parse_line(const char *line)
@@ -519,6 +694,12 @@ static void uart_cmd_parse_line(const char *line)
     const char *p = line;
 
     if (!uart_cmd_read_word(&p, word, sizeof(word))) {
+        return;
+    }
+
+    if (uart_cmd_word_equals(word, "V") ||
+        uart_cmd_word_equals(word, "VISION")) {
+        (void)uart_cmd_parse_vision_text_frame(p);
         return;
     }
 
@@ -669,6 +850,9 @@ void uart_cmd_init(void)
     g_rxHead = 0U;
     g_rxTail = 0U;
     g_rxOverflowCount = 0U;
+    g_uart1MirrorHead = 0U;
+    g_uart1MirrorTail = 0U;
+    g_uart1MirrorDropCount = 0U;
     g_lineIndex = 0U;
     g_packetActive = false;
     uart_cmd_vision_reset_receiver();
@@ -696,13 +880,15 @@ void uart_cmd_init(void)
     NVIC_ClearPendingIRQ(UART0_INST_INT_IRQN);
     NVIC_EnableIRQ(UART0_INST_INT_IRQN);
 
-    uart0_send_string("UART READY\r\n");
+    uart_cmd_send_string("UART READY\r\n");
 }
 
 void uart_cmd_process(void)
 {
     uint8_t ch;
     uint32_t nowMs;
+
+    uart_cmd_mirror_uart1_flush();
 
     while (g_rxTail != g_rxHead) {
         uint32_t primask = __get_PRIMASK();
@@ -725,6 +911,7 @@ void uart_cmd_process(void)
     nowMs = delay_get_ms();
     uart_cmd_vision_check_timeout(nowMs);
     uart_cmd_vision_update_statistics(nowMs);
+    uart_cmd_mirror_uart1_flush();
 }
 
 bool uart_cmd_get_vision_sample(uart_cmd_vision_sample_t *sample)
@@ -797,6 +984,8 @@ void uart_cmd_irq_handler(void)
     while (DL_UART_Main_isRXFIFOEmpty(UART0_INST) == false) {
         uint8_t nextHead;
         uint8_t ch = DL_UART_Main_receiveData(UART0_INST);
+
+        uart_cmd_mirror_uart0_rx_byte(ch);
 
         nextHead = (uint8_t)((g_rxHead + 1U) % UART_CMD_RX_BUFFER_SIZE);
         if (nextHead != g_rxTail) {

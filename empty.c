@@ -6,12 +6,12 @@
 #include "ti_msp_dl_config.h"
 
 #include "delay.h"
-#include "task2.h"
+#include "task3.h"
 
 int main(void)
 {
     SYSCFG_DL_init();
-    task2_ball_balance_run();
+    task3_run();
 }
 
 void SysTick_Handler(void)
