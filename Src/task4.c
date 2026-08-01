@@ -1,236 +1,235 @@
+#include "task4.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "bluetooth.h"
 #include "delay.h"
 #include "encoder.h"
-#include "gray_serial.h"
-#include "line_track.h"
-#include "oled.h"
+#include "encoder_pwm_angle.h"
 #include "pid.h"
-#include "task4.h"
-
-/*
- * Task4 parameters are deliberately separate from Task2.  Change these
- * values when Task4 is selected from main(), without changing Task2.
- */
-#define TASK4_OLED_REFRESH_PERIOD_MS              (200U)
-#define TASK4_STOP_DETECT_ENABLE_DISTANCE_MM      (6000)
-#define TASK4_GRAY_STARTUP_DISCARD_COUNT          (20U)
-#define TASK4_GRAY_STARTUP_DISCARD_MS             (2U)
-#define TASK4_LINE_BASE_SPEED_MM_S                (350)
-#define TASK4_SMALL_TURN_PERCENT                  (90)
-#define TASK4_LARGE_TURN_PERCENT                  (60)
+#include "stepper.h"
+#include "uart_cmd.h"
 
 typedef enum {
-    TASK4_LINE_STATE_RUNNING = 0,
-    TASK4_LINE_STATE_STOPPED
-} task4_line_state_t;
+    TASK4_STATE_WAIT_BALL = 0,
+    TASK4_STATE_RUNNING,
+    TASK4_STATE_SENSOR_FAULT
+} task4_state_t;
 
-static void task4_apply_line_params(void)
+static float task4_abs_float(float value)
 {
-    line_track_set_base_speed(TASK4_LINE_BASE_SPEED_MM_S);
-    (void)line_track_set_turn_ratios(TASK4_SMALL_TURN_PERCENT,
-                                     TASK4_LARGE_TURN_PERCENT);
+    return (value < 0.0f) ? -value : value;
 }
 
-static void task4_discard_startup_gray_samples(void)
+static int32_t task4_ramp_speed(int32_t currentSpeed,
+                                int32_t targetSpeed,
+                                uint32_t dtMs)
 {
-    for (uint8_t i = 0U; i < TASK4_GRAY_STARTUP_DISCARD_COUNT; i++) {
-        (void)gray_serial_read();
-        delay_ms(TASK4_GRAY_STARTUP_DISCARD_MS);
+    int32_t maximumStep;
+
+    if (dtMs > 100U) {
+        dtMs = 100U;
     }
-}
+    maximumStep = (int32_t)(((int64_t)TASK4_SPEED_RAMP_MM_S2 * dtMs +
+                             999LL) / 1000LL);
+    if (maximumStep < 1) {
+        maximumStep = 1;
+    }
 
-static uint8_t task4_count_active_gray_sensors(uint8_t raw)
-{
-    uint8_t activeCount = 0U;
-
-    for (uint8_t i = 0U; i < 4U; i++) {
-        uint8_t level = (uint8_t)((raw >> i) & 0x01U);
-
-        if (level == LINE_TRACK_ACTIVE_LEVEL) {
-            activeCount++;
+    if (currentSpeed < targetSpeed) {
+        currentSpeed += maximumStep;
+        if (currentSpeed > targetSpeed) {
+            currentSpeed = targetSpeed;
+        }
+    } else if (currentSpeed > targetSpeed) {
+        currentSpeed -= maximumStep;
+        if (currentSpeed < targetSpeed) {
+            currentSpeed = targetSpeed;
         }
     }
 
-    return activeCount;
+    return currentSpeed;
 }
 
-static bool task4_stop_marker_detected(uint8_t raw)
+static int32_t task4_straight_correction(int32_t travelErrorCounts)
 {
-    uint8_t o2Level = (uint8_t)((raw >> 1U) & 0x01U);
-    uint8_t o3Level = (uint8_t)((raw >> 2U) & 0x01U);
+    int64_t correction;
 
-    return (o2Level == LINE_TRACK_ACTIVE_LEVEL) &&
-           (o3Level == LINE_TRACK_ACTIVE_LEVEL);
+    if (travelErrorCounts >
+        (TASK4_STRAIGHT_CORRECTION_MAX_MM_S * 1000LL) /
+            TASK4_STRAIGHT_CORRECTION_KP_X1000) {
+        return TASK4_STRAIGHT_CORRECTION_MAX_MM_S;
+    }
+
+    if (travelErrorCounts <
+        (-TASK4_STRAIGHT_CORRECTION_MAX_MM_S * 1000LL) /
+            TASK4_STRAIGHT_CORRECTION_KP_X1000) {
+        return -TASK4_STRAIGHT_CORRECTION_MAX_MM_S;
+    }
+
+    correction = ((int64_t)travelErrorCounts *
+                  TASK4_STRAIGHT_CORRECTION_KP_X1000) / 1000LL;
+
+    if (correction > TASK4_STRAIGHT_CORRECTION_MAX_MM_S) {
+        correction = TASK4_STRAIGHT_CORRECTION_MAX_MM_S;
+    } else if (correction < -TASK4_STRAIGHT_CORRECTION_MAX_MM_S) {
+        correction = -TASK4_STRAIGHT_CORRECTION_MAX_MM_S;
+    }
+
+    return (int32_t)correction;
 }
 
-static int32_t task4_abs_i32(int32_t value)
+static void task4_apply_startup_beam_bias(bool *biasActive,
+                                          uint32_t startMs,
+                                          uint32_t nowMs)
 {
-    return (value < 0) ? -value : value;
-}
-
-static int32_t task4_encoder_counts_to_mm(int32_t counts)
-{
-    int64_t distanceMmX1000;
-    int64_t countsPerWheelRevX1000 =
-        (int64_t)ENCODER_LINES_PER_MOTOR_REV *
-        ENCODER_QUADRATURE_MULTIPLIER *
-        ENCODER_GEAR_RATIO_X1000;
-    int64_t wheelCircumferenceMmX1000 =
-        ((int64_t)ENCODER_WHEEL_DIAMETER_MM * 3141593LL) / 1000LL;
-
-    distanceMmX1000 =
-        (int64_t)task4_abs_i32(counts) * wheelCircumferenceMmX1000;
-
-    return (int32_t)((distanceMmX1000 +
-                      (countsPerWheelRevX1000 / 2LL)) /
-                     countsPerWheelRevX1000);
-}
-
-static int32_t task4_get_traveled_distance_mm(int32_t startLeftCount,
-                                              int32_t startRightCount)
-{
-    int32_t leftDistanceMm = task4_encoder_counts_to_mm(
-        encoder_get_left_count() - startLeftCount);
-    int32_t rightDistanceMm = task4_encoder_counts_to_mm(
-        encoder_get_right_count() - startRightCount);
-
-    return (leftDistanceMm + rightDistanceMm) / 2;
-}
-
-static void task4_oled_print_line_header(uint8_t page, const char *text)
-{
-    oled_clear_line(page);
-    oled_print_string(text);
-}
-
-static void task4_oled_update(bool oledOk,
-                              uint8_t grayRaw,
-                              uint8_t activeCount,
-                              task4_line_state_t lineState,
-                              bool stopDetectEnabled,
-                              int32_t traveledDistanceMm,
-                              uint32_t elapsedMs)
-{
-    static uint32_t lastRefreshMs = 0U;
-    uint32_t nowMs;
-    line_track_status_t status;
-
-    if (!oledOk) {
+    if (!*biasActive) {
         return;
     }
 
-    nowMs = delay_get_ms();
-    if ((uint32_t)(nowMs - lastRefreshMs) < TASK4_OLED_REFRESH_PERIOD_MS) {
+    if ((uint32_t)(nowMs - startMs) >= TASK4_STARTUP_BEAM_HOLD_MS) {
+        *biasActive = false;
         return;
     }
-    lastRefreshMs = nowMs;
 
-    line_track_get_status(&status);
-
-    task4_oled_print_line_header(0U, "Task4 Line");
-
-    task4_oled_print_line_header(1U, "RAW:");
-    oled_print_hex_u8(grayRaw);
-    oled_print_string(" A:");
-    oled_print_int(activeCount);
-    if (lineState == TASK4_LINE_STATE_STOPPED) {
-        status.correction = 0;
-        status.leftTargetMmS = 0;
-        status.rightTargetMmS = 0;
-        oled_print_string(" STOP");
-    } else if (!status.lineDetected) {
-        oled_print_string(" LOST");
-    } else if (stopDetectEnabled) {
-        oled_print_string(" ARM");
-    } else {
-        oled_print_string(" RUN");
-    }
-
-    task4_oled_print_line_header(2U, "ERR:");
-    oled_print_int(status.error);
-    oled_print_string(" C:");
-    oled_print_int(status.correction);
-
-    task4_oled_print_line_header(3U, "L:");
-    oled_print_int(status.leftTargetMmS);
-    oled_print_string(" R:");
-    oled_print_int(status.rightTargetMmS);
-
-    task4_oled_print_line_header(4U, "Small:");
-    oled_print_int(line_track_get_small_turn_percent());
-    oled_print_string("% Big:");
-    oled_print_int(line_track_get_large_turn_percent());
-    oled_print_string("%");
-
-    task4_oled_print_line_header(5U, "Dist:");
-    oled_print_int(traveledDistanceMm);
-    oled_print_string("/");
-    oled_print_int(TASK4_STOP_DETECT_ENABLE_DISTANCE_MM);
-
-    oled_print_time_large(elapsedMs);
+    stepper_set_beam_target_deg(stepper_get_beam_target_deg() +
+                                TASK4_STARTUP_BEAM_ANGLE_DEG);
 }
 
 void task4_run(void)
 {
-    uint8_t grayRaw;
-    uint8_t activeCount;
-    uint32_t taskStartMs;
+    task4_state_t state = TASK4_STATE_WAIT_BALL;
+    uart_cmd_vision_sample_t visionSample = {0};
+    encoder_pwm_angle_sample_t angleSample = {0};
     uint32_t nowMs;
-    uint32_t elapsedMs = 0U;
-    bool timerStopped = false;
-    bool stopDetectEnabled = false;
-    int32_t traveledDistanceMm = 0;
-    int32_t runStartLeftCount;
-    int32_t runStartRightCount;
-    task4_line_state_t lineState = TASK4_LINE_STATE_RUNNING;
-    bool oledOk;
+    uint32_t ballLastUpdateMs;
+    uint32_t carLastUpdateMs;
+    uint32_t serviceLastUpdateMs;
+    uint32_t readyStartMs = 0U;
+    uint32_t inputLostStartMs = 0U;
+    uint32_t startupBiasStartMs = 0U;
+    int32_t speedCommandMmS = 0;
+    int32_t straightStartLeftCount = 0;
+    int32_t straightStartRightCount = 0;
+    bool ballControlReady = false;
+    bool startupBiasActive = false;
 
-    gray_serial_init();
-    task4_discard_startup_gray_samples();
     encoder_init();
     speed_pid_init();
-    line_track_init();
-    task4_apply_line_params();
-    bluetooth_init();
-    oledOk = oled_init();
-    taskStartMs = delay_get_ms();
-    runStartLeftCount = encoder_get_left_count();
-    runStartRightCount = encoder_get_right_count();
+    stepper_init();
+    encoder_pwm_angle_init();
+    uart_cmd_init();
+
+    (void)stepper_set_beam_pid_target_mm(TASK4_BALL_TARGET_MM);
+    stepper_enable(true);
+    speed_pid_stop();
+
+    nowMs = delay_get_ms();
+    ballLastUpdateMs = nowMs;
+    carLastUpdateMs = nowMs;
+    serviceLastUpdateMs = nowMs;
 
     while (1) {
-        bluetooth_process();
-
+        uart_cmd_process();
         nowMs = delay_get_ms();
-        grayRaw = gray_serial_read();
-        activeCount = task4_count_active_gray_sensors(grayRaw);
+        (void)uart_cmd_get_vision_sample(&visionSample);
+        (void)encoder_pwm_angle_get_sample(&angleSample);
 
-        if (lineState == TASK4_LINE_STATE_RUNNING) {
-            line_track_update_with_raw_hold_on_lost(grayRaw);
-            traveledDistanceMm = task4_get_traveled_distance_mm(
-                runStartLeftCount, runStartRightCount);
-            stopDetectEnabled =
-                (traveledDistanceMm >= TASK4_STOP_DETECT_ENABLE_DISTANCE_MM);
+        ballControlReady = visionSample.valid && angleSample.fresh &&
+                           !angleSample.safeLimitActive;
 
-            if (stopDetectEnabled && task4_stop_marker_detected(grayRaw)) {
-                lineState = TASK4_LINE_STATE_STOPPED;
-                speed_pid_stop();
-                elapsedMs = nowMs - taskStartMs;
-                timerStopped = true;
+        if ((uint32_t)(nowMs - ballLastUpdateMs) >=
+            TASK4_BALL_CONTROL_PERIOD_MS) {
+            uint32_t ballDtMs = nowMs - ballLastUpdateMs;
+            float ballPositionMm = (float)visionSample.positionX10 * 0.1f;
+            float ballVelocityMmS = (float)visionSample.velocityX10 * 0.1f;
+
+            stepper_update_beam_pid(ballPositionMm, ballVelocityMmS,
+                                    ballControlReady,
+                                    (float)ballDtMs / 1000.0f);
+            stepper_update_beam_encoder_position_loop(
+                angleSample.relativeAngleDegX10, ballControlReady);
+
+            if ((state == TASK4_STATE_RUNNING) && ballControlReady) {
+                task4_apply_startup_beam_bias(&startupBiasActive,
+                                              startupBiasStartMs, nowMs);
             }
-        } else {
-            speed_pid_stop();
+
+            if (state == TASK4_STATE_WAIT_BALL) {
+                bool ballStable = ballControlReady &&
+                    (task4_abs_float(ballPositionMm -
+                                     TASK4_BALL_TARGET_MM) <=
+                     TASK4_READY_POSITION_TOLERANCE_MM) &&
+                    (task4_abs_float(ballVelocityMmS) <=
+                     TASK4_READY_VELOCITY_TOLERANCE_MM_S);
+
+                if (ballStable) {
+                    if (readyStartMs == 0U) {
+                        readyStartMs = nowMs;
+                    } else if ((uint32_t)(nowMs - readyStartMs) >=
+                               TASK4_READY_CONFIRM_MS) {
+                        speedCommandMmS = 0;
+                        straightStartLeftCount = encoder_get_left_count();
+                        straightStartRightCount = encoder_get_right_count();
+                        startupBiasStartMs = nowMs;
+                        startupBiasActive = true;
+                        state = TASK4_STATE_RUNNING;
+                    }
+                } else {
+                    readyStartMs = 0U;
+                }
+            } else if (state == TASK4_STATE_RUNNING) {
+                if (ballControlReady) {
+                    inputLostStartMs = 0U;
+                } else {
+                    speedCommandMmS = 0;
+                    if (inputLostStartMs == 0U) {
+                        inputLostStartMs = nowMs;
+                    } else if ((uint32_t)(nowMs - inputLostStartMs) >=
+                               TASK4_CONTROL_INPUT_LOST_ABORT_MS) {
+                        state = TASK4_STATE_SENSOR_FAULT;
+                    }
+                }
+            }
+
+            ballLastUpdateMs = nowMs;
         }
 
-        speed_pid_control_update();
-        if (!timerStopped) {
-            elapsedMs = nowMs - taskStartMs;
+        if ((uint32_t)(nowMs - carLastUpdateMs) >=
+            TASK4_CAR_CONTROL_PERIOD_MS) {
+            uint32_t carDtMs = nowMs - carLastUpdateMs;
+
+            if ((state == TASK4_STATE_RUNNING) && ballControlReady) {
+                int32_t leftTravelCounts = encoder_get_left_count() -
+                                           straightStartLeftCount;
+                int32_t rightTravelCounts = encoder_get_right_count() -
+                                            straightStartRightCount;
+                int32_t travelErrorCounts = leftTravelCounts -
+                                             rightTravelCounts;
+                int32_t straightCorrection =
+                    task4_straight_correction(travelErrorCounts);
+                int32_t leftTargetMmS;
+                int32_t rightTargetMmS;
+
+                speedCommandMmS = task4_ramp_speed(
+                    speedCommandMmS, TASK4_STRAIGHT_SPEED_MM_S, carDtMs);
+                leftTargetMmS = speedCommandMmS - straightCorrection;
+                rightTargetMmS = speedCommandMmS + straightCorrection;
+                speed_pid_set_speed(leftTargetMmS, rightTargetMmS);
+            } else {
+                speedCommandMmS = 0;
+                speed_pid_stop();
+            }
+            speed_pid_control_update();
+            carLastUpdateMs = nowMs;
         }
-        task4_oled_update(oledOk, grayRaw, activeCount,
-                          lineState, stopDetectEnabled,
-                          traveledDistanceMm, elapsedMs);
-        delay_ms(SPEED_PID_CONTROL_PERIOD_MS);
+
+        if ((uint32_t)(nowMs - serviceLastUpdateMs) >=
+            TASK4_STEPPER_SERVICE_PERIOD_MS) {
+            stepper_service((float)(nowMs - serviceLastUpdateMs) / 1000.0f);
+            serviceLastUpdateMs = nowMs;
+        }
+
+        delay_ms(1U);
     }
 }

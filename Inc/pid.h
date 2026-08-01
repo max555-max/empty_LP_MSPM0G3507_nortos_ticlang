@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+/* UART0 belongs to the vision link in ball-control tasks. */
+#define SPEED_PID_VOFA_ENABLE                    (0U)
+
 /*
  * 通用 PID 结构体
  *

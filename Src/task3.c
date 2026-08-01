@@ -99,6 +99,12 @@ static bool task3_task2_button_pressed(void)
                              TASK_BUTTON_START_PIN) == 0U);
 }
 
+static bool task3_task4_button_pressed(void)
+{
+    return (DL_GPIO_readPins(TASK_BUTTON_NEXT_PORT,
+                             TASK_BUTTON_NEXT_PIN) == 0U);
+}
+
 static void task3_skip_separators(const char **text)
 {
     while ((**text == ' ') || (**text == '\t') || (**text == ',')) {
@@ -339,7 +345,7 @@ static bool task3_build_line(char *buffer, uint8_t *length,
     return true;
 }
 
-void task3_run(void)
+task3_exit_t task3_run(void)
 {
     uint32_t nowMs;
     uint32_t pidLastUpdateMs;
@@ -359,6 +365,7 @@ void task3_run(void)
     int32_t uart1CommandStatus = 0;
     bool pidCommandAccepted;
     bool task2ButtonWasPressed;
+    bool task4ButtonWasPressed;
 
     stepper_init();
     /* Task3 may be entered directly from main(), bypassing the menu's
@@ -377,16 +384,24 @@ void task3_run(void)
     serviceLastUpdateMs = nowMs;
     monitorLastUpdateMs = nowMs;
     task2ButtonWasPressed = task3_task2_button_pressed();
+    task4ButtonWasPressed = task3_task4_button_pressed();
 
     while (1) {
         bool task2ButtonPressed = task3_task2_button_pressed();
+        bool task4ButtonPressed = task3_task4_button_pressed();
 
         if (task2ButtonPressed && !task2ButtonWasPressed) {
             stepper_stop();
             uart_cmd_deinit();
-            return;
+            return TASK3_EXIT_TO_TASK2;
+        }
+        if (task4ButtonPressed && !task4ButtonWasPressed) {
+            stepper_stop();
+            uart_cmd_deinit();
+            return TASK3_EXIT_TO_TASK4;
         }
         task2ButtonWasPressed = task2ButtonPressed;
+        task4ButtonWasPressed = task4ButtonPressed;
 
         pidCommandAccepted = false;
         uart_cmd_process();

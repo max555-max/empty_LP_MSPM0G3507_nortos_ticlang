@@ -86,12 +86,14 @@ static int32_t pid_apply_min_start_pwm(
 
 static uint8_t speed_pid_should_send_vofa(void)
 {
+#if (SPEED_PID_VOFA_ENABLE != 0U)
     g_speedPidVofaTick++;
 
     if (g_speedPidVofaTick >= SPEED_PID_VOFA_DIVIDER) {
         g_speedPidVofaTick = 0U;
         return 1U;
     }
+#endif
 
     return 0U;
 }

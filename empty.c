@@ -111,7 +111,7 @@ static void task_menu_start(uint8_t selectedTask)
         task2_run();
         break;
     case 3U:
-        task3_run();
+        (void)task3_run();
         break;
     case 4U:
         task4_run();
@@ -181,9 +181,16 @@ static void oled_direct_test_run(void)
 
 int main(void)
 {
+    task3_exit_t nextTask;
+
     SYSCFG_DL_init();
-    task3_run();
-    task2_run();
+    nextTask = task3_run();
+
+    if (nextTask == TASK3_EXIT_TO_TASK2) {
+        task2_run();
+    } else {
+        task4_run();
+    }
 
     while (1) {
     }
