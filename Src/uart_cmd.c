@@ -28,6 +28,7 @@ static volatile uint8_t g_rxBuffer[UART_CMD_RX_BUFFER_SIZE];
 static volatile uint8_t g_rxHead = 0U;
 static volatile uint8_t g_rxTail = 0U;
 static volatile uint16_t g_rxOverflowCount;
+static volatile uint32_t g_rxByteCount;
 static volatile uint8_t g_uart1MirrorBuffer[UART_CMD_UART1_MIRROR_BUFFER_SIZE];
 static volatile uint16_t g_uart1MirrorHead;
 static volatile uint16_t g_uart1MirrorTail;
@@ -850,6 +851,7 @@ void uart_cmd_init(void)
     g_rxHead = 0U;
     g_rxTail = 0U;
     g_rxOverflowCount = 0U;
+    g_rxByteCount = 0U;
     g_uart1MirrorHead = 0U;
     g_uart1MirrorTail = 0U;
     g_uart1MirrorDropCount = 0U;
@@ -881,6 +883,13 @@ void uart_cmd_init(void)
     NVIC_EnableIRQ(UART0_INST_INT_IRQN);
 
     uart_cmd_send_string("UART READY\r\n");
+}
+
+void uart_cmd_deinit(void)
+{
+    DL_UART_Main_disableInterrupt(UART0_INST, DL_UART_MAIN_INTERRUPT_RX);
+    NVIC_ClearPendingIRQ(UART0_INST_INT_IRQN);
+    NVIC_DisableIRQ(UART0_INST_INT_IRQN);
 }
 
 void uart_cmd_process(void)
@@ -955,6 +964,7 @@ void uart_cmd_get_vision_link_status(uart_cmd_vision_link_status_t *status)
 
     nowMs = delay_get_ms();
     uart_cmd_vision_update_statistics(nowMs);
+    status->rxByteCount = g_rxByteCount;
     status->acceptedFrameRateHz = g_visionAcceptedFrameRateHz;
     status->ballStateFrameRateHz = g_visionBallFrameRateHz;
     status->badFrameRatioPermille = g_visionBadFrameRatioPermille;
@@ -985,6 +995,7 @@ void uart_cmd_irq_handler(void)
         uint8_t nextHead;
         uint8_t ch = DL_UART_Main_receiveData(UART0_INST);
 
+        g_rxByteCount++;
         uart_cmd_mirror_uart0_rx_byte(ch);
 
         nextHead = (uint8_t)((g_rxHead + 1U) % UART_CMD_RX_BUFFER_SIZE);

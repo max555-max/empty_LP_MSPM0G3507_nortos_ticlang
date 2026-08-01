@@ -1,18 +1,18 @@
 ******************************************************************************
             TI ARM Clang Linker PC v4.0.4                      
 ******************************************************************************
->> Linked Sat Aug  1 15:21:15 2026
+>> Linked Sat Aug  1 19:12:03 2026
 
 OUTPUT FILE NAME:   <C07A.out>
-ENTRY POINT SYMBOL: "_c_int00_noargs"  address: 00004549
+ENTRY POINT SYMBOL: "_c_int00_noargs"  address: 00006891
 
 
 MEMORY CONFIGURATION
 
          name            origin    length      used     unused   attr    fill
 ----------------------  --------  ---------  --------  --------  ----  --------
-  FLASH                 00000000   00020000  00005328  0001acd8  R  X
-  SRAM                  20200000   00008000  00000721  000078df  RW X
+  FLASH                 00000000   00020000  00007d38  000182c8  R  X
+  SRAM                  20200000   00008000  000007e5  0000781b  RW X
   BCR_CONFIG            41c00000   000000ff  00000000  000000ff  R   
   BSL_CONFIG            41c00100   00000080  00000000  00000080  R   
 
@@ -21,14 +21,14 @@ SEGMENT ALLOCATION MAP
 
 run origin  load origin   length   init length attrs members
 ----------  ----------- ---------- ----------- ----- -------
-00000000    00000000    00005328   00005328    r-x
+00000000    00000000    00007d38   00007d38    r-x
   00000000    00000000    000000c0   000000c0    r-- .intvecs
-  000000c0    000000c0    000050b8   000050b8    r-x .text
-  00005178    00005178    00000180   00000180    r-- .rodata
-  000052f8    000052f8    00000030   00000030    r-- .cinit
-20200000    20200000    00000523   00000000    rw-
-  20200000    20200000    000004fa   00000000    rw- .bss
-  202004fc    202004fc    00000027   00000000    rw- .data
+  000000c0    000000c0    00007810   00007810    r-x .text
+  000078d0    000078d0    00000420   00000420    r-- .rodata
+  00007cf0    00007cf0    00000048   00000048    r-- .cinit
+20200000    20200000    000005e7   00000000    rw-
+  20200000    20200000    0000058a   00000000    rw- .bss
+  2020058c    2020058c    0000005b   00000000    rw- .data
 20207e00    20207e00    00000200   00000000    rw-
   20207e00    20207e00    00000200   00000000    rw- .stack
 
@@ -41,363 +41,508 @@ section   page    origin      length       input sections
 .intvecs   0    00000000    000000c0     
                   00000000    000000c0     startup_mspm0g350x_ticlang.o (.intvecs)
 
-.text      0    000000c0    000050b8     
-                  000000c0    000002a0     uart_cmd.o (.text.uart_cmd_parse_line)
-                  00000360    00000260     task3.o (.text.task3_build_line)
-                  000005c0    00000254     task3.o (.text.task3_run)
-                  00000814    000001e0     stepper.o (.text.stepper_update_beam_pid)
-                  000009f4    000001b0     ti_msp_dl_config.o (.text.SYSCFG_DL_GPIO_init)
-                  00000ba4    00000198     uart_cmd.o (.text.uart_cmd_parse_scaled_x10)
-                  00000d3c    00000174     uart_cmd.o (.text.uart_cmd_vision_process_byte)
-                  00000eb0    0000012c     uart_cmd.o (.text.uart_cmd_init)
-                  00000fdc    00000128     stepper.o (.text.stepper_apply_speed)
-                  00001104    00000124     stepper.o (.text.stepper_service)
-                  00001228    00000118     encoder_pwm_angle.o (.text.encoder_pwm_angle_irq_handler)
-                  00001340    00000114     uart_cmd.o (.text.uart_cmd_get_vision_sample)
-                  00001454    0000010c     stepper.o (.text.stepper_init)
-                  00001560    0000010c     uart_cmd.o (.text.uart_cmd_parse_int32)
-                  0000166c    00000108     stepper.o (.text.stepper_update_beam_encoder_position_loop)
-                  00001774    00000104     driverlib.a : dl_timer.o (.text.DL_Timer_initFourCCPWMMode)
-                  00001878    00000104     encoder_pwm_angle.o (.text.encoder_pwm_angle_get_sample)
-                  0000197c    000000f0     uart_cmd.o (.text.uart_cmd_push_line_char)
-                  00001a6c    000000ec     ti_msp_dl_config.o (.text.SYSCFG_DL_SYSCTL_SYSPLL_init)
-                  00001b58    000000e0     driverlib.a : dl_timer.o (.text.DL_Timer_initCaptureCombinedMode)
-                  00001c38    000000dc                 : dl_sysctl_mspm0g1x0x_g3x0x.o (.text.DL_SYSCTL_configSYSPLL)
-                  00001d14    000000da     task3.o (.text.task3_append_int32)
-                  00001dee    00000002     libclang_rt.builtins.a : aeabi_div0.c.obj (.text.__aeabi_idiv0)
-                  00001df0    000000d8     uart_cmd.o (.text.uart_cmd_parse_vision_text_frame)
-                  00001ec8    000000d8     libclang_rt.builtins.a : addsf3.S.obj (.text)
-                  00001fa0    000000d0     uart_cmd.o (.text.uart_cmd_vision_publish_values)
-                  00002070    000000cc     stepper.o (.text.stepper_start_timer_locked)
-                  0000213c    000000c0     stepper.o (.text.stepper_start_dir)
-                  000021fc    000000b8     encoder_pwm_angle.o (.text.encoder_pwm_angle_init)
-                  000022b4    000000b4     stepper.o (.text.stepper_start_continuous)
-                  00002368    000000ac     uart_cmd.o (.text.uart_cmd_process)
-                  00002414    000000ac     uart_cmd.o (.text.uart_cmd_vision_update_statistics)
-                  000024c0    000000aa     uart_cmd.o (.text.uart_cmd_read_word)
-                  0000256a    00000002     libclang_rt.builtins.a : aeabi_div0.c.obj (.text.__aeabi_ldiv0)
-                  0000256c    000000a4     stepper.o (.text.stepper_can_start_locked)
-                  00002610    000000a4     uart_cmd.o (.text.uart_cmd_vision_execute_frame)
-                  000026b4    000000a2     libclang_rt.builtins.a : udivmoddi4.S.obj (.text)
-                  00002756    00000002     --HOLE-- [fill = 0]
-                  00002758    000000a0     stepper.o (.text.stepper_set_speed_target)
-                  000027f8    000000a0     uart_cmd.o (.text.uart_cmd_send_status)
-                  00002898    00000098     stepper.o (.text.stepper_sync_position_from_beam_angle_x10)
-                  00002930    00000094     stepper.o (.text.stepper_timer_irq_handler)
-                  000029c4    00000092     uart_cmd.o (.text.uart_cmd_send_uint32)
-                  00002a56    00000002     --HOLE-- [fill = 0]
-                  00002a58    00000090     ti_msp_dl_config.o (.text.SYSCFG_DL_PWM_init)
-                  00002ae8    0000008c     ti_msp_dl_config.o (.text.SYSCFG_DL_initPower)
-                  00002b74    0000008c     libclang_rt.builtins.a : mulsf3.S.obj (.text.__mulsf3)
-                  00002c00    0000008c     encoder.o (.text.encoder_delta_to_speed_mm_s)
-                  00002c8c    00000088     stepper.o (.text.stepper_count_accepted_pulse)
-                  00002d14    00000084     ti_msp_dl_config.o (.text.__NVIC_SetPriority)
-                  00002d98    00000084     uart_cmd.o (.text.uart_cmd_irq_handler)
-                  00002e1c    00000082     libclang_rt.builtins.a : divsf3.S.obj (.text.__divsf3)
-                  00002e9e    0000007e     uart_cmd.o (.text.uart_cmd_word_equals)
-                  00002f1c    0000007c     libc.a : copy_decompress_lzss.c.obj (.text:decompress:lzss)
-                  00002f98    00000078     encoder.o (.text.encoder_gpio_irq_handler)
-                  00003010    00000074     libclang_rt.builtins.a : comparedf2.c.obj (.text.__gedf2)
-                  00003084    00000074     encoder.o (.text.encoder_update_speed)
-                  000030f8    00000074     stepper.o (.text.stepper_enable)
-                  0000316c    0000006c     bluetooth.o (.text.UART1_IRQHandler)
-                  000031d8    00000068     ti_msp_dl_config.o (.text.SYSCFG_DL_STEPPER_PWM_init)
-                  00003240    00000068     ti_msp_dl_config.o (.text.SYSCFG_DL_SYSCTL_init)
-                  000032a8    00000068     libclang_rt.builtins.a : comparedf2.c.obj (.text.__ledf2)
-                  00003310    00000066     uart_cmd.o (.text.uart_cmd_vision_has_expected_length)
-                  00003376    00000002     --HOLE-- [fill = 0]
-                  00003378    00000064     uart_cmd.o (.text.uart_cmd_mirror_uart0_rx_byte)
-                  000033dc    00000064     uart_cmd.o (.text.uart_cmd_mirror_uart1_flush_unlocked)
-                  00003440    00000062     libclang_rt.builtins.a : aeabi_dcmp.S.obj (.text.__aeabi_dcmp)
-                  000034a2    00000002     --HOLE-- [fill = 0]
-                  000034a4    00000062                            : aeabi_fcmp.S.obj (.text.__aeabi_fcmp)
-                  00003506    00000002     --HOLE-- [fill = 0]
-                  00003508    0000005c     stepper.o (.text.stepper_set_beam_pid_target_mm)
-                  00003564    00000058     encoder_pwm_angle.o (.text.encoder_pwm_angle_duty_to_deg_x10)
-                  000035bc    00000058     stepper.o (.text.stepper_stop_timer_locked)
-                  00003614    00000058     task3.o (.text.task3_uart1_monitor_send_pending)
-                  0000366c    00000058     uart_cmd.o (.text.uart_cmd_vision_apply_position_calibration)
-                  000036c4    00000058     uart_cmd.o (.text.uart_cmd_vision_rate_from_count)
-                  0000371c    00000056     libclang_rt.builtins.a : aeabi_idivmod.S.obj (.text.__aeabi_idivmod)
-                  00003772    00000056     uart_cmd.o (.text.uart_cmd_is_separator)
-                  000037c8    00000054     ti_msp_dl_config.o (.text.SYSCFG_DL_UART_1_init)
-                  0000381c    00000054     stepper.o (.text.stepper_write_direction)
-                  00003870    00000050     ti_msp_dl_config.o (.text.SysTick_Config)
-                  000038c0    00000050     stepper.o (.text.stepper_is_finite_float)
-                  00003910    00000050     stepper.o (.text.stepper_start)
-                  00003960    00000050     task3.o (.text.task3_float_to_x10)
-                  000039b0    00000050     uart_cmd.o (.text.uart_cmd_vision_apply_direction)
-                  00003a00    0000004c     ti_msp_dl_config.o (.text.DL_GPIO_initDigitalInputFeatures)
-                  00003a4c    0000004c     ti_msp_dl_config.o (.text.DL_UART_setBaudRateDivisor)
-                  00003a98    0000004c     stepper.o (.text.stepper_emergency_stop)
-                  00003ae4    0000004a     uart_cmd.o (.text.uart_cmd_parse_bool)
-                  00003b2e    00000002     --HOLE-- [fill = 0]
-                  00003b30    00000048     driverlib.a : dl_uart.o (.text.DL_UART_init)
-                  00003b78    00000048     ti_msp_dl_config.o (.text.SYSCFG_DL_init)
-                  00003bc0    00000046     task3.o (.text.task3_append_string)
-                  00003c06    00000002     --HOLE-- [fill = 0]
-                  00003c08    00000044     driverlib.a : dl_sysctl_mspm0g1x0x_g3x0x.o (.text.DL_SYSCTL_switchMCLKfromSYSOSCtoHSCLK)
-                  00003c4c    00000044     encoder_pwm_angle.o (.text.encoder_pwm_angle_normalize_relative_deg_x10)
-                  00003c90    00000044     stepper.o (.text.stepper_write_enable)
-                  00003cd4    00000040     ti_msp_dl_config.o (.text.SYSCFG_DL_UART0_init)
-                  00003d14    00000040     libclang_rt.builtins.a : aeabi_uidivmod.S.obj (.text.__aeabi_uidivmod)
-                  00003d54    00000040     uart_cmd.o (.text.uart_cmd_vision_record_good)
-                  00003d94    0000003e     libclang_rt.builtins.a : divmoddi4.c.obj (.text.__divmoddi4)
-                  00003dd2    0000003e     stepper.o (.text.stepper_clamp)
-                  00003e10    0000003e     task3.o (.text.task3_append_char)
-                  00003e4e    00000002     --HOLE-- [fill = 0]
-                  00003e50    0000003c     ti_msp_dl_config.o (.text.DL_Timer_setCounterControl)
-                  00003e8c    0000003c     libclang_rt.builtins.a : floatsisf.S.obj (.text.__floatsisf)
-                  00003ec8    0000003c                            : comparesf2.S.obj (.text.__gtsf2)
-                  00003f04    0000003c     stepper.o (.text.stepper_stop)
-                  00003f40    0000003c     uart_cmd.o (.text.uart_cmd_vision_publish_ball_state)
-                  00003f7c    0000003c     libc.a : autoinit.c.obj (.text:__TI_auto_init_nobinit_nopinit)
-                  00003fb8    0000003a     libclang_rt.builtins.a : comparesf2.S.obj (.text.__eqsf2)
-                  00003ff2    00000002     --HOLE-- [fill = 0]
-                  00003ff4    0000003a                            : muldsi3.S.obj (.text.__muldsi3)
-                  0000402e    00000002     --HOLE-- [fill = 0]
-                  00004030    00000038                            : fixsfsi.S.obj (.text.__fixsfsi)
-                  00004068    00000038     encoder.o (.text.encoder_update_left)
-                  000040a0    00000038     encoder.o (.text.encoder_update_right)
-                  000040d8    00000038     stepper.o (.text.stepper_limit_frequency)
-                  00004110    00000038     uart_cmd.o (.text.uart_cmd_is_digit)
-                  00004148    00000038     uart_cmd.o (.text.uart_cmd_vision_check_timeout)
-                  00004180    00000036     encoder_pwm_angle.o (.text.encoder_pwm_angle_relative_is_safe)
-                  000041b6    00000002     --HOLE-- [fill = 0]
-                  000041b8    00000034     ti_msp_dl_config.o (.text.SYSCFG_DL_BEAM_ENCODER_PWM_init)
-                  000041ec    00000034     task3.o (.text.__NVIC_DisableIRQ)
-                  00004220    00000034     stepper.o (.text.stepper_request_stop_locked)
-                  00004254    00000034     uart_cmd.o (.text.uart_cmd_to_upper)
-                  00004288    00000032     libclang_rt.builtins.a : fixunssfsi.S.obj (.text.__fixunssfsi)
-                  000042ba    00000002     --HOLE-- [fill = 0]
-                  000042bc    00000030     uart_cmd.o (.text.uart_cmd_send_int32)
-                  000042ec    0000002e     uart_cmd.o (.text.uart_cmd_abs_i16)
-                  0000431a    00000002     --HOLE-- [fill = 0]
-                  0000431c    0000002c     encoder_pwm_angle.o (.text.__NVIC_ClearPendingIRQ)
-                  00004348    0000002c     stepper.o (.text.__NVIC_ClearPendingIRQ)
-                  00004374    0000002c     task3.o (.text.__NVIC_ClearPendingIRQ)
-                  000043a0    0000002c     uart_cmd.o (.text.__NVIC_ClearPendingIRQ)
-                  000043cc    0000002c     encoder_pwm_angle.o (.text.__NVIC_EnableIRQ)
-                  000043f8    0000002c     stepper.o (.text.__NVIC_EnableIRQ)
-                  00004424    0000002c     uart_cmd.o (.text.__NVIC_EnableIRQ)
-                  00004450    0000002c     stepper.o (.text.stepper_abs)
-                  0000447c    0000002c     uart_cmd.o (.text.uart_cmd_vision_reset_receiver)
-                  000044a8    00000028     ti_msp_dl_config.o (.text.DL_Common_updateReg)
-                  000044d0    00000028     libclang_rt.builtins.a : floatunsisf.S.obj (.text.__floatunsisf)
-                  000044f8    00000028     delay.o (.text.delay_tick)
-                  00004520    00000028     stepper.o (.text.stepper_force_step_low)
-                  00004548    00000028     libc.a : boot_cortex_m.c.obj (.text:_c_int00_noargs)
-                  00004570    00000024     libclang_rt.builtins.a : floatunsidf.S.obj (.text.__floatunsidf)
-                  00004594    00000024                            : muldi3.S.obj (.text.__muldi3)
-                  000045b8    00000024     encoder.o (.text.encoder_tick_1ms)
-                  000045dc    00000024     stepper.o (.text.stepper_set_beam_target_deg)
-                  00004600    00000024     task3.o (.text.task3_uart1_monitor_init)
-                  00004624    00000024     uart_cmd.o (.text.uart_cmd_skip_separators)
-                  00004648    00000024     uart_cmd.o (.text.uart_cmd_vision_increment)
-                  0000466c    00000024     uart_cmd.o (.text.uart_cmd_vision_record_bad)
-                  00004690    00000022     uart_cmd.o (.text.uart_cmd_mirror_uart1_flush)
-                  000046b2    00000002     --HOLE-- [fill = 0]
-                  000046b4    00000020     ti_msp_dl_config.o (.text.DL_GPIO_initPeripheralInputFunction)
-                  000046d4    00000020     ti_msp_dl_config.o (.text.DL_SYSCTL_setFlashWaitState)
-                  000046f4    00000020     encoder.o (.text.encoder_left_b_is_high)
-                  00004714    00000020     encoder.o (.text.encoder_right_b_is_high)
-                  00004734    00000020     stepper.o (.text.stepper_clear_emergency_inhibit)
-                  00004754    00000020     stepper.o (.text.stepper_get_position_steps)
-                  00004774    00000020     uart_cmd.o (.text.uart_cmd_abs_to_u32)
-                  00004794    0000001e     ti_msp_dl_config.o (.text.DL_UART_setOversampling)
-                  000047b2    00000002     --HOLE-- [fill = 0]
-                  000047b4    0000001e     libclang_rt.builtins.a : ashldi3.S.obj (.text.__ashldi3)
-                  000047d2    00000002     --HOLE-- [fill = 0]
-                  000047d4    0000001c     encoder.o (.text.DL_GPIO_clearInterruptStatus)
-                  000047f0    0000001c     ti_msp_dl_config.o (.text.DL_GPIO_clearInterruptStatus)
-                  0000480c    0000001c     ti_msp_dl_config.o (.text.DL_GPIO_enableInterrupt)
-                  00004828    0000001c     stepper.o (.text.DL_GPIO_initPeripheralOutputFunction)
-                  00004844    0000001c     ti_msp_dl_config.o (.text.DL_GPIO_initPeripheralOutputFunction)
-                  00004860    0000001c     driverlib.a : dl_sysctl_mspm0g1x0x_g3x0x.o (.text.DL_SYSCTL_configFCC)
-                  0000487c    0000001c     ti_msp_dl_config.o (.text.DL_SYSCTL_setFCCPeriods)
-                  00004898    0000001c     ti_msp_dl_config.o (.text.DL_SYSCTL_setSYSOSCFreq)
-                  000048b4    0000001c     ti_msp_dl_config.o (.text.DL_SYSCTL_setULPCLKDivider)
-                  000048d0    0000001c     stepper.o (.text.DL_Timer_disableInterrupt)
-                  000048ec    0000001c     stepper.o (.text.DL_Timer_enableInterrupt)
-                  00004908    0000001c     ti_msp_dl_config.o (.text.DL_Timer_enableInterrupt)
-                  00004924    0000001c     driverlib.a : dl_timer.o (.text.DL_Timer_setCaptCompUpdateMethod)
-                  00004940    0000001c                 : dl_timer.o (.text.DL_Timer_setClockConfig)
-                  0000495c    0000001c     encoder_pwm_angle.o (.text.DL_Timer_setCoreHaltBehavior)
-                  00004978    0000001c     task3.o (.text.DL_UART_disableInterrupt)
-                  00004994    0000001c     ti_msp_dl_config.o (.text.DL_UART_enableInterrupt)
-                  000049b0    0000001c     uart_cmd.o (.text.DL_UART_enableInterrupt)
-                  000049cc    0000001c     uart_cmd.o (.text.UART0_IRQHandler)
-                  000049e8    0000001c     stepper.o (.text.stepper_connect_step_to_timer)
-                  00004a04    0000001a     uart_cmd.o (.text.uart_cmd_read_i16_be)
-                  00004a1e    00000002     --HOLE-- [fill = 0]
-                  00004a20    00000018     stepper.o (.text.DL_GPIO_enableOutput)
-                  00004a38    00000018     ti_msp_dl_config.o (.text.DL_GPIO_enableOutput)
-                  00004a50    00000018     ti_msp_dl_config.o (.text.DL_GPIO_enablePower)
-                  00004a68    00000018     encoder.o (.text.DL_GPIO_getEnabledInterruptStatus)
-                  00004a80    00000018     stepper.o (.text.DL_GPIO_initDigitalOutput)
-                  00004a98    00000018     ti_msp_dl_config.o (.text.DL_GPIO_initDigitalOutput)
-                  00004ab0    00000018     ti_msp_dl_config.o (.text.DL_GPIO_reset)
-                  00004ac8    00000018     stepper.o (.text.DL_GPIO_setPins)
-                  00004ae0    00000018     ti_msp_dl_config.o (.text.DL_GPIO_setPins)
-                  00004af8    00000018     ti_msp_dl_config.o (.text.DL_GPIO_setUpperPinsPolarity)
-                  00004b10    00000018     ti_msp_dl_config.o (.text.DL_SYSCTL_setBORThreshold)
-                  00004b28    00000018     encoder_pwm_angle.o (.text.DL_Timer_clearInterruptStatus)
-                  00004b40    00000018     stepper.o (.text.DL_Timer_clearInterruptStatus)
-                  00004b58    00000018     ti_msp_dl_config.o (.text.DL_Timer_enablePower)
-                  00004b70    00000018     ti_msp_dl_config.o (.text.DL_Timer_reset)
-                  00004b88    00000018     driverlib.a : dl_timer.o (.text.DL_Timer_setCaptureCompareOutCtl)
-                  00004ba0    00000018     stepper.o (.text.DL_Timer_setLoadValue)
-                  00004bb8    00000018     encoder_pwm_angle.o (.text.DL_Timer_startCounter)
-                  00004bd0    00000018     stepper.o (.text.DL_Timer_startCounter)
-                  00004be8    00000018     encoder_pwm_angle.o (.text.DL_Timer_stopCounter)
-                  00004c00    00000018     stepper.o (.text.DL_Timer_stopCounter)
-                  00004c18    00000018     uart_cmd.o (.text.DL_UART_clearInterruptStatus)
-                  00004c30    00000018     ti_msp_dl_config.o (.text.DL_UART_enablePower)
-                  00004c48    00000018     bluetooth.o (.text.DL_UART_isRXFIFOEmpty)
-                  00004c60    00000018     uart_cmd.o (.text.DL_UART_isRXFIFOEmpty)
-                  00004c78    00000018     task3.o (.text.DL_UART_isTXFIFOFull)
-                  00004c90    00000018     uart_cmd.o (.text.DL_UART_isTXFIFOFull)
-                  00004ca8    00000018     ti_msp_dl_config.o (.text.DL_UART_reset)
-                  00004cc0    00000018     encoder_pwm_angle.o (.text.encoder_pwm_angle_exit_critical)
-                  00004cd8    00000018     encoder_pwm_angle.o (.text.encoder_pwm_angle_raw_to_relative_deg_x10)
-                  00004cf0    00000018     stepper.o (.text.stepper_step_is_high)
-                  00004d08    00000016     encoder.o (.text.DL_GPIO_readPins)
-                  00004d1e    00000016     stepper.o (.text.DL_GPIO_readPins)
-                  00004d34    00000016     ti_msp_dl_config.o (.text.DL_UART_enable)
-                  00004d4a    00000016     task3.o (.text.DL_UART_transmitData)
-                  00004d60    00000016     uart_cmd.o (.text.DL_UART_transmitData)
-                  00004d76    00000002     --HOLE-- [fill = 0]
-                  00004d78    00000016     libclang_rt.builtins.a : comparesf2.S.obj (.text.__unordsf2)
-                  00004d8e    00000016     uart_cmd.o (.text.uart_cmd_has_no_more)
-                  00004da4    00000014     stepper.o (.text.DL_GPIO_clearPins)
-                  00004db8    00000014     ti_msp_dl_config.o (.text.DL_GPIO_clearPins)
-                  00004dcc    00000014     ti_msp_dl_config.o (.text.DL_SYSCTL_disableSYSPLL)
-                  00004de0    00000014     ti_msp_dl_config.o (.text.DL_SYSCTL_enableSYSPLL)
-                  00004df4    00000014     ti_msp_dl_config.o (.text.DL_Timer_enableClock)
-                  00004e08    00000014     encoder_pwm_angle.o (.text.DL_Timer_getLoadValue)
-                  00004e1c    00000014     ti_msp_dl_config.o (.text.DL_Timer_setCCPDirection)
-                  00004e30    00000014     encoder_pwm_angle.o (.text.DL_Timer_setTimerCount)
-                  00004e44    00000014     stepper.o (.text.DL_Timer_setTimerCount)
-                  00004e58    00000014     bluetooth.o (.text.DL_UART_receiveData)
-                  00004e6c    00000014     uart_cmd.o (.text.DL_UART_receiveData)
-                  00004e80    00000014     libclang_rt.builtins.a : aeabi_ldivmod.S.obj (.text.__aeabi_ldivmod)
-                  00004e94    00000014                            : aeabi_uldivmod.S.obj (.text.__aeabi_uldivmod)
-                  00004ea8    00000014     encoder_pwm_angle.o (.text.encoder_pwm_angle_enter_critical)
-                  00004ebc    00000014     empty.o (.text.main)
-                  00004ed0    00000014     stepper.o (.text.stepper_enter_critical)
-                  00004ee4    00000014     stepper.o (.text.stepper_reset_beam_pid)
-                  00004ef8    00000012     encoder_pwm_angle.o (.text.DL_Timer_getPendingInterrupt)
-                  00004f0a    00000012     stepper.o (.text.DL_Timer_getPendingInterrupt)
-                  00004f1c    00000012     bluetooth.o (.text.DL_UART_getPendingInterrupt)
-                  00004f2e    00000012     uart_cmd.o (.text.DL_UART_getPendingInterrupt)
-                  00004f40    00000012     driverlib.a : dl_uart.o (.text.DL_UART_setClockConfig)
-                  00004f52    00000012     stepper.o (.text.stepper_exit_critical)
-                  00004f64    00000012     libc.a : memcpy16.S.obj (.text:TI_memcpy_small)
-                  00004f76    00000012            : copy_decompress_none.c.obj (.text:decompress:none)
-                  00004f88    00000010     ti_msp_dl_config.o (.text.DL_SYSCTL_disableHFXT)
-                  00004f98    00000010     ti_msp_dl_config.o (.text.DL_SYSCTL_isFCCDone)
-                  00004fa8    00000010     ti_msp_dl_config.o (.text.DL_SYSCTL_startFCC)
-                  00004fb8    00000010     driverlib.a : dl_timer.o (.text.DL_Timer_getCaptureCompareValue)
-                  00004fc8    00000010                 : dl_timer.o (.text.DL_Timer_setCaptureCompareValue)
-                  00004fd8    00000010     ti_msp_dl_config.o (.text.SYSCFG_DL_SYSTICK_init)
-                  00004fe8    00000010     stepper.o (.text.stepper_get_direction)
-                  00004ff8    00000010     stepper.o (.text.stepper_is_busy)
-                  00005008    00000010     stepper.o (.text.stepper_is_emergency_inhibited)
-                  00005018    00000010     stepper.o (.text.stepper_is_enabled)
-                  00005028    00000010     stepper.o (.text.stepper_is_limit_active)
-                  00005038    00000010     stepper.o (.text.stepper_is_moving)
-                  00005048    00000010     uart_cmd.o (.text.uart_cmd_send_error)
-                  00005058    00000010     uart_cmd.o (.text.uart_cmd_send_help)
-                  00005068    00000010     uart_cmd.o (.text.uart_cmd_send_ok)
-                  00005078    00000010     libc.a : copy_zero_init.c.obj (.text:decompress:ZI)
-                  00005088    0000000e            : memset16.S.obj (.text:TI_memset_small)
-                  00005096    00000002     --HOLE-- [fill = 0]
-                  00005098    0000000c     ti_msp_dl_config.o (.text.DL_SYSCTL_getClockStatus)
-                  000050a4    0000000c     ti_msp_dl_config.o (.text.DL_SYSCTL_readFCC)
-                  000050b0    0000000c     empty.o (.text.SysTick_Handler)
-                  000050bc    0000000c     libclang_rt.builtins.a : aeabi_memset.S.obj (.text.__aeabi_memclr)
-                  000050c8    0000000c     delay.o (.text.delay_get_ms)
-                  000050d4    0000000c     stepper.o (.text.stepper_get_beam_pid_target_mm)
-                  000050e0    0000000c     stepper.o (.text.stepper_get_beam_target_deg)
-                  000050ec    0000000c     stepper.o (.text.stepper_get_current_speed_hz)
-                  000050f8    0000000c     stepper.o (.text.stepper_get_frequency_hz)
-                  00005104    0000000c     stepper.o (.text.stepper_get_remaining_steps)
-                  00005110    0000000c     stepper.o (.text.stepper_get_speed_target_hz)
-                  0000511c    0000000a     driverlib.a : dl_common.o (.text.DL_Common_delayCycles)
-                  00005126    00000008     encoder.o (.text.GROUP1_IRQHandler)
-                  0000512e    00000008     encoder_pwm_angle.o (.text.TIMA0_IRQHandler)
-                  00005136    00000008     stepper.o (.text.TIMA1_IRQHandler)
-                  0000513e    00000002     --HOLE-- [fill = 0]
-                  00005140    00000008     libclang_rt.builtins.a : aeabi_memcpy.S.obj (.text.__aeabi_memcpy)
-                  00005148    00000008     uart_cmd.o (.text.uart_cmd_send_string)
-                  00005150    00000006     libc.a : exit.c.obj (.text:abort)
-                  00005156    00000004     startup_mspm0g350x_ticlang.o (.text.Default_Handler)
-                  0000515a    00000004     libsysbm.a : hostexit.c.obj (.text.HOSTexit)
-                  0000515e    00000004     startup_mspm0g350x_ticlang.o (.text.Reset_Handler)
-                  00005162    00000002     --HOLE-- [fill = 0]
-                  00005164    00000010     libc.a : boot_cortex_m.c.obj (.tramp._c_int00_noargs.1)
-                  00005174    00000004            : pre_init.c.obj (.text._system_pre_init)
+.text      0    000000c0    00007810     
+                  000000c0    00000350     task3.o (.text.task3_run)
+                  00000410    000002a0     uart_cmd.o (.text.uart_cmd_parse_line)
+                  000006b0    000001e8     oled.o (.text.oled_print_char_x2)
+                  00000898    000001e0     stepper.o (.text.stepper_update_beam_pid)
+                  00000a78    000001cc     ti_msp_dl_config.o (.text.SYSCFG_DL_GPIO_init)
+                  00000c44    00000198     uart_cmd.o (.text.uart_cmd_parse_scaled_x10)
+                  00000ddc    0000018c     task2.o (.text.task2_oled_update)
+                  00000f68    00000184     task3.o (.text.task3_parse_float)
+                  000010ec    00000178     line_track.o (.text.line_track_classify)
+                  00001264    00000174     uart_cmd.o (.text.uart_cmd_vision_process_byte)
+                  000013d8    0000015c     task3.o (.text.task3_apply_pid_command)
+                  00001534    00000136     bluetooth.o (.text.bluetooth_parse_ratio_percent)
+                  0000166a    00000002     libclang_rt.builtins.a : aeabi_div0.c.obj (.text.__aeabi_idiv0)
+                  0000166c    00000134     uart_cmd.o (.text.uart_cmd_init)
+                  000017a0    0000012c     task2.o (.text.task2_run)
+                  000018cc    00000128     stepper.o (.text.stepper_apply_speed)
+                  000019f4    00000124     stepper.o (.text.stepper_service)
+                  00001b18    00000118     encoder_pwm_angle.o (.text.encoder_pwm_angle_irq_handler)
+                  00001c30    00000114     uart_cmd.o (.text.uart_cmd_get_vision_sample)
+                  00001d44    0000010e     oled.o (.text.oled_print_time_large)
+                  00001e52    00000002     libclang_rt.builtins.a : aeabi_div0.c.obj (.text.__aeabi_ldiv0)
+                  00001e54    0000010c     bluetooth.o (.text.bluetooth_parse_int32)
+                  00001f60    0000010c     stepper.o (.text.stepper_init)
+                  0000206c    0000010c     uart_cmd.o (.text.uart_cmd_parse_int32)
+                  00002178    00000108     encoder.o (.text.encoder_init)
+                  00002280    00000108     pid.o (.text.speed_pid_control_update)
+                  00002388    00000108     stepper.o (.text.stepper_update_beam_encoder_position_loop)
+                  00002490    00000104     driverlib.a : dl_timer.o (.text.DL_Timer_initFourCCPWMMode)
+                  00002594    00000104     encoder_pwm_angle.o (.text.encoder_pwm_angle_get_sample)
+                  00002698    00000100     motor.o (.text.motor_set_pwm)
+                  00002798    000000fc     bluetooth.o (.text.bluetooth_process)
+                  00002894    000000f0     uart_cmd.o (.text.uart_cmd_push_line_char)
+                  00002984    000000ec     ti_msp_dl_config.o (.text.SYSCFG_DL_SYSCTL_SYSPLL_init)
+                  00002a70    000000ec     bluetooth.o (.text.bluetooth_parse_packet)
+                  00002b5c    000000e0     driverlib.a : dl_timer.o (.text.DL_Timer_initCaptureCombinedMode)
+                  00002c3c    000000e0     task3.o (.text.task3_uart1_process_rx)
+                  00002d1c    000000dc     driverlib.a : dl_sysctl_mspm0g1x0x_g3x0x.o (.text.DL_SYSCTL_configSYSPLL)
+                  00002df8    000000d8     uart_cmd.o (.text.uart_cmd_parse_vision_text_frame)
+                  00002ed0    000000d8     libclang_rt.builtins.a : addsf3.S.obj (.text)
+                  00002fa8    000000d0     uart_cmd.o (.text.uart_cmd_vision_publish_values)
+                  00003078    000000ce     oled.o (.text.oled_init)
+                  00003146    00000002     --HOLE-- [fill = 0]
+                  00003148    000000cc     stepper.o (.text.stepper_start_timer_locked)
+                  00003214    000000c0     stepper.o (.text.stepper_set_beam_pid_gains)
+                  000032d4    000000c0     stepper.o (.text.stepper_start_dir)
+                  00003394    000000b8     encoder_pwm_angle.o (.text.encoder_pwm_angle_init)
+                  0000344c    000000b4     stepper.o (.text.stepper_start_continuous)
+                  00003500    000000b0     line_track.o (.text.line_track_apply_turn)
+                  000035b0    000000ac     uart_cmd.o (.text.uart_cmd_process)
+                  0000365c    000000ac     uart_cmd.o (.text.uart_cmd_vision_update_statistics)
+                  00003708    000000aa     pid.o (.text.pid_calculate)
+                  000037b2    000000aa     uart_cmd.o (.text.uart_cmd_read_word)
+                  0000385c    000000a6     bluetooth.o (.text.bluetooth_read_word)
+                  00003902    000000a6     oled.o (.text.oled_print_int)
+                  000039a8    000000a4     stepper.o (.text.stepper_can_start_locked)
+                  00003a4c    000000a4     uart_cmd.o (.text.uart_cmd_vision_execute_frame)
+                  00003af0    000000a2     libclang_rt.builtins.a : udivmoddi4.S.obj (.text)
+                  00003b92    00000002     --HOLE-- [fill = 0]
+                  00003b94    000000a0     stepper.o (.text.stepper_set_speed_target)
+                  00003c34    000000a0     uart_cmd.o (.text.uart_cmd_send_status)
+                  00003cd4    00000098     stepper.o (.text.stepper_sync_position_from_beam_angle_x10)
+                  00003d6c    00000094     stepper.o (.text.stepper_timer_irq_handler)
+                  00003e00    00000092     uart_cmd.o (.text.uart_cmd_send_uint32)
+                  00003e92    00000002     --HOLE-- [fill = 0]
+                  00003e94    00000090     ti_msp_dl_config.o (.text.SYSCFG_DL_PWM_init)
+                  00003f24    00000090     uart_cmd.o (.text.uart_cmd_irq_handler)
+                  00003fb4    0000008c     ti_msp_dl_config.o (.text.SYSCFG_DL_initPower)
+                  00004040    0000008c     libclang_rt.builtins.a : mulsf3.S.obj (.text.__mulsf3)
+                  000040cc    0000008c     encoder.o (.text.encoder_delta_to_speed_mm_s)
+                  00004158    0000008c     oled.o (.text.oled_print_char)
+                  000041e4    00000088     stepper.o (.text.stepper_count_accepted_pulse)
+                  0000426c    00000084     ti_msp_dl_config.o (.text.__NVIC_SetPriority)
+                  000042f0    00000084     bluetooth.o (.text.bluetooth_packet_equals)
+                  00004374    00000084     pid.o (.text.speed_pid_init)
+                  000043f8    00000084     vofa.o (.text.uart0_send_int)
+                  0000447c    00000082     libclang_rt.builtins.a : divsf3.S.obj (.text.__divsf3)
+                  000044fe    0000007e     uart_cmd.o (.text.uart_cmd_word_equals)
+                  0000457c    0000007c     libc.a : copy_decompress_lzss.c.obj (.text:decompress:lzss)
+                  000045f8    00000078     encoder.o (.text.encoder_gpio_irq_handler)
+                  00004670    00000078     line_track.o (.text.line_track_update_with_raw_hold_on_lost)
+                  000046e8    00000074     libclang_rt.builtins.a : comparedf2.c.obj (.text.__gedf2)
+                  0000475c    00000074     encoder.o (.text.encoder_update_speed)
+                  000047d0    00000074     stepper.o (.text.stepper_enable)
+                  00004844    0000006c     bluetooth.o (.text.UART1_IRQHandler)
+                  000048b0    0000006c     oled.o (.text.oled_set_cursor)
+                  0000491c    00000068     ti_msp_dl_config.o (.text.SYSCFG_DL_STEPPER_PWM_init)
+                  00004984    00000068     ti_msp_dl_config.o (.text.SYSCFG_DL_SYSCTL_init)
+                  000049ec    00000068     libclang_rt.builtins.a : comparedf2.c.obj (.text.__ledf2)
+                  00004a54    00000068     bluetooth.o (.text.bluetooth_init)
+                  00004abc    00000068     vofa.o (.text.vofa_send_six_int)
+                  00004b24    00000066     pid.o (.text.pid_apply_min_start_pwm)
+                  00004b8a    00000066     uart_cmd.o (.text.uart_cmd_vision_has_expected_length)
+                  00004bf0    00000064     bluetooth.o (.text.bluetooth_is_separator)
+                  00004c54    00000064     uart_cmd.o (.text.uart_cmd_mirror_uart0_rx_byte)
+                  00004cb8    00000064     uart_cmd.o (.text.uart_cmd_mirror_uart1_flush_unlocked)
+                  00004d1c    00000062     libclang_rt.builtins.a : aeabi_dcmp.S.obj (.text.__aeabi_dcmp)
+                  00004d7e    00000002     --HOLE-- [fill = 0]
+                  00004d80    00000062                            : aeabi_fcmp.S.obj (.text.__aeabi_fcmp)
+                  00004de2    00000062     gray_serial.o (.text.gray_serial_read)
+                  00004e44    00000060     vofa.o (.text.uart0_send_byte)
+                  00004ea4    0000005c     line_track.o (.text.line_track_set_turn_ratios)
+                  00004f00    0000005c     stepper.o (.text.stepper_set_beam_pid_target_mm)
+                  00004f5c    00000058     encoder_pwm_angle.o (.text.encoder_pwm_angle_duty_to_deg_x10)
+                  00004fb4    00000058     line_track.o (.text.line_track_init)
+                  0000500c    00000058     stepper.o (.text.stepper_stop_timer_locked)
+                  00005064    00000058     task3.o (.text.task3_uart1_send_entry_marker)
+                  000050bc    00000058     uart_cmd.o (.text.uart_cmd_vision_apply_position_calibration)
+                  00005114    00000058     uart_cmd.o (.text.uart_cmd_vision_rate_from_count)
+                  0000516c    00000056     libclang_rt.builtins.a : aeabi_idivmod.S.obj (.text.__aeabi_idivmod)
+                  000051c2    00000056     uart_cmd.o (.text.uart_cmd_is_separator)
+                  00005218    00000054     ti_msp_dl_config.o (.text.SYSCFG_DL_UART_1_init)
+                  0000526c    00000054     stepper.o (.text.stepper_write_direction)
+                  000052c0    00000054     task2.o (.text.task2_count_active_gray_sensors)
+                  00005314    00000054     task2.o (.text.task2_encoder_counts_to_mm)
+                  00005368    00000052     bluetooth.o (.text.bluetooth_send_ratio)
+                  000053ba    00000002     --HOLE-- [fill = 0]
+                  000053bc    00000050     ti_msp_dl_config.o (.text.SysTick_Config)
+                  0000540c    00000050     oled.o (.text.oled_write_byte)
+                  0000545c    00000050     stepper.o (.text.stepper_is_finite_float)
+                  000054ac    00000050     stepper.o (.text.stepper_start)
+                  000054fc    00000050     uart_cmd.o (.text.uart_cmd_vision_apply_direction)
+                  0000554c    0000004e     task3.o (.text.task3_skip_separators)
+                  0000559a    00000002     --HOLE-- [fill = 0]
+                  0000559c    0000004c     gray_serial.o (.text.DL_GPIO_initDigitalInputFeatures)
+                  000055e8    0000004c     ti_msp_dl_config.o (.text.DL_GPIO_initDigitalInputFeatures)
+                  00005634    0000004c     ti_msp_dl_config.o (.text.DL_UART_setBaudRateDivisor)
+                  00005680    0000004c     stepper.o (.text.stepper_emergency_stop)
+                  000056cc    0000004a     uart_cmd.o (.text.uart_cmd_parse_bool)
+                  00005716    00000002     --HOLE-- [fill = 0]
+                  00005718    00000048     driverlib.a : dl_uart.o (.text.DL_UART_init)
+                  00005760    00000048     ti_msp_dl_config.o (.text.SYSCFG_DL_init)
+                  000057a8    00000048     line_track.o (.text.line_track_store_and_write)
+                  000057f0    00000048     oled.o (.text.oled_clear_line)
+                  00005838    00000048     pid.o (.text.speed_pid_stop)
+                  00005880    00000046     gray_serial.o (.text.gray_serial_init)
+                  000058c6    00000002     --HOLE-- [fill = 0]
+                  000058c8    00000044     driverlib.a : dl_sysctl_mspm0g1x0x_g3x0x.o (.text.DL_SYSCTL_switchMCLKfromSYSOSCtoHSCLK)
+                  0000590c    00000044     encoder_pwm_angle.o (.text.encoder_pwm_angle_normalize_relative_deg_x10)
+                  00005950    00000044     pid.o (.text.pid_limit)
+                  00005994    00000044     stepper.o (.text.stepper_write_enable)
+                  000059d8    00000040     ti_msp_dl_config.o (.text.SYSCFG_DL_UART0_init)
+                  00005a18    00000040     libclang_rt.builtins.a : aeabi_uidivmod.S.obj (.text.__aeabi_uidivmod)
+                  00005a58    00000040     bluetooth.o (.text.bluetooth_skip_separators)
+                  00005a98    00000040     motor.o (.text.motor_limit_pwm)
+                  00005ad8    00000040     oled.o (.text.oled_reverse_bits)
+                  00005b18    00000040     uart_cmd.o (.text.uart_cmd_vision_record_good)
+                  00005b58    0000003e     libclang_rt.builtins.a : divmoddi4.c.obj (.text.__divmoddi4)
+                  00005b96    0000003e     encoder.o (.text.encoder_read_left_state)
+                  00005bd4    0000003e     encoder.o (.text.encoder_read_right_state)
+                  00005c12    0000003e     oled.o (.text.oled_print_string)
+                  00005c50    0000003e     oled.o (.text.oled_print_string_x2)
+                  00005c8e    0000003e     stepper.o (.text.stepper_clamp)
+                  00005ccc    0000003c     ti_msp_dl_config.o (.text.DL_Timer_setCounterControl)
+                  00005d08    0000003c     libclang_rt.builtins.a : floatsisf.S.obj (.text.__floatsisf)
+                  00005d44    0000003c                            : comparesf2.S.obj (.text.__gtsf2)
+                  00005d80    0000003c     oled.o (.text.oled_print_hex_u8)
+                  00005dbc    0000003c     pid.o (.text.pid_init)
+                  00005df8    0000003c     stepper.o (.text.stepper_stop)
+                  00005e34    0000003c     task2.o (.text.task2_stop_marker_detected)
+                  00005e70    0000003c     uart_cmd.o (.text.uart_cmd_vision_publish_ball_state)
+                  00005eac    0000003c     libc.a : autoinit.c.obj (.text:__TI_auto_init_nobinit_nopinit)
+                  00005ee8    0000003a     libclang_rt.builtins.a : comparesf2.S.obj (.text.__eqsf2)
+                  00005f22    00000002     --HOLE-- [fill = 0]
+                  00005f24    0000003a                            : muldsi3.S.obj (.text.__muldsi3)
+                  00005f5e    00000002     --HOLE-- [fill = 0]
+                  00005f60    00000038                            : fixsfsi.S.obj (.text.__fixsfsi)
+                  00005f98    00000038     bluetooth.o (.text.bluetooth_is_digit)
+                  00005fd0    00000038     encoder.o (.text.encoder_update_left)
+                  00006008    00000038     encoder.o (.text.encoder_update_right)
+                  00006040    00000038     stepper.o (.text.stepper_limit_frequency)
+                  00006078    00000038     uart_cmd.o (.text.uart_cmd_is_digit)
+                  000060b0    00000038     uart_cmd.o (.text.uart_cmd_vision_check_timeout)
+                  000060e8    00000036     encoder_pwm_angle.o (.text.encoder_pwm_angle_relative_is_safe)
+                  0000611e    00000036     oled.o (.text.oled_clear)
+                  00006154    00000034     ti_msp_dl_config.o (.text.SYSCFG_DL_BEAM_ENCODER_PWM_init)
+                  00006188    00000034     task3.o (.text.__NVIC_DisableIRQ)
+                  000061bc    00000034     uart_cmd.o (.text.__NVIC_DisableIRQ)
+                  000061f0    00000034     bluetooth.o (.text.bluetooth_to_upper)
+                  00006224    00000034     oled.o (.text.oled_dc)
+                  00006258    00000034     oled.o (.text.oled_rst)
+                  0000628c    00000034     oled.o (.text.oled_scl)
+                  000062c0    00000034     oled.o (.text.oled_sda)
+                  000062f4    00000034     pid.o (.text.speed_pid_should_send_vofa)
+                  00006328    00000034     stepper.o (.text.stepper_request_stop_locked)
+                  0000635c    00000034     task2.o (.text.task2_get_traveled_distance_mm)
+                  00006390    00000034     uart_cmd.o (.text.uart_cmd_to_upper)
+                  000063c4    00000032     libclang_rt.builtins.a : fixunssfsi.S.obj (.text.__fixunssfsi)
+                  000063f6    00000002     --HOLE-- [fill = 0]
+                  000063f8    00000030     driverlib.a : dl_uart.o (.text.DL_UART_transmitDataBlocking)
+                  00006428    00000030     bluetooth.o (.text.bluetooth_send_params)
+                  00006458    00000030     task2.o (.text.task2_discard_startup_gray_samples)
+                  00006488    00000030     uart_cmd.o (.text.uart_cmd_send_int32)
+                  000064b8    0000002e     uart_cmd.o (.text.uart_cmd_abs_i16)
+                  000064e6    00000002     --HOLE-- [fill = 0]
+                  000064e8    0000002c     bluetooth.o (.text.__NVIC_ClearPendingIRQ)
+                  00006514    0000002c     encoder.o (.text.__NVIC_ClearPendingIRQ)
+                  00006540    0000002c     encoder_pwm_angle.o (.text.__NVIC_ClearPendingIRQ)
+                  0000656c    0000002c     stepper.o (.text.__NVIC_ClearPendingIRQ)
+                  00006598    0000002c     task3.o (.text.__NVIC_ClearPendingIRQ)
+                  000065c4    0000002c     uart_cmd.o (.text.__NVIC_ClearPendingIRQ)
+                  000065f0    0000002c     bluetooth.o (.text.__NVIC_EnableIRQ)
+                  0000661c    0000002c     encoder.o (.text.__NVIC_EnableIRQ)
+                  00006648    0000002c     encoder_pwm_angle.o (.text.__NVIC_EnableIRQ)
+                  00006674    0000002c     stepper.o (.text.__NVIC_EnableIRQ)
+                  000066a0    0000002c     uart_cmd.o (.text.__NVIC_EnableIRQ)
+                  000066cc    0000002c     stepper.o (.text.stepper_abs)
+                  000066f8    0000002c     task3.o (.text.task3_abs_float)
+                  00006724    0000002c     uart_cmd.o (.text.uart_cmd_vision_reset_receiver)
+                  00006750    00000028     ti_msp_dl_config.o (.text.DL_Common_updateReg)
+                  00006778    00000028     libclang_rt.builtins.a : floatunsisf.S.obj (.text.__floatunsisf)
+                  000067a0    00000028     delay.o (.text.delay_tick)
+                  000067c8    00000028     encoder.o (.text.encoder_get_left_count)
+                  000067f0    00000028     encoder.o (.text.encoder_get_left_speed_mm_s)
+                  00006818    00000028     encoder.o (.text.encoder_get_right_count)
+                  00006840    00000028     encoder.o (.text.encoder_get_right_speed_mm_s)
+                  00006868    00000028     stepper.o (.text.stepper_force_step_low)
+                  00006890    00000028     libc.a : boot_cortex_m.c.obj (.text:_c_int00_noargs)
+                  000068b8    00000026     vofa.o (.text.uart0_send_string)
+                  000068de    00000002     --HOLE-- [fill = 0]
+                  000068e0    00000024     libclang_rt.builtins.a : floatunsidf.S.obj (.text.__floatunsidf)
+                  00006904    00000024                            : muldi3.S.obj (.text.__muldi3)
+                  00006928    00000024     bluetooth.o (.text.bluetooth_send_string)
+                  0000694c    00000024     encoder.o (.text.encoder_tick_1ms)
+                  00006970    00000024     line_track.o (.text.line_track_get_status)
+                  00006994    00000024     line_track.o (.text.line_track_is_active)
+                  000069b8    00000024     oled.o (.text.oled_physical_page)
+                  000069dc    00000024     stepper.o (.text.stepper_set_beam_target_deg)
+                  00006a00    00000024     task3.o (.text.task3_uart1_monitor_init)
+                  00006a24    00000024     uart_cmd.o (.text.uart_cmd_deinit)
+                  00006a48    00000024     uart_cmd.o (.text.uart_cmd_skip_separators)
+                  00006a6c    00000024     uart_cmd.o (.text.uart_cmd_vision_increment)
+                  00006a90    00000024     uart_cmd.o (.text.uart_cmd_vision_record_bad)
+                  00006ab4    00000022     uart_cmd.o (.text.uart_cmd_mirror_uart1_flush)
+                  00006ad6    00000002     --HOLE-- [fill = 0]
+                  00006ad8    00000020     ti_msp_dl_config.o (.text.DL_GPIO_initPeripheralInputFunction)
+                  00006af8    00000020     ti_msp_dl_config.o (.text.DL_SYSCTL_setFlashWaitState)
+                  00006b18    00000020     delay.o (.text.delay_ms)
+                  00006b38    00000020     encoder.o (.text.encoder_left_a_is_high)
+                  00006b58    00000020     encoder.o (.text.encoder_left_b_is_high)
+                  00006b78    00000020     encoder.o (.text.encoder_right_a_is_high)
+                  00006b98    00000020     encoder.o (.text.encoder_right_b_is_high)
+                  00006bb8    00000020     gray_serial.o (.text.gray_serial_read_pin)
+                  00006bd8    00000020     line_track.o (.text.line_track_scale_percent)
+                  00006bf8    00000020     pid.o (.text.speed_pid_set_target)
+                  00006c18    00000020     stepper.o (.text.stepper_clear_emergency_inhibit)
+                  00006c38    00000020     stepper.o (.text.stepper_get_position_steps)
+                  00006c58    00000020     task2.o (.text.task2_abs_i32)
+                  00006c78    00000020     uart_cmd.o (.text.uart_cmd_abs_to_u32)
+                  00006c98    0000001e     ti_msp_dl_config.o (.text.DL_UART_setOversampling)
+                  00006cb6    00000002     --HOLE-- [fill = 0]
+                  00006cb8    0000001e     libclang_rt.builtins.a : ashldi3.S.obj (.text.__ashldi3)
+                  00006cd6    00000002     --HOLE-- [fill = 0]
+                  00006cd8    0000001c     encoder.o (.text.DL_GPIO_clearInterruptStatus)
+                  00006cf4    0000001c     ti_msp_dl_config.o (.text.DL_GPIO_clearInterruptStatus)
+                  00006d10    0000001c     encoder.o (.text.DL_GPIO_disableInterrupt)
+                  00006d2c    0000001c     encoder.o (.text.DL_GPIO_enableInterrupt)
+                  00006d48    0000001c     ti_msp_dl_config.o (.text.DL_GPIO_enableInterrupt)
+                  00006d64    0000001c     stepper.o (.text.DL_GPIO_initPeripheralOutputFunction)
+                  00006d80    0000001c     ti_msp_dl_config.o (.text.DL_GPIO_initPeripheralOutputFunction)
+                  00006d9c    0000001c     driverlib.a : dl_sysctl_mspm0g1x0x_g3x0x.o (.text.DL_SYSCTL_configFCC)
+                  00006db8    0000001c     ti_msp_dl_config.o (.text.DL_SYSCTL_setFCCPeriods)
+                  00006dd4    0000001c     ti_msp_dl_config.o (.text.DL_SYSCTL_setSYSOSCFreq)
+                  00006df0    0000001c     ti_msp_dl_config.o (.text.DL_SYSCTL_setULPCLKDivider)
+                  00006e0c    0000001c     stepper.o (.text.DL_Timer_disableInterrupt)
+                  00006e28    0000001c     stepper.o (.text.DL_Timer_enableInterrupt)
+                  00006e44    0000001c     ti_msp_dl_config.o (.text.DL_Timer_enableInterrupt)
+                  00006e60    0000001c     driverlib.a : dl_timer.o (.text.DL_Timer_setCaptCompUpdateMethod)
+                  00006e7c    0000001c                 : dl_timer.o (.text.DL_Timer_setClockConfig)
+                  00006e98    0000001c     encoder_pwm_angle.o (.text.DL_Timer_setCoreHaltBehavior)
+                  00006eb4    0000001c     task3.o (.text.DL_UART_disableInterrupt)
+                  00006ed0    0000001c     uart_cmd.o (.text.DL_UART_disableInterrupt)
+                  00006eec    0000001c     bluetooth.o (.text.DL_UART_enableInterrupt)
+                  00006f08    0000001c     ti_msp_dl_config.o (.text.DL_UART_enableInterrupt)
+                  00006f24    0000001c     uart_cmd.o (.text.DL_UART_enableInterrupt)
+                  00006f40    0000001c     uart_cmd.o (.text.UART0_IRQHandler)
+                  00006f5c    0000001c     bluetooth.o (.text.bluetooth_send_char)
+                  00006f78    0000001c     oled.o (.text.oled_write_cmd)
+                  00006f94    0000001c     oled.o (.text.oled_write_data)
+                  00006fb0    0000001c     stepper.o (.text.stepper_connect_step_to_timer)
+                  00006fcc    0000001c     task2.o (.text.task2_oled_print_line_header)
+                  00006fe8    0000001a     uart_cmd.o (.text.uart_cmd_read_i16_be)
+                  00007002    00000002     --HOLE-- [fill = 0]
+                  00007004    00000018     stepper.o (.text.DL_GPIO_enableOutput)
+                  0000701c    00000018     ti_msp_dl_config.o (.text.DL_GPIO_enableOutput)
+                  00007034    00000018     ti_msp_dl_config.o (.text.DL_GPIO_enablePower)
+                  0000704c    00000018     encoder.o (.text.DL_GPIO_getEnabledInterruptStatus)
+                  00007064    00000018     stepper.o (.text.DL_GPIO_initDigitalOutput)
+                  0000707c    00000018     ti_msp_dl_config.o (.text.DL_GPIO_initDigitalOutput)
+                  00007094    00000018     ti_msp_dl_config.o (.text.DL_GPIO_reset)
+                  000070ac    00000018     motor.o (.text.DL_GPIO_setPins)
+                  000070c4    00000018     oled.o (.text.DL_GPIO_setPins)
+                  000070dc    00000018     stepper.o (.text.DL_GPIO_setPins)
+                  000070f4    00000018     ti_msp_dl_config.o (.text.DL_GPIO_setPins)
+                  0000710c    00000018     encoder.o (.text.DL_GPIO_setUpperPinsPolarity)
+                  00007124    00000018     ti_msp_dl_config.o (.text.DL_GPIO_setUpperPinsPolarity)
+                  0000713c    00000018     ti_msp_dl_config.o (.text.DL_SYSCTL_setBORThreshold)
+                  00007154    00000018     encoder_pwm_angle.o (.text.DL_Timer_clearInterruptStatus)
+                  0000716c    00000018     stepper.o (.text.DL_Timer_clearInterruptStatus)
+                  00007184    00000018     ti_msp_dl_config.o (.text.DL_Timer_enablePower)
+                  0000719c    00000018     ti_msp_dl_config.o (.text.DL_Timer_reset)
+                  000071b4    00000018     driverlib.a : dl_timer.o (.text.DL_Timer_setCaptureCompareOutCtl)
+                  000071cc    00000018     stepper.o (.text.DL_Timer_setLoadValue)
+                  000071e4    00000018     encoder_pwm_angle.o (.text.DL_Timer_startCounter)
+                  000071fc    00000018     stepper.o (.text.DL_Timer_startCounter)
+                  00007214    00000018     encoder_pwm_angle.o (.text.DL_Timer_stopCounter)
+                  0000722c    00000018     stepper.o (.text.DL_Timer_stopCounter)
+                  00007244    00000018     bluetooth.o (.text.DL_UART_clearInterruptStatus)
+                  0000725c    00000018     uart_cmd.o (.text.DL_UART_clearInterruptStatus)
+                  00007274    00000018     ti_msp_dl_config.o (.text.DL_UART_enablePower)
+                  0000728c    00000018     bluetooth.o (.text.DL_UART_isRXFIFOEmpty)
+                  000072a4    00000018     task3.o (.text.DL_UART_isRXFIFOEmpty)
+                  000072bc    00000018     uart_cmd.o (.text.DL_UART_isRXFIFOEmpty)
+                  000072d4    00000018     task3.o (.text.DL_UART_isTXFIFOFull)
+                  000072ec    00000018     uart_cmd.o (.text.DL_UART_isTXFIFOFull)
+                  00007304    00000018     vofa.o (.text.DL_UART_isTXFIFOFull)
+                  0000731c    00000018     ti_msp_dl_config.o (.text.DL_UART_reset)
+                  00007334    00000018     encoder_pwm_angle.o (.text.encoder_pwm_angle_exit_critical)
+                  0000734c    00000018     encoder_pwm_angle.o (.text.encoder_pwm_angle_raw_to_relative_deg_x10)
+                  00007364    00000018     empty.o (.text.main)
+                  0000737c    00000018     stepper.o (.text.stepper_step_is_high)
+                  00007394    00000016     encoder.o (.text.DL_GPIO_readPins)
+                  000073aa    00000016     gray_serial.o (.text.DL_GPIO_readPins)
+                  000073c0    00000016     stepper.o (.text.DL_GPIO_readPins)
+                  000073d6    00000016     task3.o (.text.DL_GPIO_readPins)
+                  000073ec    00000016     ti_msp_dl_config.o (.text.DL_UART_enable)
+                  00007402    00000016     task3.o (.text.DL_UART_transmitData)
+                  00007418    00000016     uart_cmd.o (.text.DL_UART_transmitData)
+                  0000742e    00000016     vofa.o (.text.DL_UART_transmitData)
+                  00007444    00000016     libclang_rt.builtins.a : comparesf2.S.obj (.text.__unordsf2)
+                  0000745a    00000016     bluetooth.o (.text.bluetooth_is_packet_end)
+                  00007470    00000016     uart_cmd.o (.text.uart_cmd_has_no_more)
+                  00007486    00000014     motor.o (.text.DL_GPIO_clearPins)
+                  0000749a    00000014     oled.o (.text.DL_GPIO_clearPins)
+                  000074ae    00000014     stepper.o (.text.DL_GPIO_clearPins)
+                  000074c2    00000014     ti_msp_dl_config.o (.text.DL_GPIO_clearPins)
+                  000074d6    00000002     --HOLE-- [fill = 0]
+                  000074d8    00000014     ti_msp_dl_config.o (.text.DL_SYSCTL_disableSYSPLL)
+                  000074ec    00000014     ti_msp_dl_config.o (.text.DL_SYSCTL_enableSYSPLL)
+                  00007500    00000014     ti_msp_dl_config.o (.text.DL_Timer_enableClock)
+                  00007514    00000014     encoder_pwm_angle.o (.text.DL_Timer_getLoadValue)
+                  00007528    00000014     ti_msp_dl_config.o (.text.DL_Timer_setCCPDirection)
+                  0000753c    00000014     encoder_pwm_angle.o (.text.DL_Timer_setTimerCount)
+                  00007550    00000014     stepper.o (.text.DL_Timer_setTimerCount)
+                  00007564    00000014     bluetooth.o (.text.DL_UART_receiveData)
+                  00007578    00000014     task3.o (.text.DL_UART_receiveData)
+                  0000758c    00000014     uart_cmd.o (.text.DL_UART_receiveData)
+                  000075a0    00000014     libclang_rt.builtins.a : aeabi_ldivmod.S.obj (.text.__aeabi_ldivmod)
+                  000075b4    00000014                            : aeabi_uldivmod.S.obj (.text.__aeabi_uldivmod)
+                  000075c8    00000014     encoder_pwm_angle.o (.text.encoder_pwm_angle_enter_critical)
+                  000075dc    00000014     line_track.o (.text.line_track_set_base_speed)
+                  000075f0    00000014     pid.o (.text.speed_pid_set_speed)
+                  00007604    00000014     stepper.o (.text.stepper_enter_critical)
+                  00007618    00000014     stepper.o (.text.stepper_reset_beam_pid)
+                  0000762c    00000014     task2.o (.text.task2_apply_race_line_params)
+                  00007640    00000014     task3.o (.text.task3_task2_button_pressed)
+                  00007654    00000012     encoder_pwm_angle.o (.text.DL_Timer_getPendingInterrupt)
+                  00007666    00000012     stepper.o (.text.DL_Timer_getPendingInterrupt)
+                  00007678    00000012     bluetooth.o (.text.DL_UART_getPendingInterrupt)
+                  0000768a    00000012     uart_cmd.o (.text.DL_UART_getPendingInterrupt)
+                  0000769c    00000012     driverlib.a : dl_uart.o (.text.DL_UART_setClockConfig)
+                  000076ae    00000012     pid.o (.text.pid_reset)
+                  000076c0    00000012     stepper.o (.text.stepper_exit_critical)
+                  000076d2    00000012     libc.a : memcpy16.S.obj (.text:TI_memcpy_small)
+                  000076e4    00000012            : copy_decompress_none.c.obj (.text:decompress:none)
+                  000076f6    00000002     --HOLE-- [fill = 0]
+                  000076f8    00000010     ti_msp_dl_config.o (.text.DL_SYSCTL_disableHFXT)
+                  00007708    00000010     ti_msp_dl_config.o (.text.DL_SYSCTL_isFCCDone)
+                  00007718    00000010     ti_msp_dl_config.o (.text.DL_SYSCTL_startFCC)
+                  00007728    00000010     driverlib.a : dl_timer.o (.text.DL_Timer_getCaptureCompareValue)
+                  00007738    00000010                 : dl_timer.o (.text.DL_Timer_setCaptureCompareValue)
+                  00007748    00000010     ti_msp_dl_config.o (.text.SYSCFG_DL_SYSTICK_init)
+                  00007758    00000010     bluetooth.o (.text.bluetooth_send_error)
+                  00007768    00000010     stepper.o (.text.stepper_get_direction)
+                  00007778    00000010     stepper.o (.text.stepper_is_busy)
+                  00007788    00000010     stepper.o (.text.stepper_is_emergency_inhibited)
+                  00007798    00000010     stepper.o (.text.stepper_is_enabled)
+                  000077a8    00000010     stepper.o (.text.stepper_is_limit_active)
+                  000077b8    00000010     uart_cmd.o (.text.uart_cmd_send_error)
+                  000077c8    00000010     uart_cmd.o (.text.uart_cmd_send_help)
+                  000077d8    00000010     uart_cmd.o (.text.uart_cmd_send_ok)
+                  000077e8    00000010     libc.a : copy_zero_init.c.obj (.text:decompress:ZI)
+                  000077f8    0000000e            : memset16.S.obj (.text:TI_memset_small)
+                  00007806    00000002     --HOLE-- [fill = 0]
+                  00007808    0000000c     ti_msp_dl_config.o (.text.DL_SYSCTL_getClockStatus)
+                  00007814    0000000c     ti_msp_dl_config.o (.text.DL_SYSCTL_readFCC)
+                  00007820    0000000c     empty.o (.text.SysTick_Handler)
+                  0000782c    0000000c     libclang_rt.builtins.a : aeabi_memset.S.obj (.text.__aeabi_memclr)
+                  00007838    0000000c     delay.o (.text.delay_get_ms)
+                  00007844    0000000c     line_track.o (.text.line_track_get_large_turn_percent)
+                  00007850    0000000c     line_track.o (.text.line_track_get_small_turn_percent)
+                  0000785c    0000000c     stepper.o (.text.stepper_get_frequency_hz)
+                  00007868    0000000c     stepper.o (.text.stepper_get_remaining_steps)
+                  00007874    0000000a     driverlib.a : dl_common.o (.text.DL_Common_delayCycles)
+                  0000787e    00000008     encoder.o (.text.GROUP1_IRQHandler)
+                  00007886    00000008     encoder_pwm_angle.o (.text.TIMA0_IRQHandler)
+                  0000788e    00000008     stepper.o (.text.TIMA1_IRQHandler)
+                  00007896    00000002     --HOLE-- [fill = 0]
+                  00007898    00000008     libclang_rt.builtins.a : aeabi_memcpy.S.obj (.text.__aeabi_memcpy)
+                  000078a0    00000008     uart_cmd.o (.text.uart_cmd_send_string)
+                  000078a8    00000006     libc.a : exit.c.obj (.text:abort)
+                  000078ae    00000004     startup_mspm0g350x_ticlang.o (.text.Default_Handler)
+                  000078b2    00000004     libsysbm.a : hostexit.c.obj (.text.HOSTexit)
+                  000078b6    00000004     startup_mspm0g350x_ticlang.o (.text.Reset_Handler)
+                  000078ba    00000002     --HOLE-- [fill = 0]
+                  000078bc    00000010     libc.a : boot_cortex_m.c.obj (.tramp._c_int00_noargs.1)
+                  000078cc    00000004            : pre_init.c.obj (.text._system_pre_init)
 
-.cinit     0    000052f8    00000030     
-                  000052f8    0000000c     (__TI_handler_table)
-                  00005304    00000008     (.cinit..bss.load) [load image, compression = zero_init]
-                  0000530c    00000008     (.cinit..data.load) [load image, compression = lzss]
-                  00005314    00000010     (__TI_cinit_table)
-                  00005324    00000004     --HOLE-- [fill = 0]
+.cinit     0    00007cf0    00000048     
+                  00007cf0    0000001e     (.cinit..data.load) [load image, compression = lzss]
+                  00007d0e    00000002     --HOLE-- [fill = 0]
+                  00007d10    0000000c     (__TI_handler_table)
+                  00007d1c    00000008     (.cinit..bss.load) [load image, compression = zero_init]
+                  00007d24    00000010     (__TI_cinit_table)
+                  00007d34    00000004     --HOLE-- [fill = 0]
 
-.rodata    0    00005178    00000180     
-                  00005178    0000005d     uart_cmd.o (.rodata.str1.840249729018285378.1)
-                  000051d5    00000003     ti_msp_dl_config.o (.rodata.gBEAM_ENCODER_PWMClockConfig)
-                  000051d8    00000028     ti_msp_dl_config.o (.rodata.gSYSPLLConfig)
-                  00005200    00000010     ti_msp_dl_config.o (.rodata.gBEAM_ENCODER_PWMCaptureConfig)
-                  00005210    0000000d     uart_cmd.o (.rodata.str1.6277650787150843725.1)
-                  0000521d    00000003     ti_msp_dl_config.o (.rodata.gPWMClockConfig)
-                  00005220    0000000c     driverlib.a : dl_timer.o (.rodata..Lswitch.table.DL_Timer_initCaptureCombinedMode.1)
-                  0000522c    0000000c                 : dl_timer.o (.rodata..Lswitch.table.DL_Timer_initCompareMode)
-                  00005238    0000000a     ti_msp_dl_config.o (.rodata.gUART0Config)
-                  00005242    0000000a     ti_msp_dl_config.o (.rodata.gUART_1Config)
-                  0000524c    00000009     task3.o (.rodata.str1.12216839978602168404.1)
-                  00005255    00000009     uart_cmd.o (.rodata.str1.3460805920169786119.1)
-                  0000525e    00000002     ti_msp_dl_config.o (.rodata.gUART0ClockConfig)
-                  00005260    00000008     ti_msp_dl_config.o (.rodata.gPWMConfig)
-                  00005268    00000008     ti_msp_dl_config.o (.rodata.gSTEPPER_PWMConfig)
-                  00005270    00000007     uart_cmd.o (.rodata.str1.11218698011615936392.1)
-                  00005277    00000007     uart_cmd.o (.rodata.str1.12707298662019533641.1)
-                  0000527e    00000007     uart_cmd.o (.rodata.str1.17920282215832191347.1)
-                  00005285    00000007     uart_cmd.o (.rodata.str1.7517722674715864021.1)
-                  0000528c    00000006     uart_cmd.o (.rodata.str1.13905025852110864062.1)
-                  00005292    00000006     uart_cmd.o (.rodata.str1.2511651689747361614.1)
-                  00005298    00000006     uart_cmd.o (.rodata.str1.4092367985313040374.1)
-                  0000529e    00000006     uart_cmd.o (.rodata.str1.4234987772374414360.1)
-                  000052a4    00000006     uart_cmd.o (.rodata.str1.8588377972619878686.1)
-                  000052aa    00000006     uart_cmd.o (.rodata.str1.8762729705417149107.1)
-                  000052b0    00000006     uart_cmd.o (.rodata.str1.9257292791547982817.1)
-                  000052b6    00000005     uart_cmd.o (.rodata.str1.11466531589070145015.1)
-                  000052bb    00000005     uart_cmd.o (.rodata.str1.11477833326989684832.1)
-                  000052c0    00000005     uart_cmd.o (.rodata.str1.12267827134117714350.1)
-                  000052c5    00000005     uart_cmd.o (.rodata.str1.8540953112625378261.1)
-                  000052ca    00000004     uart_cmd.o (.rodata.str1.11119734733588663232.1)
-                  000052ce    00000004     uart_cmd.o (.rodata.str1.2369543017385929624.1)
-                  000052d2    00000004     uart_cmd.o (.rodata.str1.6811838705501227079.1)
-                  000052d6    00000003     ti_msp_dl_config.o (.rodata.gSTEPPER_PWMClockConfig)
-                  000052d9    00000003     uart_cmd.o (.rodata.str1.1028318311211003142.1)
-                  000052dc    00000003     uart_cmd.o (.rodata.str1.1217499487293683049.1)
-                  000052df    00000003     uart_cmd.o (.rodata.str1.15498057389316061030.1)
-                  000052e2    00000003     uart_cmd.o (.rodata.str1.9423187404258085070.1)
-                  000052e5    00000002     ti_msp_dl_config.o (.rodata.gUART_1ClockConfig)
-                  000052e7    00000002     uart_cmd.o (.rodata.str1.1327018440546922054.1)
-                  000052e9    00000002     uart_cmd.o (.rodata.str1.15436932795843561489.1)
-                  000052eb    00000002     uart_cmd.o (.rodata.str1.3044072844558183483.1)
-                  000052ed    00000002     uart_cmd.o (.rodata.str1.5852106103808048319.1)
-                  000052ef    00000002     uart_cmd.o (.rodata.str1.7261196379038542568.1)
-                  000052f1    00000007     --HOLE-- [fill = 0]
+.rodata    0    000078d0    00000420     
+                  000078d0    000001e0     oled.o (.rodata.g_font5x7)
+                  00007ab0    0000005d     uart_cmd.o (.rodata.str1.840249729018285378.1)
+                  00007b0d    00000003     ti_msp_dl_config.o (.rodata.gBEAM_ENCODER_PWMClockConfig)
+                  00007b10    00000028     ti_msp_dl_config.o (.rodata.gSYSPLLConfig)
+                  00007b38    0000001e     bluetooth.o (.rodata.str1.16629367813050839963.1)
+                  00007b56    00000011     oled.o (.rodata.oled_print_hex_u8.hex)
+                  00007b67    00000001     --HOLE-- [fill = 0]
+                  00007b68    00000010     ti_msp_dl_config.o (.rodata.gBEAM_ENCODER_PWMCaptureConfig)
+                  00007b78    0000000e     task3.o (.rodata.task3_uart1_send_entry_marker.text)
+                  00007b86    0000000d     uart_cmd.o (.rodata.str1.6277650787150843725.1)
+                  00007b93    00000001     --HOLE-- [fill = 0]
+                  00007b94    0000000c     driverlib.a : dl_timer.o (.rodata..Lswitch.table.DL_Timer_initCaptureCombinedMode.1)
+                  00007ba0    0000000c                 : dl_timer.o (.rodata..Lswitch.table.DL_Timer_initCompareMode)
+                  00007bac    0000000b     task2.o (.rodata.str1.6270099379802012038.1)
+                  00007bb7    00000001     --HOLE-- [fill = 0]
+                  00007bb8    0000000a     ti_msp_dl_config.o (.rodata.gUART0Config)
+                  00007bc2    0000000a     ti_msp_dl_config.o (.rodata.gUART_1Config)
+                  00007bcc    00000009     vofa.o (.rodata.str1.15592850640436249970.1)
+                  00007bd5    00000009     uart_cmd.o (.rodata.str1.3460805920169786119.1)
+                  00007bde    00000002     ti_msp_dl_config.o (.rodata.gUART0ClockConfig)
+                  00007be0    00000008     ti_msp_dl_config.o (.rodata.gPWMConfig)
+                  00007be8    00000008     ti_msp_dl_config.o (.rodata.gSTEPPER_PWMConfig)
+                  00007bf0    00000008     bluetooth.o (.rodata.str1.5771443866524668017.1)
+                  00007bf8    00000007     uart_cmd.o (.rodata.str1.11218698011615936392.1)
+                  00007bff    00000007     uart_cmd.o (.rodata.str1.12707298662019533641.1)
+                  00007c06    00000007     uart_cmd.o (.rodata.str1.17920282215832191347.1)
+                  00007c0d    00000007     bluetooth.o (.rodata.str1.17966125886390595526.1)
+                  00007c14    00000007     task2.o (.rodata.str1.4027431418486214476.1)
+                  00007c1b    00000007     uart_cmd.o (.rodata.str1.7517722674715864021.1)
+                  00007c22    00000007     task2.o (.rodata.str1.7738086751646626088.1)
+                  00007c29    00000006     bluetooth.o (.rodata.str1.11827052999310086412.1)
+                  00007c2f    00000006     uart_cmd.o (.rodata.str1.13905025852110864062.1)
+                  00007c35    00000006     task2.o (.rodata.str1.17373148445091913500.1)
+                  00007c3b    00000006     task2.o (.rodata.str1.17633820753039632488.1)
+                  00007c41    00000006     uart_cmd.o (.rodata.str1.2511651689747361614.1)
+                  00007c47    00000006     uart_cmd.o (.rodata.str1.4092367985313040374.1)
+                  00007c4d    00000006     uart_cmd.o (.rodata.str1.4234987772374414360.1)
+                  00007c53    00000006     uart_cmd.o (.rodata.str1.8588377972619878686.1)
+                  00007c59    00000006     uart_cmd.o (.rodata.str1.8762729705417149107.1)
+                  00007c5f    00000006     uart_cmd.o (.rodata.str1.9257292791547982817.1)
+                  00007c65    00000006     task2.o (.rodata.str1.939052906329602936.1)
+                  00007c6b    00000005     uart_cmd.o (.rodata.str1.11466531589070145015.1)
+                  00007c70    00000005     uart_cmd.o (.rodata.str1.11477833326989684832.1)
+                  00007c75    00000005     uart_cmd.o (.rodata.str1.12267827134117714350.1)
+                  00007c7a    00000005     task2.o (.rodata.str1.13010141169230031054.1)
+                  00007c7f    00000005     bluetooth.o (.rodata.str1.15849129404937087116.1)
+                  00007c84    00000005     task2.o (.rodata.str1.2158638958197205535.1)
+                  00007c89    00000005     task2.o (.rodata.str1.5204079928230718379.1)
+                  00007c8e    00000005     bluetooth.o (.rodata.str1.5440892105354547817.1)
+                  00007c93    00000005     task2.o (.rodata.str1.640788693715056402.1)
+                  00007c98    00000005     uart_cmd.o (.rodata.str1.8540953112625378261.1)
+                  00007c9d    00000004     bluetooth.o (.rodata.str1.10942773203734653784.1)
+                  00007ca1    00000004     uart_cmd.o (.rodata.str1.11119734733588663232.1)
+                  00007ca5    00000004     task2.o (.rodata.str1.15209940071586506504.1)
+                  00007ca9    00000004     task2.o (.rodata.str1.16316541120335400078.1)
+                  00007cad    00000004     task2.o (.rodata.str1.17012419870760764162.1)
+                  00007cb1    00000004     uart_cmd.o (.rodata.str1.2369543017385929624.1)
+                  00007cb5    00000004     bluetooth.o (.rodata.str1.5649145351321820900.1)
+                  00007cb9    00000004     bluetooth.o (.rodata.str1.606026657030378210.1)
+                  00007cbd    00000004     uart_cmd.o (.rodata.str1.6811838705501227079.1)
+                  00007cc1    00000003     ti_msp_dl_config.o (.rodata.gPWMClockConfig)
+                  00007cc4    00000003     ti_msp_dl_config.o (.rodata.gSTEPPER_PWMClockConfig)
+                  00007cc7    00000003     uart_cmd.o (.rodata.str1.1028318311211003142.1)
+                  00007cca    00000003     oled.o (.rodata.str1.10612175213412870912.1)
+                  00007ccd    00000003     uart_cmd.o (.rodata.str1.1217499487293683049.1)
+                  00007cd0    00000003     uart_cmd.o (.rodata.str1.15498057389316061030.1)
+                  00007cd3    00000003     task2.o (.rodata.str1.18066539378867147291.1)
+                  00007cd6    00000003     uart_cmd.o (.rodata.str1.9423187404258085070.1)
+                  00007cd9    00000002     ti_msp_dl_config.o (.rodata.gUART_1ClockConfig)
+                  00007cdb    00000002     bluetooth.o (.rodata.str1.10613031068244860091.1)
+                  00007cdd    00000002     uart_cmd.o (.rodata.str1.1327018440546922054.1)
+                  00007cdf    00000002     uart_cmd.o (.rodata.str1.15436932795843561489.1)
+                  00007ce1    00000002     uart_cmd.o (.rodata.str1.3044072844558183483.1)
+                  00007ce3    00000002     uart_cmd.o (.rodata.str1.5852106103808048319.1)
+                  00007ce5    00000002     task2.o (.rodata.str1.6330514837858891175.1)
+                  00007ce7    00000002     task2.o (.rodata.str1.6548218060335122408.1)
+                  00007ce9    00000002     uart_cmd.o (.rodata.str1.7261196379038542568.1)
+                  00007ceb    00000005     --HOLE-- [fill = 0]
 
 .init_array 
 *          0    00000000    00000000     UNINITIALIZED
 
 .binit     0    00000000    00000000     
 
-.bss       0    20200000    000004fa     UNINITIALIZED
+.bss       0    20200000    0000058a     UNINITIALIZED
                   20200000    00000100     uart_cmd.o (.bss.g_uart1MirrorBuffer)
                   20200100    000000bc     (.common:gBEAM_ENCODER_PWMBackup)
                   202001bc    000000bc     (.common:gSTEPPER_PWMBackup)
@@ -405,80 +550,104 @@ section   page    origin      length       input sections
                   20200318    00000080     bluetooth.o (.bss.g_rxBuffer)
                   20200398    00000080     uart_cmd.o (.bss.g_rxBuffer)
                   20200418    00000050     uart_cmd.o (.bss.g_line)
-                  20200468    00000004     encoder_pwm_angle.o (.bss.g_angleDegX10)
-                  2020046c    00000004     stepper.o (.bss.g_beamPidIntegralMmS)
-                  20200470    00000004     stepper.o (.bss.g_beamPidKdDegSPerMm)
-                  20200474    00000004     stepper.o (.bss.g_beamPidKiDegPerMmS)
-                  20200478    00000004     stepper.o (.bss.g_beamPidKpDegPerMm)
-                  2020047c    00000004     stepper.o (.bss.g_beamPidOutputDeg)
-                  20200480    00000004     stepper.o (.bss.g_beamPidTargetMm)
-                  20200484    00000004     stepper.o (.bss.g_beamTargetDeg)
-                  20200488    00000004     encoder_pwm_angle.o (.bss.g_captureCount)
-                  2020048c    00000004     stepper.o (.bss.g_frequencyHz)
-                  20200490    00000004     encoder_pwm_angle.o (.bss.g_highTicks)
-                  20200494    00000004     encoder_pwm_angle.o (.bss.g_loadValue)
-                  20200498    00000004     encoder_pwm_angle.o (.bss.g_periodTicks)
-                  2020049c    00000004     stepper.o (.bss.g_positionSteps)
-                  202004a0    00000004     stepper.o (.bss.g_remainingSteps)
-                  202004a4    00000004     stepper.o (.bss.g_speedCurrentHz)
-                  202004a8    00000004     stepper.o (.bss.g_speedLimitHz)
-                  202004ac    00000004     stepper.o (.bss.g_speedTargetHz)
-                  202004b0    00000004     encoder_pwm_angle.o (.bss.g_timeoutCount)
-                  202004b4    00000004     encoder_pwm_angle.o (.bss.g_timestampMs)
-                  202004b8    00000004     uart_cmd.o (.bss.g_visionData)
-                  202004bc    00000004     uart_cmd.o (.bss.g_visionDataTimestampMs)
-                  202004c0    00000004     uart_cmd.o (.bss.g_visionFrameStartMs)
-                  202004c4    00000004     uart_cmd.o (.bss.g_visionLinkTimestampMs)
-                  202004c8    00000004     uart_cmd.o (.bss.g_visionStatsWindowStartMs)
-                  202004cc    00000002     uart_cmd.o (.bss.g_rxOverflowCount)
-                  202004ce    00000002     uart_cmd.o (.bss.g_uart1MirrorDropCount)
-                  202004d0    00000002     uart_cmd.o (.bss.g_uart1MirrorHead)
-                  202004d2    00000002     uart_cmd.o (.bss.g_uart1MirrorTail)
-                  202004d4    00000002     uart_cmd.o (.bss.g_visionAcceptedFrameRateHz)
-                  202004d6    00000002     uart_cmd.o (.bss.g_visionAcceptedFramesInWindow)
-                  202004d8    00000002     uart_cmd.o (.bss.g_visionBadFrameRatioPermille)
-                  202004da    00000002     uart_cmd.o (.bss.g_visionBadFrames)
-                  202004dc    00000002     uart_cmd.o (.bss.g_visionBadFramesInWindow)
-                  202004de    00000002     uart_cmd.o (.bss.g_visionBallFrameRateHz)
-                  202004e0    00000002     uart_cmd.o (.bss.g_visionBallFramesInWindow)
-                  202004e2    00000002     uart_cmd.o (.bss.g_visionGoodFrames)
-                  202004e4    00000002     uart_cmd.o (.bss.g_visionPositionX10)
-                  202004e6    00000002     uart_cmd.o (.bss.g_visionVelocityX10)
-                  202004e8    00000001     stepper.o (.bss.g_continuous)
-                  202004e9    00000001     stepper.o (.bss.g_directionHigh)
-                  202004ea    00000001     stepper.o (.bss.g_emergencyInhibit)
-                  202004eb    00000001     stepper.o (.bss.g_enabled)
-                  202004ec    00000001     stepper.o (.bss.g_initialized)
-                  202004ed    00000001     stepper.o (.bss.g_limitActive)
-                  202004ee    00000001     stepper.o (.bss.g_running)
-                  202004ef    00000001     stepper.o (.bss.g_stopPending)
-                  202004f0    00000001     encoder_pwm_angle.o (.bss.g_synced)
-                  202004f1    00000001     encoder_pwm_angle.o (.bss.g_valid)
-                  202004f2    00000001     uart_cmd.o (.bss.g_visionChecksum)
-                  202004f3    00000001     uart_cmd.o (.bss.g_visionCommand)
-                  202004f4    00000001     uart_cmd.o (.bss.g_visionDetectionValid)
-                  202004f5    00000001     uart_cmd.o (.bss.g_visionHasLink)
-                  202004f6    00000001     uart_cmd.o (.bss.g_visionHasPosition)
-                  202004f7    00000001     uart_cmd.o (.bss.g_visionIndex)
-                  202004f8    00000001     uart_cmd.o (.bss.g_visionLength)
-                  202004f9    00000001     uart_cmd.o (.bss.g_visionRxState)
+                  20200468    00000040     bluetooth.o (.bss.g_packet)
+                  202004a8    0000001c     pid.o (.bss.g_leftSpeedPid)
+                  202004c4    0000001c     pid.o (.bss.g_rightSpeedPid)
+                  202004e0    00000014     line_track.o (.bss.g_lineTrackStatus)
+                  202004f4    00000004     encoder_pwm_angle.o (.bss.g_angleDegX10)
+                  202004f8    00000004     stepper.o (.bss.g_beamPidIntegralMmS)
+                  202004fc    00000004     stepper.o (.bss.g_beamPidKdDegSPerMm)
+                  20200500    00000004     stepper.o (.bss.g_beamPidKiDegPerMmS)
+                  20200504    00000004     stepper.o (.bss.g_beamPidKpDegPerMm)
+                  20200508    00000004     stepper.o (.bss.g_beamPidOutputDeg)
+                  2020050c    00000004     stepper.o (.bss.g_beamPidTargetMm)
+                  20200510    00000004     stepper.o (.bss.g_beamTargetDeg)
+                  20200514    00000004     encoder_pwm_angle.o (.bss.g_captureCount)
+                  20200518    00000004     stepper.o (.bss.g_frequencyHz)
+                  2020051c    00000004     encoder_pwm_angle.o (.bss.g_highTicks)
+                  20200520    00000004     encoder_pwm_angle.o (.bss.g_loadValue)
+                  20200524    00000004     encoder_pwm_angle.o (.bss.g_periodTicks)
+                  20200528    00000004     stepper.o (.bss.g_positionSteps)
+                  2020052c    00000004     stepper.o (.bss.g_remainingSteps)
+                  20200530    00000004     uart_cmd.o (.bss.g_rxByteCount)
+                  20200534    00000004     stepper.o (.bss.g_speedCurrentHz)
+                  20200538    00000004     stepper.o (.bss.g_speedLimitHz)
+                  2020053c    00000004     stepper.o (.bss.g_speedTargetHz)
+                  20200540    00000004     encoder_pwm_angle.o (.bss.g_timeoutCount)
+                  20200544    00000004     encoder_pwm_angle.o (.bss.g_timestampMs)
+                  20200548    00000004     uart_cmd.o (.bss.g_visionData)
+                  2020054c    00000004     uart_cmd.o (.bss.g_visionDataTimestampMs)
+                  20200550    00000004     uart_cmd.o (.bss.g_visionFrameStartMs)
+                  20200554    00000004     uart_cmd.o (.bss.g_visionLinkTimestampMs)
+                  20200558    00000004     uart_cmd.o (.bss.g_visionStatsWindowStartMs)
+                  2020055c    00000002     uart_cmd.o (.bss.g_rxOverflowCount)
+                  2020055e    00000002     uart_cmd.o (.bss.g_uart1MirrorDropCount)
+                  20200560    00000002     uart_cmd.o (.bss.g_uart1MirrorHead)
+                  20200562    00000002     uart_cmd.o (.bss.g_uart1MirrorTail)
+                  20200564    00000002     uart_cmd.o (.bss.g_visionAcceptedFrameRateHz)
+                  20200566    00000002     uart_cmd.o (.bss.g_visionAcceptedFramesInWindow)
+                  20200568    00000002     uart_cmd.o (.bss.g_visionBadFrameRatioPermille)
+                  2020056a    00000002     uart_cmd.o (.bss.g_visionBadFrames)
+                  2020056c    00000002     uart_cmd.o (.bss.g_visionBadFramesInWindow)
+                  2020056e    00000002     uart_cmd.o (.bss.g_visionBallFrameRateHz)
+                  20200570    00000002     uart_cmd.o (.bss.g_visionBallFramesInWindow)
+                  20200572    00000002     uart_cmd.o (.bss.g_visionGoodFrames)
+                  20200574    00000002     uart_cmd.o (.bss.g_visionPositionX10)
+                  20200576    00000002     uart_cmd.o (.bss.g_visionVelocityX10)
+                  20200578    00000001     stepper.o (.bss.g_continuous)
+                  20200579    00000001     stepper.o (.bss.g_directionHigh)
+                  2020057a    00000001     stepper.o (.bss.g_emergencyInhibit)
+                  2020057b    00000001     stepper.o (.bss.g_enabled)
+                  2020057c    00000001     stepper.o (.bss.g_initialized)
+                  2020057d    00000001     stepper.o (.bss.g_limitActive)
+                  2020057e    00000001     stepper.o (.bss.g_running)
+                  2020057f    00000001     stepper.o (.bss.g_stopPending)
+                  20200580    00000001     encoder_pwm_angle.o (.bss.g_synced)
+                  20200581    00000001     encoder_pwm_angle.o (.bss.g_valid)
+                  20200582    00000001     uart_cmd.o (.bss.g_visionChecksum)
+                  20200583    00000001     uart_cmd.o (.bss.g_visionCommand)
+                  20200584    00000001     uart_cmd.o (.bss.g_visionDetectionValid)
+                  20200585    00000001     uart_cmd.o (.bss.g_visionHasLink)
+                  20200586    00000001     uart_cmd.o (.bss.g_visionHasPosition)
+                  20200587    00000001     uart_cmd.o (.bss.g_visionIndex)
+                  20200588    00000001     uart_cmd.o (.bss.g_visionLength)
+                  20200589    00000001     uart_cmd.o (.bss.g_visionRxState)
 
-.data      0    202004fc    00000027     UNINITIALIZED
-                  202004fc    00000004     delay.o (.data.delay_ms_ticks)
-                  20200500    00000004     delay.o (.data.delay_times)
-                  20200504    00000004     encoder.o (.data.g_encoderLeftCount)
-                  20200508    00000004     encoder.o (.data.g_encoderLeftLastSpeedCount)
-                  2020050c    00000004     encoder.o (.data.g_encoderLeftSpeedMmS)
-                  20200510    00000004     encoder.o (.data.g_encoderRightCount)
-                  20200514    00000004     encoder.o (.data.g_encoderRightLastSpeedCount)
-                  20200518    00000004     encoder.o (.data.g_encoderRightSpeedMmS)
-                  2020051c    00000001     encoder.o (.data.g_encoderSpeedTickMs)
-                  2020051d    00000001     uart_cmd.o (.data.g_lineIndex)
-                  2020051e    00000001     uart_cmd.o (.data.g_packetActive)
-                  2020051f    00000001     bluetooth.o (.data.g_rxHead)
-                  20200520    00000001     uart_cmd.o (.data.g_rxHead)
-                  20200521    00000001     bluetooth.o (.data.g_rxTail)
-                  20200522    00000001     uart_cmd.o (.data.g_rxTail)
+.data      0    2020058c    0000005b     UNINITIALIZED
+                  2020058c    00000004     delay.o (.data.delay_ms_ticks)
+                  20200590    00000004     delay.o (.data.delay_times)
+                  20200594    00000004     line_track.o (.data.g_baseSpeedMmS)
+                  20200598    00000004     encoder.o (.data.g_encoderLeftCount)
+                  2020059c    00000004     encoder.o (.data.g_encoderLeftLastSpeedCount)
+                  202005a0    00000004     encoder.o (.data.g_encoderLeftSpeedMmS)
+                  202005a4    00000004     encoder.o (.data.g_encoderRightCount)
+                  202005a8    00000004     encoder.o (.data.g_encoderRightLastSpeedCount)
+                  202005ac    00000004     encoder.o (.data.g_encoderRightSpeedMmS)
+                  202005b0    00000004     line_track.o (.data.g_largeTurnPercent)
+                  202005b4    00000004     line_track.o (.data.g_lastError)
+                  202005b8    00000004     line_track.o (.data.g_leftBaseBiasMmS)
+                  202005bc    00000004     pid.o (.data.g_leftPwm)
+                  202005c0    00000004     pid.o (.data.g_leftTargetMmS)
+                  202005c4    00000004     line_track.o (.data.g_rightBaseBiasMmS)
+                  202005c8    00000004     pid.o (.data.g_rightPwm)
+                  202005cc    00000004     pid.o (.data.g_rightTargetMmS)
+                  202005d0    00000004     line_track.o (.data.g_smallTurnPercent)
+                  202005d4    00000004     task2.o (.data.task2_oled_update.lastRefreshMs)
+                  202005d8    00000001     oled.o (.data.g_cursorColumn)
+                  202005d9    00000001     oled.o (.data.g_cursorPage)
+                  202005da    00000001     encoder.o (.data.g_encoderLeftLastState)
+                  202005db    00000001     encoder.o (.data.g_encoderRightLastState)
+                  202005dc    00000001     encoder.o (.data.g_encoderSpeedTickMs)
+                  202005dd    00000001     line_track.o (.data.g_lastTurn)
+                  202005de    00000001     uart_cmd.o (.data.g_lineIndex)
+                  202005df    00000001     bluetooth.o (.data.g_packetActive)
+                  202005e0    00000001     uart_cmd.o (.data.g_packetActive)
+                  202005e1    00000001     bluetooth.o (.data.g_packetIndex)
+                  202005e2    00000001     bluetooth.o (.data.g_rxHead)
+                  202005e3    00000001     uart_cmd.o (.data.g_rxHead)
+                  202005e4    00000001     bluetooth.o (.data.g_rxTail)
+                  202005e5    00000001     uart_cmd.o (.data.g_rxTail)
+                  202005e6    00000001     pid.o (.data.g_speedPidVofaTick)
 
 .stack     0    20207e00    00000200     UNINITIALIZED
                   20207e00    00000004     libc.a : boot_cortex_m.c.obj (.stack)
@@ -495,30 +664,37 @@ MODULE SUMMARY
        Module                         code    ro data   rw data
        ------                         ----    -------   -------
     .\
-       ti_msp_dl_config.o             2688    105       536    
+       ti_msp_dl_config.o             2716    105       536    
        startup_mspm0g350x_ticlang.o   8       192       0      
-       empty.o                        32      0         0      
+       empty.o                        36      0         0      
     +--+------------------------------+-------+---------+---------+
-       Total:                         2728    297       536    
+       Total:                         2760    297       536    
                                                                
     .\Src\
-       uart_cmd.o                     5900    239       524    
-       stepper.o                      4740    0         60     
-       task3.o                        1928    9         0      
+       uart_cmd.o                     6036    239       528    
+       stepper.o                      4868    0         60     
+       oled.o                         2176    500       2      
+       bluetooth.o                    2282    75        196    
+       task3.o                        2310    14        0      
+       encoder.o                      1450    0         27     
        encoder_pwm_angle.o            1256    0         30     
-       encoder.o                      670     0         25     
-       bluetooth.o                    170     0         130    
-       delay.o                        52      0         8      
+       task2.o                        1104    82        4      
+       line_track.o                   1072    0         45     
+       pid.o                          990     0         73     
+       vofa.o                         416     9         0      
+       motor.o                        364     0         0      
+       gray_serial.o                  298     0         0      
+       delay.o                        84      0         8      
     +--+------------------------------+-------+---------+---------+
-       Total:                         14716   248       777    
+       Total:                         24706   919       973    
                                                                
     C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/lib/ticlang/m0p/mspm0g1x0x_g3x0x/driverlib.a
        dl_timer.o                     596     24        0      
        dl_sysctl_mspm0g1x0x_g3x0x.o   316     0         0      
-       dl_uart.o                      90      0         0      
+       dl_uart.o                      138     0         0      
        dl_common.o                    10      0         0      
     +--+------------------------------+-------+---------+---------+
-       Total:                         1012    24        0      
+       Total:                         1060    24        0      
                                                                
     D:\ti\ccs2050\ccs\tools\compiler\ti-cgt-armllvm_4.0.4.LTS\lib\armv6m-ti-none-eabi/c/libc.a
        copy_decompress_lzss.c.obj     124     0         0      
@@ -567,21 +743,21 @@ MODULE SUMMARY
        Total:                         1846    0         0      
                                                                
        Stack:                         0       0         512    
-       Linker Generated:              0       44        0      
+       Linker Generated:              0       66        0      
     +--+------------------------------+-------+---------+---------+
-       Grand Total:                   20622   613       1825   
+       Grand Total:                   30692   1306      2021   
 
 
 LINKER GENERATED COPY TABLES
 
-__TI_cinit_table @ 00005314 records: 2, size/record: 8, table size: 16
-	.bss: load addr=00005304, load size=00000008 bytes, run addr=20200000, run size=000004fa bytes, compression=zero_init
-	.data: load addr=0000530c, load size=00000008 bytes, run addr=202004fc, run size=00000027 bytes, compression=lzss
+__TI_cinit_table @ 00007d24 records: 2, size/record: 8, table size: 16
+	.data: load addr=00007cf0, load size=0000001e bytes, run addr=2020058c, run size=0000005b bytes, compression=lzss
+	.bss: load addr=00007d1c, load size=00000008 bytes, run addr=20200000, run size=0000058a bytes, compression=zero_init
 
 
 LINKER GENERATED HANDLER TABLE
 
-__TI_handler_table @ 000052f8 records: 3, size/record: 4, table size: 12
+__TI_handler_table @ 00007d10 records: 3, size/record: 4, table size: 12
 	index: 0, handler: __TI_decompress_lzss
 	index: 1, handler: __TI_decompress_none
 	index: 2, handler: __TI_zero_init
@@ -593,7 +769,7 @@ callee name               trampoline name
    callee addr  tramp addr   call addr  call info
 --------------  -----------  ---------  ----------------
 _c_int00_noargs           $Tramp$TT$L$PI$$_c_int00_noargs
-   00004549     00005164     0000515e   startup_mspm0g350x_ticlang.o (.text.Reset_Handler)
+   00006891     000078bc     000078b6   startup_mspm0g350x_ticlang.o (.text.Reset_Handler)
 
 [1 trampolines]
 [1 trampoline calls]
@@ -603,65 +779,66 @@ GLOBAL SYMBOLS: SORTED ALPHABETICALLY BY Name
 
 address   name                                     
 -------   ----                                     
-00005157  ADC0_IRQHandler                          
-00005157  ADC1_IRQHandler                          
-00005157  AES_IRQHandler                           
-0000515a  C$$EXIT                                  
-00005157  CANFD0_IRQHandler                        
-00005157  DAC0_IRQHandler                          
-0000511d  DL_Common_delayCycles                    
-00004861  DL_SYSCTL_configFCC                      
-00001c39  DL_SYSCTL_configSYSPLL                   
-00003c09  DL_SYSCTL_switchMCLKfromSYSOSCtoHSCLK    
-00004fb9  DL_Timer_getCaptureCompareValue          
-00001b59  DL_Timer_initCaptureCombinedMode         
-00001775  DL_Timer_initFourCCPWMMode               
-00004925  DL_Timer_setCaptCompUpdateMethod         
-00004b89  DL_Timer_setCaptureCompareOutCtl         
-00004fc9  DL_Timer_setCaptureCompareValue          
-00004941  DL_Timer_setClockConfig                  
-00003b31  DL_UART_init                             
-00004f41  DL_UART_setClockConfig                   
-00005157  DMA_IRQHandler                           
-00005157  Default_Handler                          
-00005157  GROUP0_IRQHandler                        
-00005127  GROUP1_IRQHandler                        
-0000515b  HOSTexit                                 
-00005157  HardFault_Handler                        
-00005157  I2C0_IRQHandler                          
-00005157  I2C1_IRQHandler                          
-00005157  NMI_Handler                              
-00005157  PendSV_Handler                           
-00005157  RTC_IRQHandler                           
-0000515f  Reset_Handler                            
-00005157  SPI0_IRQHandler                          
-00005157  SPI1_IRQHandler                          
-00005157  SVC_Handler                              
-000041b9  SYSCFG_DL_BEAM_ENCODER_PWM_init          
-000009f5  SYSCFG_DL_GPIO_init                      
-00002a59  SYSCFG_DL_PWM_init                       
-000031d9  SYSCFG_DL_STEPPER_PWM_init               
-00001a6d  SYSCFG_DL_SYSCTL_SYSPLL_init             
-00003241  SYSCFG_DL_SYSCTL_init                    
-00004fd9  SYSCFG_DL_SYSTICK_init                   
-00003cd5  SYSCFG_DL_UART0_init                     
-000037c9  SYSCFG_DL_UART_1_init                    
-00003b79  SYSCFG_DL_init                           
-00002ae9  SYSCFG_DL_initPower                      
-000050b1  SysTick_Handler                          
-0000512f  TIMA0_IRQHandler                         
-00005137  TIMA1_IRQHandler                         
-00005157  TIMG0_IRQHandler                         
-00005157  TIMG12_IRQHandler                        
-00005157  TIMG6_IRQHandler                         
-00005157  TIMG7_IRQHandler                         
-00005157  TIMG8_IRQHandler                         
-00004f65  TI_memcpy_small                          
-00005089  TI_memset_small                          
-000049cd  UART0_IRQHandler                         
-0000316d  UART1_IRQHandler                         
-00005157  UART2_IRQHandler                         
-00005157  UART3_IRQHandler                         
+000078af  ADC0_IRQHandler                          
+000078af  ADC1_IRQHandler                          
+000078af  AES_IRQHandler                           
+000078b2  C$$EXIT                                  
+000078af  CANFD0_IRQHandler                        
+000078af  DAC0_IRQHandler                          
+00007875  DL_Common_delayCycles                    
+00006d9d  DL_SYSCTL_configFCC                      
+00002d1d  DL_SYSCTL_configSYSPLL                   
+000058c9  DL_SYSCTL_switchMCLKfromSYSOSCtoHSCLK    
+00007729  DL_Timer_getCaptureCompareValue          
+00002b5d  DL_Timer_initCaptureCombinedMode         
+00002491  DL_Timer_initFourCCPWMMode               
+00006e61  DL_Timer_setCaptCompUpdateMethod         
+000071b5  DL_Timer_setCaptureCompareOutCtl         
+00007739  DL_Timer_setCaptureCompareValue          
+00006e7d  DL_Timer_setClockConfig                  
+00005719  DL_UART_init                             
+0000769d  DL_UART_setClockConfig                   
+000063f9  DL_UART_transmitDataBlocking             
+000078af  DMA_IRQHandler                           
+000078af  Default_Handler                          
+000078af  GROUP0_IRQHandler                        
+0000787f  GROUP1_IRQHandler                        
+000078b3  HOSTexit                                 
+000078af  HardFault_Handler                        
+000078af  I2C0_IRQHandler                          
+000078af  I2C1_IRQHandler                          
+000078af  NMI_Handler                              
+000078af  PendSV_Handler                           
+000078af  RTC_IRQHandler                           
+000078b7  Reset_Handler                            
+000078af  SPI0_IRQHandler                          
+000078af  SPI1_IRQHandler                          
+000078af  SVC_Handler                              
+00006155  SYSCFG_DL_BEAM_ENCODER_PWM_init          
+00000a79  SYSCFG_DL_GPIO_init                      
+00003e95  SYSCFG_DL_PWM_init                       
+0000491d  SYSCFG_DL_STEPPER_PWM_init               
+00002985  SYSCFG_DL_SYSCTL_SYSPLL_init             
+00004985  SYSCFG_DL_SYSCTL_init                    
+00007749  SYSCFG_DL_SYSTICK_init                   
+000059d9  SYSCFG_DL_UART0_init                     
+00005219  SYSCFG_DL_UART_1_init                    
+00005761  SYSCFG_DL_init                           
+00003fb5  SYSCFG_DL_initPower                      
+00007821  SysTick_Handler                          
+00007887  TIMA0_IRQHandler                         
+0000788f  TIMA1_IRQHandler                         
+000078af  TIMG0_IRQHandler                         
+000078af  TIMG12_IRQHandler                        
+000078af  TIMG6_IRQHandler                         
+000078af  TIMG7_IRQHandler                         
+000078af  TIMG8_IRQHandler                         
+000076d3  TI_memcpy_small                          
+000077f9  TI_memset_small                          
+00006f41  UART0_IRQHandler                         
+00004845  UART1_IRQHandler                         
+000078af  UART2_IRQHandler                         
+000078af  UART3_IRQHandler                         
 20208000  __STACK_END                              
 00000200  __STACK_SIZE                             
 00000000  __TI_ATRegion0_region_sz                 
@@ -673,146 +850,186 @@ address   name
 00000000  __TI_ATRegion2_region_sz                 
 00000000  __TI_ATRegion2_src_addr                  
 00000000  __TI_ATRegion2_trg_addr                  
-00005314  __TI_CINIT_Base                          
-00005324  __TI_CINIT_Limit                         
-00005324  __TI_CINIT_Warm                          
-000052f8  __TI_Handler_Table_Base                  
-00005304  __TI_Handler_Table_Limit                 
-00003f7d  __TI_auto_init_nobinit_nopinit           
-00002f1d  __TI_decompress_lzss                     
-00004f77  __TI_decompress_none                     
+00007d24  __TI_CINIT_Base                          
+00007d34  __TI_CINIT_Limit                         
+00007d34  __TI_CINIT_Warm                          
+00007d10  __TI_Handler_Table_Base                  
+00007d1c  __TI_Handler_Table_Limit                 
+00005ead  __TI_auto_init_nobinit_nopinit           
+0000457d  __TI_decompress_lzss                     
+000076e5  __TI_decompress_none                     
 ffffffff  __TI_pprof_out_hndl                      
 ffffffff  __TI_prof_data_size                      
 ffffffff  __TI_prof_data_start                     
 00000000  __TI_static_base__                       
-00005079  __TI_zero_init                           
-00001ed3  __addsf3                                 
-00003441  __aeabi_dcmpeq                           
-0000347d  __aeabi_dcmpge                           
-00003491  __aeabi_dcmpgt                           
-00003469  __aeabi_dcmple                           
-00003455  __aeabi_dcmplt                           
-00004031  __aeabi_f2iz                             
-00004289  __aeabi_f2uiz                            
-00001ed3  __aeabi_fadd                             
-000034a5  __aeabi_fcmpeq                           
-000034e1  __aeabi_fcmpge                           
-000034f5  __aeabi_fcmpgt                           
-000034cd  __aeabi_fcmple                           
-000034b9  __aeabi_fcmplt                           
-00004d79  __aeabi_fcmpun                           
-00002e1d  __aeabi_fdiv                             
-00002b75  __aeabi_fmul                             
-00001ec9  __aeabi_fsub                             
-00003e8d  __aeabi_i2f                              
-0000371d  __aeabi_idiv                             
-00001def  __aeabi_idiv0                            
-0000371d  __aeabi_idivmod                          
-0000256b  __aeabi_ldiv0                            
-00004e81  __aeabi_ldivmod                          
-000047b5  __aeabi_llsl                             
-00004595  __aeabi_lmul                             
-000050bd  __aeabi_memclr                           
-000050bd  __aeabi_memclr4                          
-000050bd  __aeabi_memclr8                          
-00005141  __aeabi_memcpy                           
-00005141  __aeabi_memcpy4                          
-00005141  __aeabi_memcpy8                          
-00004571  __aeabi_ui2d                             
-000044d1  __aeabi_ui2f                             
-00003d15  __aeabi_uidiv                            
-00003d15  __aeabi_uidivmod                         
-00004e95  __aeabi_uldivmod                         
-000047b5  __ashldi3                                
+000077e9  __TI_zero_init                           
+00002edb  __addsf3                                 
+00004d1d  __aeabi_dcmpeq                           
+00004d59  __aeabi_dcmpge                           
+00004d6d  __aeabi_dcmpgt                           
+00004d45  __aeabi_dcmple                           
+00004d31  __aeabi_dcmplt                           
+00005f61  __aeabi_f2iz                             
+000063c5  __aeabi_f2uiz                            
+00002edb  __aeabi_fadd                             
+00004d81  __aeabi_fcmpeq                           
+00004dbd  __aeabi_fcmpge                           
+00004dd1  __aeabi_fcmpgt                           
+00004da9  __aeabi_fcmple                           
+00004d95  __aeabi_fcmplt                           
+00007445  __aeabi_fcmpun                           
+0000447d  __aeabi_fdiv                             
+00004041  __aeabi_fmul                             
+00002ed1  __aeabi_fsub                             
+00005d09  __aeabi_i2f                              
+0000516d  __aeabi_idiv                             
+0000166b  __aeabi_idiv0                            
+0000516d  __aeabi_idivmod                          
+00001e53  __aeabi_ldiv0                            
+000075a1  __aeabi_ldivmod                          
+00006cb9  __aeabi_llsl                             
+00006905  __aeabi_lmul                             
+0000782d  __aeabi_memclr                           
+0000782d  __aeabi_memclr4                          
+0000782d  __aeabi_memclr8                          
+00007899  __aeabi_memcpy                           
+00007899  __aeabi_memcpy4                          
+00007899  __aeabi_memcpy8                          
+000068e1  __aeabi_ui2d                             
+00006779  __aeabi_ui2f                             
+00005a19  __aeabi_uidiv                            
+00005a19  __aeabi_uidivmod                         
+000075b5  __aeabi_uldivmod                         
+00006cb9  __ashldi3                                
 ffffffff  __binit__                                
-000032a9  __cmpdf2                                 
-00003fb9  __cmpsf2                                 
-00003d95  __divmoddi4                              
-00002e1d  __divsf3                                 
-000032a9  __eqdf2                                  
-00003fb9  __eqsf2                                  
-00004031  __fixsfsi                                
-00004289  __fixunssfsi                             
-00003e8d  __floatsisf                              
-00004571  __floatunsidf                            
-000044d1  __floatunsisf                            
-00003011  __gedf2                                  
-00003ec9  __gesf2                                  
-00003011  __gtdf2                                  
-00003ec9  __gtsf2                                  
-000032a9  __ledf2                                  
-00003fb9  __lesf2                                  
-000032a9  __ltdf2                                  
-00003fb9  __ltsf2                                  
+000049ed  __cmpdf2                                 
+00005ee9  __cmpsf2                                 
+00005b59  __divmoddi4                              
+0000447d  __divsf3                                 
+000049ed  __eqdf2                                  
+00005ee9  __eqsf2                                  
+00005f61  __fixsfsi                                
+000063c5  __fixunssfsi                             
+00005d09  __floatsisf                              
+000068e1  __floatunsidf                            
+00006779  __floatunsisf                            
+000046e9  __gedf2                                  
+00005d45  __gesf2                                  
+000046e9  __gtdf2                                  
+00005d45  __gtsf2                                  
+000049ed  __ledf2                                  
+00005ee9  __lesf2                                  
+000049ed  __ltdf2                                  
+00005ee9  __ltsf2                                  
 UNDEFED   __mpu_init                               
-00004595  __muldi3                                 
-00003ff5  __muldsi3                                
-00002b75  __mulsf3                                 
-000032a9  __nedf2                                  
-00003fb9  __nesf2                                  
+00006905  __muldi3                                 
+00005f25  __muldsi3                                
+00004041  __mulsf3                                 
+000049ed  __nedf2                                  
+00005ee9  __nesf2                                  
 20207e00  __stack                                  
 20200000  __start___llvm_prf_bits                  
 20200000  __start___llvm_prf_cnts                  
 20200000  __stop___llvm_prf_bits                   
 20200000  __stop___llvm_prf_cnts                   
-00001ec9  __subsf3                                 
-000026b5  __udivmoddi4                             
-00004d79  __unordsf2                               
-00004549  _c_int00_noargs                          
+00002ed1  __subsf3                                 
+00003af1  __udivmoddi4                             
+00007445  __unordsf2                               
+00006891  _c_int00_noargs                          
 UNDEFED   _system_post_cinit                       
-00005175  _system_pre_init                         
-00005151  abort                                    
+000078cd  _system_pre_init                         
+000078a9  abort                                    
 ffffffff  binit                                    
-000050c9  delay_get_ms                             
-000044f9  delay_tick                               
-20200500  delay_times                              
-00002f99  encoder_gpio_irq_handler                 
-00001879  encoder_pwm_angle_get_sample             
-000021fd  encoder_pwm_angle_init                   
-00001229  encoder_pwm_angle_irq_handler            
-00004cd9  encoder_pwm_angle_raw_to_relative_deg_x10
-00004181  encoder_pwm_angle_relative_is_safe       
-000045b9  encoder_tick_1ms                         
+00004a55  bluetooth_init                           
+00002799  bluetooth_process                        
+00006429  bluetooth_send_params                    
+00007839  delay_get_ms                             
+00006b19  delay_ms                                 
+000067a1  delay_tick                               
+20200590  delay_times                              
+000067c9  encoder_get_left_count                   
+000067f1  encoder_get_left_speed_mm_s              
+00006819  encoder_get_right_count                  
+00006841  encoder_get_right_speed_mm_s             
+000045f9  encoder_gpio_irq_handler                 
+00002179  encoder_init                             
+00002595  encoder_pwm_angle_get_sample             
+00003395  encoder_pwm_angle_init                   
+00001b19  encoder_pwm_angle_irq_handler            
+0000734d  encoder_pwm_angle_raw_to_relative_deg_x10
+000060e9  encoder_pwm_angle_relative_is_safe       
+0000694d  encoder_tick_1ms                         
 20200100  gBEAM_ENCODER_PWMBackup                  
 20200278  gPWMBackup                               
 202001bc  gSTEPPER_PWMBackup                       
+00005881  gray_serial_init                         
+00004de3  gray_serial_read                         
 00000000  interruptVectors                         
-00004ebd  main                                     
-00004735  stepper_clear_emergency_inhibit          
-00003a99  stepper_emergency_stop                   
-000030f9  stepper_enable                           
-000050d5  stepper_get_beam_pid_target_mm           
-000050e1  stepper_get_beam_target_deg              
-000050ed  stepper_get_current_speed_hz             
-00004fe9  stepper_get_direction                    
-000050f9  stepper_get_frequency_hz                 
-00004755  stepper_get_position_steps               
-00005105  stepper_get_remaining_steps              
-00005111  stepper_get_speed_target_hz              
-00001455  stepper_init                             
-00004ff9  stepper_is_busy                          
-00005009  stepper_is_emergency_inhibited           
-00005019  stepper_is_enabled                       
-00005029  stepper_is_limit_active                  
-00005039  stepper_is_moving                        
-00004ee5  stepper_reset_beam_pid                   
-00001105  stepper_service                          
-00003509  stepper_set_beam_pid_target_mm           
-000045dd  stepper_set_beam_target_deg              
-00002759  stepper_set_speed_target                 
-00003911  stepper_start                            
-000022b5  stepper_start_continuous                 
-0000213d  stepper_start_dir                        
-00003f05  stepper_stop                             
-00002899  stepper_sync_position_from_beam_angle_x10
-00002931  stepper_timer_irq_handler                
-0000166d  stepper_update_beam_encoder_position_loop
-00000815  stepper_update_beam_pid                  
-000005c1  task3_run                                
-00001341  uart_cmd_get_vision_sample               
-00000eb1  uart_cmd_init                            
-00002d99  uart_cmd_irq_handler                     
-00002369  uart_cmd_process                         
+00007845  line_track_get_large_turn_percent        
+00007851  line_track_get_small_turn_percent        
+00006971  line_track_get_status                    
+00004fb5  line_track_init                          
+000075dd  line_track_set_base_speed                
+00004ea5  line_track_set_turn_ratios               
+00004671  line_track_update_with_raw_hold_on_lost  
+00007365  main                                     
+00002699  motor_set_pwm                            
+0000611f  oled_clear                               
+000057f1  oled_clear_line                          
+00003079  oled_init                                
+00004159  oled_print_char                          
+000006b1  oled_print_char_x2                       
+00005d81  oled_print_hex_u8                        
+00003903  oled_print_int                           
+00005c13  oled_print_string                        
+00005c51  oled_print_string_x2                     
+00001d45  oled_print_time_large                    
+000048b1  oled_set_cursor                          
+00003709  pid_calculate                            
+00005dbd  pid_init                                 
+000076af  pid_reset                                
+00002281  speed_pid_control_update                 
+00004375  speed_pid_init                           
+000075f1  speed_pid_set_speed                      
+00006bf9  speed_pid_set_target                     
+00005839  speed_pid_stop                           
+00006c19  stepper_clear_emergency_inhibit          
+00005681  stepper_emergency_stop                   
+000047d1  stepper_enable                           
+00007769  stepper_get_direction                    
+0000785d  stepper_get_frequency_hz                 
+00006c39  stepper_get_position_steps               
+00007869  stepper_get_remaining_steps              
+00001f61  stepper_init                             
+00007779  stepper_is_busy                          
+00007789  stepper_is_emergency_inhibited           
+00007799  stepper_is_enabled                       
+000077a9  stepper_is_limit_active                  
+00007619  stepper_reset_beam_pid                   
+000019f5  stepper_service                          
+00003215  stepper_set_beam_pid_gains               
+00004f01  stepper_set_beam_pid_target_mm           
+000069dd  stepper_set_beam_target_deg              
+00003b95  stepper_set_speed_target                 
+000054ad  stepper_start                            
+0000344d  stepper_start_continuous                 
+000032d5  stepper_start_dir                        
+00005df9  stepper_stop                             
+00003cd5  stepper_sync_position_from_beam_angle_x10
+00003d6d  stepper_timer_irq_handler                
+00002389  stepper_update_beam_encoder_position_loop
+00000899  stepper_update_beam_pid                  
+000017a1  task2_run                                
+000000c1  task3_run                                
+00004e45  uart0_send_byte                          
+000043f9  uart0_send_int                           
+000068b9  uart0_send_string                        
+00006a25  uart_cmd_deinit                          
+00001c31  uart_cmd_get_vision_sample               
+0000166d  uart_cmd_init                            
+00003f25  uart_cmd_irq_handler                     
+000035b1  uart_cmd_process                         
+00004abd  vofa_send_six_int                        
 
 
 GLOBAL SYMBOLS: SORTED BY Symbol Address 
@@ -830,188 +1047,229 @@ address   name
 00000000  __TI_ATRegion2_trg_addr                  
 00000000  __TI_static_base__                       
 00000000  interruptVectors                         
+000000c1  task3_run                                
 00000200  __STACK_SIZE                             
-000005c1  task3_run                                
-00000815  stepper_update_beam_pid                  
-000009f5  SYSCFG_DL_GPIO_init                      
-00000eb1  uart_cmd_init                            
-00001105  stepper_service                          
-00001229  encoder_pwm_angle_irq_handler            
-00001341  uart_cmd_get_vision_sample               
-00001455  stepper_init                             
-0000166d  stepper_update_beam_encoder_position_loop
-00001775  DL_Timer_initFourCCPWMMode               
-00001879  encoder_pwm_angle_get_sample             
-00001a6d  SYSCFG_DL_SYSCTL_SYSPLL_init             
-00001b59  DL_Timer_initCaptureCombinedMode         
-00001c39  DL_SYSCTL_configSYSPLL                   
-00001def  __aeabi_idiv0                            
-00001ec9  __aeabi_fsub                             
-00001ec9  __subsf3                                 
-00001ed3  __addsf3                                 
-00001ed3  __aeabi_fadd                             
-0000213d  stepper_start_dir                        
-000021fd  encoder_pwm_angle_init                   
-000022b5  stepper_start_continuous                 
-00002369  uart_cmd_process                         
-0000256b  __aeabi_ldiv0                            
-000026b5  __udivmoddi4                             
-00002759  stepper_set_speed_target                 
-00002899  stepper_sync_position_from_beam_angle_x10
-00002931  stepper_timer_irq_handler                
-00002a59  SYSCFG_DL_PWM_init                       
-00002ae9  SYSCFG_DL_initPower                      
-00002b75  __aeabi_fmul                             
-00002b75  __mulsf3                                 
-00002d99  uart_cmd_irq_handler                     
-00002e1d  __aeabi_fdiv                             
-00002e1d  __divsf3                                 
-00002f1d  __TI_decompress_lzss                     
-00002f99  encoder_gpio_irq_handler                 
-00003011  __gedf2                                  
-00003011  __gtdf2                                  
-000030f9  stepper_enable                           
-0000316d  UART1_IRQHandler                         
-000031d9  SYSCFG_DL_STEPPER_PWM_init               
-00003241  SYSCFG_DL_SYSCTL_init                    
-000032a9  __cmpdf2                                 
-000032a9  __eqdf2                                  
-000032a9  __ledf2                                  
-000032a9  __ltdf2                                  
-000032a9  __nedf2                                  
-00003441  __aeabi_dcmpeq                           
-00003455  __aeabi_dcmplt                           
-00003469  __aeabi_dcmple                           
-0000347d  __aeabi_dcmpge                           
-00003491  __aeabi_dcmpgt                           
-000034a5  __aeabi_fcmpeq                           
-000034b9  __aeabi_fcmplt                           
-000034cd  __aeabi_fcmple                           
-000034e1  __aeabi_fcmpge                           
-000034f5  __aeabi_fcmpgt                           
-00003509  stepper_set_beam_pid_target_mm           
-0000371d  __aeabi_idiv                             
-0000371d  __aeabi_idivmod                          
-000037c9  SYSCFG_DL_UART_1_init                    
-00003911  stepper_start                            
-00003a99  stepper_emergency_stop                   
-00003b31  DL_UART_init                             
-00003b79  SYSCFG_DL_init                           
-00003c09  DL_SYSCTL_switchMCLKfromSYSOSCtoHSCLK    
-00003cd5  SYSCFG_DL_UART0_init                     
-00003d15  __aeabi_uidiv                            
-00003d15  __aeabi_uidivmod                         
-00003d95  __divmoddi4                              
-00003e8d  __aeabi_i2f                              
-00003e8d  __floatsisf                              
-00003ec9  __gesf2                                  
-00003ec9  __gtsf2                                  
-00003f05  stepper_stop                             
-00003f7d  __TI_auto_init_nobinit_nopinit           
-00003fb9  __cmpsf2                                 
-00003fb9  __eqsf2                                  
-00003fb9  __lesf2                                  
-00003fb9  __ltsf2                                  
-00003fb9  __nesf2                                  
-00003ff5  __muldsi3                                
-00004031  __aeabi_f2iz                             
-00004031  __fixsfsi                                
-00004181  encoder_pwm_angle_relative_is_safe       
-000041b9  SYSCFG_DL_BEAM_ENCODER_PWM_init          
-00004289  __aeabi_f2uiz                            
-00004289  __fixunssfsi                             
-000044d1  __aeabi_ui2f                             
-000044d1  __floatunsisf                            
-000044f9  delay_tick                               
-00004549  _c_int00_noargs                          
-00004571  __aeabi_ui2d                             
-00004571  __floatunsidf                            
-00004595  __aeabi_lmul                             
-00004595  __muldi3                                 
-000045b9  encoder_tick_1ms                         
-000045dd  stepper_set_beam_target_deg              
-00004735  stepper_clear_emergency_inhibit          
-00004755  stepper_get_position_steps               
-000047b5  __aeabi_llsl                             
-000047b5  __ashldi3                                
-00004861  DL_SYSCTL_configFCC                      
-00004925  DL_Timer_setCaptCompUpdateMethod         
-00004941  DL_Timer_setClockConfig                  
-000049cd  UART0_IRQHandler                         
-00004b89  DL_Timer_setCaptureCompareOutCtl         
-00004cd9  encoder_pwm_angle_raw_to_relative_deg_x10
-00004d79  __aeabi_fcmpun                           
-00004d79  __unordsf2                               
-00004e81  __aeabi_ldivmod                          
-00004e95  __aeabi_uldivmod                         
-00004ebd  main                                     
-00004ee5  stepper_reset_beam_pid                   
-00004f41  DL_UART_setClockConfig                   
-00004f65  TI_memcpy_small                          
-00004f77  __TI_decompress_none                     
-00004fb9  DL_Timer_getCaptureCompareValue          
-00004fc9  DL_Timer_setCaptureCompareValue          
-00004fd9  SYSCFG_DL_SYSTICK_init                   
-00004fe9  stepper_get_direction                    
-00004ff9  stepper_is_busy                          
-00005009  stepper_is_emergency_inhibited           
-00005019  stepper_is_enabled                       
-00005029  stepper_is_limit_active                  
-00005039  stepper_is_moving                        
-00005079  __TI_zero_init                           
-00005089  TI_memset_small                          
-000050b1  SysTick_Handler                          
-000050bd  __aeabi_memclr                           
-000050bd  __aeabi_memclr4                          
-000050bd  __aeabi_memclr8                          
-000050c9  delay_get_ms                             
-000050d5  stepper_get_beam_pid_target_mm           
-000050e1  stepper_get_beam_target_deg              
-000050ed  stepper_get_current_speed_hz             
-000050f9  stepper_get_frequency_hz                 
-00005105  stepper_get_remaining_steps              
-00005111  stepper_get_speed_target_hz              
-0000511d  DL_Common_delayCycles                    
-00005127  GROUP1_IRQHandler                        
-0000512f  TIMA0_IRQHandler                         
-00005137  TIMA1_IRQHandler                         
-00005141  __aeabi_memcpy                           
-00005141  __aeabi_memcpy4                          
-00005141  __aeabi_memcpy8                          
-00005151  abort                                    
-00005157  ADC0_IRQHandler                          
-00005157  ADC1_IRQHandler                          
-00005157  AES_IRQHandler                           
-00005157  CANFD0_IRQHandler                        
-00005157  DAC0_IRQHandler                          
-00005157  DMA_IRQHandler                           
-00005157  Default_Handler                          
-00005157  GROUP0_IRQHandler                        
-00005157  HardFault_Handler                        
-00005157  I2C0_IRQHandler                          
-00005157  I2C1_IRQHandler                          
-00005157  NMI_Handler                              
-00005157  PendSV_Handler                           
-00005157  RTC_IRQHandler                           
-00005157  SPI0_IRQHandler                          
-00005157  SPI1_IRQHandler                          
-00005157  SVC_Handler                              
-00005157  TIMG0_IRQHandler                         
-00005157  TIMG12_IRQHandler                        
-00005157  TIMG6_IRQHandler                         
-00005157  TIMG7_IRQHandler                         
-00005157  TIMG8_IRQHandler                         
-00005157  UART2_IRQHandler                         
-00005157  UART3_IRQHandler                         
-0000515a  C$$EXIT                                  
-0000515b  HOSTexit                                 
-0000515f  Reset_Handler                            
-00005175  _system_pre_init                         
-000052f8  __TI_Handler_Table_Base                  
-00005304  __TI_Handler_Table_Limit                 
-00005314  __TI_CINIT_Base                          
-00005324  __TI_CINIT_Limit                         
-00005324  __TI_CINIT_Warm                          
+000006b1  oled_print_char_x2                       
+00000899  stepper_update_beam_pid                  
+00000a79  SYSCFG_DL_GPIO_init                      
+0000166b  __aeabi_idiv0                            
+0000166d  uart_cmd_init                            
+000017a1  task2_run                                
+000019f5  stepper_service                          
+00001b19  encoder_pwm_angle_irq_handler            
+00001c31  uart_cmd_get_vision_sample               
+00001d45  oled_print_time_large                    
+00001e53  __aeabi_ldiv0                            
+00001f61  stepper_init                             
+00002179  encoder_init                             
+00002281  speed_pid_control_update                 
+00002389  stepper_update_beam_encoder_position_loop
+00002491  DL_Timer_initFourCCPWMMode               
+00002595  encoder_pwm_angle_get_sample             
+00002699  motor_set_pwm                            
+00002799  bluetooth_process                        
+00002985  SYSCFG_DL_SYSCTL_SYSPLL_init             
+00002b5d  DL_Timer_initCaptureCombinedMode         
+00002d1d  DL_SYSCTL_configSYSPLL                   
+00002ed1  __aeabi_fsub                             
+00002ed1  __subsf3                                 
+00002edb  __addsf3                                 
+00002edb  __aeabi_fadd                             
+00003079  oled_init                                
+00003215  stepper_set_beam_pid_gains               
+000032d5  stepper_start_dir                        
+00003395  encoder_pwm_angle_init                   
+0000344d  stepper_start_continuous                 
+000035b1  uart_cmd_process                         
+00003709  pid_calculate                            
+00003903  oled_print_int                           
+00003af1  __udivmoddi4                             
+00003b95  stepper_set_speed_target                 
+00003cd5  stepper_sync_position_from_beam_angle_x10
+00003d6d  stepper_timer_irq_handler                
+00003e95  SYSCFG_DL_PWM_init                       
+00003f25  uart_cmd_irq_handler                     
+00003fb5  SYSCFG_DL_initPower                      
+00004041  __aeabi_fmul                             
+00004041  __mulsf3                                 
+00004159  oled_print_char                          
+00004375  speed_pid_init                           
+000043f9  uart0_send_int                           
+0000447d  __aeabi_fdiv                             
+0000447d  __divsf3                                 
+0000457d  __TI_decompress_lzss                     
+000045f9  encoder_gpio_irq_handler                 
+00004671  line_track_update_with_raw_hold_on_lost  
+000046e9  __gedf2                                  
+000046e9  __gtdf2                                  
+000047d1  stepper_enable                           
+00004845  UART1_IRQHandler                         
+000048b1  oled_set_cursor                          
+0000491d  SYSCFG_DL_STEPPER_PWM_init               
+00004985  SYSCFG_DL_SYSCTL_init                    
+000049ed  __cmpdf2                                 
+000049ed  __eqdf2                                  
+000049ed  __ledf2                                  
+000049ed  __ltdf2                                  
+000049ed  __nedf2                                  
+00004a55  bluetooth_init                           
+00004abd  vofa_send_six_int                        
+00004d1d  __aeabi_dcmpeq                           
+00004d31  __aeabi_dcmplt                           
+00004d45  __aeabi_dcmple                           
+00004d59  __aeabi_dcmpge                           
+00004d6d  __aeabi_dcmpgt                           
+00004d81  __aeabi_fcmpeq                           
+00004d95  __aeabi_fcmplt                           
+00004da9  __aeabi_fcmple                           
+00004dbd  __aeabi_fcmpge                           
+00004dd1  __aeabi_fcmpgt                           
+00004de3  gray_serial_read                         
+00004e45  uart0_send_byte                          
+00004ea5  line_track_set_turn_ratios               
+00004f01  stepper_set_beam_pid_target_mm           
+00004fb5  line_track_init                          
+0000516d  __aeabi_idiv                             
+0000516d  __aeabi_idivmod                          
+00005219  SYSCFG_DL_UART_1_init                    
+000054ad  stepper_start                            
+00005681  stepper_emergency_stop                   
+00005719  DL_UART_init                             
+00005761  SYSCFG_DL_init                           
+000057f1  oled_clear_line                          
+00005839  speed_pid_stop                           
+00005881  gray_serial_init                         
+000058c9  DL_SYSCTL_switchMCLKfromSYSOSCtoHSCLK    
+000059d9  SYSCFG_DL_UART0_init                     
+00005a19  __aeabi_uidiv                            
+00005a19  __aeabi_uidivmod                         
+00005b59  __divmoddi4                              
+00005c13  oled_print_string                        
+00005c51  oled_print_string_x2                     
+00005d09  __aeabi_i2f                              
+00005d09  __floatsisf                              
+00005d45  __gesf2                                  
+00005d45  __gtsf2                                  
+00005d81  oled_print_hex_u8                        
+00005dbd  pid_init                                 
+00005df9  stepper_stop                             
+00005ead  __TI_auto_init_nobinit_nopinit           
+00005ee9  __cmpsf2                                 
+00005ee9  __eqsf2                                  
+00005ee9  __lesf2                                  
+00005ee9  __ltsf2                                  
+00005ee9  __nesf2                                  
+00005f25  __muldsi3                                
+00005f61  __aeabi_f2iz                             
+00005f61  __fixsfsi                                
+000060e9  encoder_pwm_angle_relative_is_safe       
+0000611f  oled_clear                               
+00006155  SYSCFG_DL_BEAM_ENCODER_PWM_init          
+000063c5  __aeabi_f2uiz                            
+000063c5  __fixunssfsi                             
+000063f9  DL_UART_transmitDataBlocking             
+00006429  bluetooth_send_params                    
+00006779  __aeabi_ui2f                             
+00006779  __floatunsisf                            
+000067a1  delay_tick                               
+000067c9  encoder_get_left_count                   
+000067f1  encoder_get_left_speed_mm_s              
+00006819  encoder_get_right_count                  
+00006841  encoder_get_right_speed_mm_s             
+00006891  _c_int00_noargs                          
+000068b9  uart0_send_string                        
+000068e1  __aeabi_ui2d                             
+000068e1  __floatunsidf                            
+00006905  __aeabi_lmul                             
+00006905  __muldi3                                 
+0000694d  encoder_tick_1ms                         
+00006971  line_track_get_status                    
+000069dd  stepper_set_beam_target_deg              
+00006a25  uart_cmd_deinit                          
+00006b19  delay_ms                                 
+00006bf9  speed_pid_set_target                     
+00006c19  stepper_clear_emergency_inhibit          
+00006c39  stepper_get_position_steps               
+00006cb9  __aeabi_llsl                             
+00006cb9  __ashldi3                                
+00006d9d  DL_SYSCTL_configFCC                      
+00006e61  DL_Timer_setCaptCompUpdateMethod         
+00006e7d  DL_Timer_setClockConfig                  
+00006f41  UART0_IRQHandler                         
+000071b5  DL_Timer_setCaptureCompareOutCtl         
+0000734d  encoder_pwm_angle_raw_to_relative_deg_x10
+00007365  main                                     
+00007445  __aeabi_fcmpun                           
+00007445  __unordsf2                               
+000075a1  __aeabi_ldivmod                          
+000075b5  __aeabi_uldivmod                         
+000075dd  line_track_set_base_speed                
+000075f1  speed_pid_set_speed                      
+00007619  stepper_reset_beam_pid                   
+0000769d  DL_UART_setClockConfig                   
+000076af  pid_reset                                
+000076d3  TI_memcpy_small                          
+000076e5  __TI_decompress_none                     
+00007729  DL_Timer_getCaptureCompareValue          
+00007739  DL_Timer_setCaptureCompareValue          
+00007749  SYSCFG_DL_SYSTICK_init                   
+00007769  stepper_get_direction                    
+00007779  stepper_is_busy                          
+00007789  stepper_is_emergency_inhibited           
+00007799  stepper_is_enabled                       
+000077a9  stepper_is_limit_active                  
+000077e9  __TI_zero_init                           
+000077f9  TI_memset_small                          
+00007821  SysTick_Handler                          
+0000782d  __aeabi_memclr                           
+0000782d  __aeabi_memclr4                          
+0000782d  __aeabi_memclr8                          
+00007839  delay_get_ms                             
+00007845  line_track_get_large_turn_percent        
+00007851  line_track_get_small_turn_percent        
+0000785d  stepper_get_frequency_hz                 
+00007869  stepper_get_remaining_steps              
+00007875  DL_Common_delayCycles                    
+0000787f  GROUP1_IRQHandler                        
+00007887  TIMA0_IRQHandler                         
+0000788f  TIMA1_IRQHandler                         
+00007899  __aeabi_memcpy                           
+00007899  __aeabi_memcpy4                          
+00007899  __aeabi_memcpy8                          
+000078a9  abort                                    
+000078af  ADC0_IRQHandler                          
+000078af  ADC1_IRQHandler                          
+000078af  AES_IRQHandler                           
+000078af  CANFD0_IRQHandler                        
+000078af  DAC0_IRQHandler                          
+000078af  DMA_IRQHandler                           
+000078af  Default_Handler                          
+000078af  GROUP0_IRQHandler                        
+000078af  HardFault_Handler                        
+000078af  I2C0_IRQHandler                          
+000078af  I2C1_IRQHandler                          
+000078af  NMI_Handler                              
+000078af  PendSV_Handler                           
+000078af  RTC_IRQHandler                           
+000078af  SPI0_IRQHandler                          
+000078af  SPI1_IRQHandler                          
+000078af  SVC_Handler                              
+000078af  TIMG0_IRQHandler                         
+000078af  TIMG12_IRQHandler                        
+000078af  TIMG6_IRQHandler                         
+000078af  TIMG7_IRQHandler                         
+000078af  TIMG8_IRQHandler                         
+000078af  UART2_IRQHandler                         
+000078af  UART3_IRQHandler                         
+000078b2  C$$EXIT                                  
+000078b3  HOSTexit                                 
+000078b7  Reset_Handler                            
+000078cd  _system_pre_init                         
+00007d10  __TI_Handler_Table_Base                  
+00007d1c  __TI_Handler_Table_Limit                 
+00007d24  __TI_CINIT_Base                          
+00007d34  __TI_CINIT_Limit                         
+00007d34  __TI_CINIT_Warm                          
 20200000  __start___llvm_prf_bits                  
 20200000  __start___llvm_prf_cnts                  
 20200000  __stop___llvm_prf_bits                   
@@ -1019,7 +1277,7 @@ address   name
 20200100  gBEAM_ENCODER_PWMBackup                  
 202001bc  gSTEPPER_PWMBackup                       
 20200278  gPWMBackup                               
-20200500  delay_times                              
+20200590  delay_times                              
 20207e00  __stack                                  
 20208000  __STACK_END                              
 ffffffff  __TI_pprof_out_hndl                      
@@ -1030,4 +1288,4 @@ ffffffff  binit
 UNDEFED   __mpu_init                               
 UNDEFED   _system_post_cinit                       
 
-[210 symbols]
+[251 symbols]

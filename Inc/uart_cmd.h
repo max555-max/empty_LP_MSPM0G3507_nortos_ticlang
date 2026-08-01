@@ -55,6 +55,7 @@ typedef struct {
 } uart_cmd_vision_sample_t;
 
 typedef struct {
+    uint32_t rxByteCount;
     uint16_t acceptedFrameRateHz;
     uint16_t ballStateFrameRateHz;
     uint16_t badFrameRatioPermille;
@@ -84,6 +85,7 @@ typedef struct {
  */
 
 void uart_cmd_init(void);
+void uart_cmd_deinit(void);
 void uart_cmd_process(void);
 void uart_cmd_irq_handler(void);
 /* Returns true only for a fresh, link-online, detection-valid vision sample. */

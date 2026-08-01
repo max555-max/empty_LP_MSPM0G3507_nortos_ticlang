@@ -270,6 +270,14 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 /* Defines for O4: GPIOA.22 with pinCMx 47 on package pin 18 */
 #define GRAY_SERIAL_O4_PIN                                      (DL_GPIO_PIN_22)
 #define GRAY_SERIAL_O4_IOMUX                                     (IOMUX_PINCM47)
+/* Defines for NEXT: GPIOB.8 with pinCMx 25 on package pin 60 */
+#define TASK_BUTTON_NEXT_PORT                                            (GPIOB)
+#define TASK_BUTTON_NEXT_PIN                                     (DL_GPIO_PIN_8)
+#define TASK_BUTTON_NEXT_IOMUX                                   (IOMUX_PINCM25)
+/* Defines for START: GPIOA.7 with pinCMx 14 on package pin 49 */
+#define TASK_BUTTON_START_PORT                                           (GPIOA)
+#define TASK_BUTTON_START_PIN                                    (DL_GPIO_PIN_7)
+#define TASK_BUTTON_START_IOMUX                                  (IOMUX_PINCM14)
 
 
 

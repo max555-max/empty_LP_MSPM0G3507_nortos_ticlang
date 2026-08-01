@@ -3,15 +3,21 @@
 
 /*
  * Task3:
- * - zero the beam motor after power-on;
- * - then enter the existing ball-control flow.
+ * - move the beam to its logical encoder zero after task start;
+ * - wait until a valid vision sample reports the ball near its zero;
+ * - drive the ball toward -80 mm;
+ * - switch to +80 mm when vision reports the ball near -50 mm;
+ * - return when PA7 is pressed so main() can start Task2.
  */
-#define TASK3_STARTUP_WAIT_MS              (1000U)
-#define TASK3_FIRST_TARGET_MM              (-80.0f)
-#define TASK3_SECOND_TARGET_MM             (80.0f)
-#define TASK3_SWITCH_TARGET_DELAY_MS       (2000U)
+#define TASK3_ZERO_TARGET_DEG                       (0.0f)
+#define TASK3_ZERO_ANGLE_TOLERANCE_DEG_X10          (5)
+#define TASK3_BALL_ZERO_POSITION_MM                 (0.0f)
+#define TASK3_BALL_ZERO_TOLERANCE_MM                (5.0f)
+#define TASK3_FIRST_TARGET_MM                       (-70.0f)
+#define TASK3_SWITCH_TO_SECOND_POSITION_MM          (-50.0f)
+#define TASK3_SWITCH_TO_SECOND_TOLERANCE_MM         (5.0f)
+#define TASK3_SECOND_TARGET_MM                      (70.0f)
 
 void task3_run(void);
-void task3_motor_zero_run(void);
 
 #endif
