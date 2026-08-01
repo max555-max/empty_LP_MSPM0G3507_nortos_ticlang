@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "delay.h"
+#include "bluetooth.h"
 #include "encoder.h"
 #include "gray_serial.h"
 #include "line_track.h"
@@ -20,9 +21,8 @@
 #define TASK5_GRAY_STARTUP_DISCARD_MS     (2U)
 
 #define TASK5_STABLE_LINE_BASE_SPEED_MM_S       LINE_TRACK_BASE_SPEED_MM_S
-#define TASK5_STABLE_LINE_TURN_KP               LINE_TRACK_TURN_KP
-#define TASK5_STABLE_LINE_TURN_KD               LINE_TRACK_TURN_KD
-#define TASK5_STABLE_LINE_MAX_CORRECTION_MM_S   LINE_TRACK_MAX_CORRECTION_MM_S
+#define TASK5_STABLE_SMALL_TURN_PERCENT          LINE_TRACK_SMALL_TURN_INNER_PERCENT
+#define TASK5_STABLE_LARGE_TURN_PERCENT          LINE_TRACK_LARGE_TURN_INNER_PERCENT
 
 typedef enum {
     TASK5_LINE_STATE_RUNNING = 0,
@@ -33,11 +33,9 @@ typedef enum {
 static void task5_apply_stable_line_params(void)
 {
     line_track_set_base_speed(TASK5_STABLE_LINE_BASE_SPEED_MM_S);
-    line_track_set_turn_gains(
-        TASK5_STABLE_LINE_TURN_KP,
-        TASK5_STABLE_LINE_TURN_KD);
-    line_track_set_max_correction(
-        TASK5_STABLE_LINE_MAX_CORRECTION_MM_S);
+    (void)line_track_set_turn_ratios(
+        TASK5_STABLE_SMALL_TURN_PERCENT,
+        TASK5_STABLE_LARGE_TURN_PERCENT);
 }
 
 static void task5_discard_startup_gray_samples(void)
@@ -50,15 +48,10 @@ static void task5_discard_startup_gray_samples(void)
 
 static uint8_t task5_count_active_gray_sensors(uint8_t raw)
 {
-    static const uint8_t channelBitMap[8] = {
-        1U, 2U, 3U, 4U, 5U, 6U, 7U, 0U
-    };
-
     uint8_t activeCount = 0U;
 
-    for (uint8_t i = 0U; i < 8U; i++) {
-        uint8_t level =
-            (uint8_t)((raw >> channelBitMap[i]) & 0x01U);
+    for (uint8_t i = 0U; i < 4U; i++) {
+        uint8_t level = (uint8_t)((raw >> i) & 0x01U);
 
         if (level == LINE_TRACK_ACTIVE_LEVEL) {
             activeCount++;
@@ -177,10 +170,11 @@ static void task5_oled_update(bool oledOk,
     oled_print_string(" R:");
     oled_print_int(status.rightTargetMmS);
 
-    task5_oled_print_line_header(4U, "Kp:");
-    oled_print_int(line_track_get_turn_kp());
-    oled_print_string(" Kd:");
-    oled_print_int(line_track_get_turn_kd());
+    task5_oled_print_line_header(4U, "Small:");
+    oled_print_int(line_track_get_small_turn_percent());
+    oled_print_string("% Big:");
+    oled_print_int(line_track_get_large_turn_percent());
+    oled_print_string("%");
 
     task5_oled_print_line_header(5U, "Base:");
     oled_print_int(line_track_get_base_speed());
@@ -211,11 +205,13 @@ void task5_run(void)
     line_track_init();
     task5_apply_stable_line_params();
     uart_cmd_init();
+    bluetooth_init();
     oledOk = oled_init();
     taskStartMs = delay_get_ms();
 
     while (1) {
         uart_cmd_process();
+        bluetooth_process();
 
         nowMs = delay_get_ms();
         grayRaw = gray_serial_read();

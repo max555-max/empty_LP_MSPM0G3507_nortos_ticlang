@@ -3,6 +3,7 @@
 #include <limits.h>
 
 #include "delay.h"
+#include "bluetooth.h"
 #include "encoder.h"
 #include "encoder_pwm_angle.h"
 #include "gray_serial.h"
@@ -15,11 +16,7 @@
 #include "uart_cmd.h"
 
 #define TASK2_OLED_REFRESH_PERIOD_MS      (200U)
-#define TASK2_STOP_ACTIVE_SENSOR_COUNT    (3U)
-#define TASK2_STOP_ENABLE_DELAY_MS        (2000U)
-#define TASK2_STOP_APPROACH_SPEED_MM_S    (300)
-#define TASK2_STOP_APPROACH_DISTANCE_MM   (150)
-#define TASK2_STOP_APPROACH_SLOW_DELAY_MS (0U)
+#define TASK2_STOP_DETECT_ENABLE_DISTANCE_MM (6000)
 #define TASK2_GRAY_STARTUP_DISCARD_COUNT  (20U)
 #define TASK2_GRAY_STARTUP_DISCARD_MS     (2U)
 #define TASK2_BALL_PID_PERIOD_MS           (10U)
@@ -56,7 +53,6 @@
 
 typedef enum {
     TASK2_LINE_STATE_RUNNING = 0,
-    TASK2_LINE_STATE_APPROACHING_STOP,
     TASK2_LINE_STATE_STOPPED
 } task2_line_state_t;
 
@@ -79,19 +75,16 @@ typedef enum {
  * line_track.h 中的默认宏作为稳定参数保留给其他任务使用。
  * 这里先让竞速参数与当前稳定参数一致，后续可单独调高。
  */
-#define TASK2_RACE_LINE_BASE_SPEED_MM_S       (400)
-#define TASK2_RACE_LINE_TURN_KP               (100)
-#define TASK2_RACE_LINE_TURN_KD               (20)
-#define TASK2_RACE_LINE_MAX_CORRECTION_MM_S   (350)
+#define TASK2_RACE_LINE_BASE_SPEED_MM_S       (350)
+#define TASK2_RACE_SMALL_TURN_PERCENT          (90)
+#define TASK2_RACE_LARGE_TURN_PERCENT          (60)
  
 static void task2_apply_race_line_params(void)
 {
     line_track_set_base_speed(TASK2_RACE_LINE_BASE_SPEED_MM_S);
-    line_track_set_turn_gains(
-        TASK2_RACE_LINE_TURN_KP,
-        TASK2_RACE_LINE_TURN_KD);
-    line_track_set_max_correction(
-        TASK2_RACE_LINE_MAX_CORRECTION_MM_S);
+    (void)line_track_set_turn_ratios(
+        TASK2_RACE_SMALL_TURN_PERCENT,
+        TASK2_RACE_LARGE_TURN_PERCENT);
 }
 
 static void task2_discard_startup_gray_samples(void)
@@ -104,15 +97,10 @@ static void task2_discard_startup_gray_samples(void)
 
 static uint8_t task2_count_active_gray_sensors(uint8_t raw)
 {
-    static const uint8_t channelBitMap[8] = {
-        1U, 2U, 3U, 4U, 5U, 6U, 7U, 0U
-    };
-
     uint8_t activeCount = 0U;
 
-    for (uint8_t i = 0U; i < 8U; i++) {
-        uint8_t level =
-            (uint8_t)((raw >> channelBitMap[i]) & 0x01U);
+    for (uint8_t i = 0U; i < 4U; i++) {
+        uint8_t level = (uint8_t)((raw >> i) & 0x01U);
 
         if (level == LINE_TRACK_ACTIVE_LEVEL) {
             activeCount++;
@@ -122,10 +110,13 @@ static uint8_t task2_count_active_gray_sensors(uint8_t raw)
     return activeCount;
 }
 
-
-static bool task2_should_exit_line_track(uint8_t activeCount)
+static bool task2_stop_marker_detected(uint8_t raw)
 {
-    return activeCount >= TASK2_STOP_ACTIVE_SENSOR_COUNT;
+    uint8_t o2Level = (uint8_t)((raw >> 1U) & 0x01U);
+    uint8_t o3Level = (uint8_t)((raw >> 2U) & 0x01U);
+
+    return (o2Level == LINE_TRACK_ACTIVE_LEVEL) &&
+           (o3Level == LINE_TRACK_ACTIVE_LEVEL);
 }
 
 static int32_t task2_abs_i32(int32_t value)
@@ -166,12 +157,6 @@ static int32_t task2_get_traveled_distance_mm(int32_t startLeftCount,
     return (leftDistanceMm + rightDistanceMm) / 2;
 }
 
-static bool task2_car_speed_is_zero(void)
-{
-    return (encoder_get_left_speed_mm_s() == 0) &&
-           (encoder_get_right_speed_mm_s() == 0);
-}
-
 static void task2_oled_print_line_header(uint8_t page, const char *text)
 {
     oled_clear_line(page);
@@ -181,8 +166,9 @@ static void task2_oled_print_line_header(uint8_t page, const char *text)
 static void task2_oled_update(bool oledOk,
                               uint8_t grayRaw,
                               uint8_t activeCount,
-                              bool stopArmed,
                               task2_line_state_t lineState,
+                              bool stopDetectEnabled,
+                              int32_t traveledDistanceMm,
                               uint32_t elapsedMs)
 {
     static uint32_t lastRefreshMs = 0U;
@@ -212,12 +198,10 @@ static void task2_oled_update(bool oledOk,
         status.leftTargetMmS = 0;
         status.rightTargetMmS = 0;
         oled_print_string(" STOP");
-    } else if (lineState == TASK2_LINE_STATE_APPROACHING_STOP) {
-        oled_print_string(" SLOW");
-    } else if (!stopArmed) {
-        oled_print_string(" WAIT");
     } else if (!status.lineDetected) {
         oled_print_string(" LOST");
+    } else if (stopDetectEnabled) {
+        oled_print_string(" ARM");
     } else {
         oled_print_string(" RUN");
     }
@@ -232,14 +216,16 @@ static void task2_oled_update(bool oledOk,
     oled_print_string(" R:");
     oled_print_int(status.rightTargetMmS);
 
-    task2_oled_print_line_header(4U, "Kp:");
-    oled_print_int(line_track_get_turn_kp());
-    oled_print_string(" Kd:");
-    oled_print_int(line_track_get_turn_kd());
+    task2_oled_print_line_header(4U, "Small:");
+    oled_print_int(line_track_get_small_turn_percent());
+    oled_print_string("% Big:");
+    oled_print_int(line_track_get_large_turn_percent());
+    oled_print_string("%");
 
-    task2_oled_print_line_header(5U, "Base:");
-    oled_print_int(line_track_get_base_speed());
-    oled_print_string(" mm/s");
+    task2_oled_print_line_header(5U, "Dist:");
+    oled_print_int(traveledDistanceMm);
+    oled_print_string("/");
+    oled_print_int(TASK2_STOP_DETECT_ENABLE_DISTANCE_MM);
 
     oled_print_time_large(elapsedMs);
 }
@@ -1972,10 +1958,10 @@ void task2_run(void)
     uint32_t nowMs;
     uint32_t elapsedMs = 0U;
     bool timerStopped = false;
-    uint32_t stopDetectMs = 0U;
-    int32_t stopStartLeftCount = 0;
-    int32_t stopStartRightCount = 0;
-    bool stopArmed;
+    bool stopDetectEnabled = false;
+    int32_t traveledDistanceMm = 0;
+    int32_t runStartLeftCount;
+    int32_t runStartRightCount;
     task2_line_state_t lineState = TASK2_LINE_STATE_RUNNING;
     bool oledOk;
 
@@ -1985,55 +1971,43 @@ void task2_run(void)
     speed_pid_init();
     line_track_init();
     task2_apply_race_line_params();
-    uart_cmd_init();
+    bluetooth_init();
     oledOk = oled_init();
     taskStartMs = delay_get_ms();
+    runStartLeftCount = encoder_get_left_count();
+    runStartRightCount = encoder_get_right_count();
 
     while (1) {
-        uart_cmd_process();
+        bluetooth_process();
 
         nowMs = delay_get_ms();
         grayRaw = gray_serial_read();
         activeCount = task2_count_active_gray_sensors(grayRaw);
-        stopArmed = ((uint32_t)(nowMs - taskStartMs) >=
-                     TASK2_STOP_ENABLE_DELAY_MS);
 
-        if ((lineState == TASK2_LINE_STATE_RUNNING) && stopArmed &&
-            task2_should_exit_line_track(activeCount)) {
-            lineState = TASK2_LINE_STATE_APPROACHING_STOP;
-            stopDetectMs = nowMs;
-            stopStartLeftCount = encoder_get_left_count();
-            stopStartRightCount = encoder_get_right_count();
-        }
-
-        if (lineState == TASK2_LINE_STATE_APPROACHING_STOP) {
-            if ((uint32_t)(nowMs - stopDetectMs) >=
-                TASK2_STOP_APPROACH_SLOW_DELAY_MS) {
-                line_track_set_base_speed(TASK2_STOP_APPROACH_SPEED_MM_S);
-            }
+        if (lineState == TASK2_LINE_STATE_RUNNING) {
             line_track_update_with_raw_hold_on_lost(grayRaw);
+            traveledDistanceMm = task2_get_traveled_distance_mm(
+                runStartLeftCount, runStartRightCount);
+            stopDetectEnabled =
+                (traveledDistanceMm >= TASK2_STOP_DETECT_ENABLE_DISTANCE_MM);
 
-            if (task2_get_traveled_distance_mm(stopStartLeftCount,
-                                               stopStartRightCount) >=
-                TASK2_STOP_APPROACH_DISTANCE_MM) {
+            if (stopDetectEnabled && task2_stop_marker_detected(grayRaw)) {
                 lineState = TASK2_LINE_STATE_STOPPED;
                 speed_pid_stop();
+                elapsedMs = nowMs - taskStartMs;
+                timerStopped = true;
             }
-        } else if (lineState == TASK2_LINE_STATE_STOPPED) {
-            speed_pid_stop();
         } else {
-            line_track_update_with_raw_hold_on_lost(grayRaw);
+            speed_pid_stop();
         }
 
         speed_pid_control_update();
         if (!timerStopped) {
-            elapsedMs = nowMs;
-            if ((lineState == TASK2_LINE_STATE_STOPPED) && task2_car_speed_is_zero()) {
-                timerStopped = true;
-            }
+            elapsedMs = nowMs - taskStartMs;
         }
         task2_oled_update(oledOk, grayRaw, activeCount,
-                          stopArmed, lineState, elapsedMs);
+                          lineState, stopDetectEnabled,
+                          traveledDistanceMm, elapsedMs);
         delay_ms(SPEED_PID_CONTROL_PERIOD_MS);
     }
 }

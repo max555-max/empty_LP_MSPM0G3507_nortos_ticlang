@@ -262,3 +262,53 @@ void task3_run(void)
         }
     }
 }
+
+void task3_motor_zero_run(void)
+{
+    uint32_t nowMs;
+    uint32_t zeroStartMs;
+    uint32_t positionLastUpdateMs;
+    uint32_t serviceLastUpdateMs;
+    encoder_pwm_angle_sample_t angleSample = {0};
+
+    stepper_init();
+    encoder_pwm_angle_init();
+    stepper_enable(true);
+    stepper_set_beam_target_deg(0.0f);
+
+    nowMs = delay_get_ms();
+    zeroStartMs = nowMs;
+    positionLastUpdateMs = nowMs;
+    serviceLastUpdateMs = nowMs;
+
+    while (1) {
+        nowMs = delay_get_ms();
+        (void)encoder_pwm_angle_get_sample(&angleSample);
+
+        if ((uint32_t)(nowMs - zeroStartMs) >= TASK3_STARTUP_WAIT_MS) {
+            stepper_stop();
+            task3_run();
+            return;
+        }
+
+        if ((uint32_t)(nowMs - positionLastUpdateMs) >=
+            TASK3_BALL_PID_PERIOD_MS) {
+            if (angleSample.fresh) {
+                stepper_update_beam_encoder_position_loop(
+                    angleSample.relativeAngleDegX10, true);
+            } else {
+                stepper_set_speed_target(0.0f);
+            }
+            positionLastUpdateMs = nowMs;
+        }
+
+        if ((uint32_t)(nowMs - serviceLastUpdateMs) >=
+            TASK3_BALL_SERVICE_PERIOD_MS) {
+            float serviceDtSeconds =
+                (float)(nowMs - serviceLastUpdateMs) / 1000.0f;
+
+            stepper_service(serviceDtSeconds);
+            serviceLastUpdateMs = nowMs;
+        }
+    }
+}

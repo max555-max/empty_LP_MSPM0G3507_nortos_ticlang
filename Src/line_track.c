@@ -3,94 +3,26 @@
 #include "gray_serial.h"
 #include "pid.h"
 
-/* 保存循迹当前状态，供 OLED 和调试接口读取。 */
+typedef enum {
+    LINE_TRACK_TURN_LOST = 0,
+    LINE_TRACK_TURN_STRAIGHT,
+    LINE_TRACK_TURN_SMALL_LEFT,
+    LINE_TRACK_TURN_SMALL_RIGHT,
+    LINE_TRACK_TURN_LARGE_LEFT,
+    LINE_TRACK_TURN_LARGE_RIGHT
+} line_track_turn_t;
+
 static line_track_status_t g_lineTrackStatus;
 
-/* 运行时参数：默认来自 line_track.h，也可以通过蓝牙动态修改。 */
 static int32_t g_baseSpeedMmS = LINE_TRACK_BASE_SPEED_MM_S;
-static int32_t g_turnKp = LINE_TRACK_TURN_KP;
-static int32_t g_turnKd = LINE_TRACK_TURN_KD;
-static int32_t g_maxCorrectionMmS = LINE_TRACK_MAX_CORRECTION_MM_S;
+static int32_t g_smallTurnPercent = LINE_TRACK_SMALL_TURN_INNER_PERCENT;
+static int32_t g_largeTurnPercent = LINE_TRACK_LARGE_TURN_INNER_PERCENT;
 static int32_t g_leftBaseBiasMmS = LINE_TRACK_LEFT_BASE_BIAS_MM_S;
 static int32_t g_rightBaseBiasMmS = LINE_TRACK_RIGHT_BASE_BIAS_MM_S;
 
-/* 历史误差，用于 D 项和丢线找线方向判断。 */
+static line_track_turn_t g_lastTurn = LINE_TRACK_TURN_STRAIGHT;
 static int32_t g_lastError = 0;
-static int32_t WEIFEN = 0;
-static bool g_hasPreviousError = false;
-static int32_t g_previousError = 0;
 
-static void line_track_update_with_raw_impl(uint8_t raw, bool stopOnLost);
-
-static int32_t line_track_abs(int32_t value)
-{
-    if (value < 0) {
-        return -value;
-    }
-
-    return value;
-}
-
-/* 对数值做正负限幅。 */
-static int32_t line_track_limit(int32_t value, int32_t limit)
-{
-    if (value > limit) {
-        return limit;
-    }
-
-    if (value < -limit) {
-        return -limit;
-    }
-
-    return value;
-}
-
-/* 中心死区：小偏差不参与控制，超过死区后只保留超出的部分。 */
-static int32_t line_track_apply_deadband(int32_t error)
-{
-    if ((error > -LINE_TRACK_ERROR_DEADBAND) &&
-        (error < LINE_TRACK_ERROR_DEADBAND)) {
-        return 0;
-    }
-
-    return error;
-}
-
-/* 大弯增强：线压到外侧传感器附近时，临时增加差速余量。 */
-static int32_t line_track_curve_extra_correction(int32_t error)
-{
-    if (line_track_abs(error) >= LINE_TRACK_CURVE_ERROR_THRESHOLD) {
-        return LINE_TRACK_CURVE_EXTRA_CORRECTION_MM_S;
-    }
-
-    return 0;
-}
-
-/* 大弯降速：线压到外侧传感器附近时，临时降低基础速度。 */
-static int32_t line_track_curve_base_reduce(int32_t error)
-{
-    if (line_track_abs(error) >= LINE_TRACK_CURVE_ERROR_THRESHOLD) {
-        return LINE_TRACK_CURVE_BASE_REDUCE_MM_S;
-    }
-
-    return 0;
-}
-
-/* 大弯时降低基础速度，避免外侧轮最高速度继续增加。 */
-static int32_t line_track_reduce_forward_base(int32_t baseSpeed, int32_t reduce)
-{
-    if (baseSpeed <= 0) {
-        return baseSpeed;
-    }
-
-    if (baseSpeed <= reduce) {
-        return 0;
-    }
-
-    return baseSpeed - reduce;
-}
-
-/* 判断某个原始 bit 是否表示检测到黑线。 */
 static bool line_track_is_active(uint8_t raw, uint8_t bit)
 {
     uint8_t level = (uint8_t)((raw >> bit) & 0x01U);
@@ -98,34 +30,137 @@ static bool line_track_is_active(uint8_t raw, uint8_t bit)
     return level == LINE_TRACK_ACTIVE_LEVEL;
 }
 
-/* 根据 8 路传感器加权平均计算循迹误差。 */
-static int32_t line_track_calculate_error(uint8_t raw, bool *lineDetected)
+static line_track_turn_t line_track_classify(uint8_t raw,
+                                              bool *lineDetected,
+                                              int32_t *error)
 {
-    /* 串行读回 bit 顺序为 1,2,3,4,5,6,7,0，对应物理 ch1..ch8。 */
-    static const uint8_t channelBitMap[8] = {
-        1U, 2U, 3U, 4U, 5U, 6U, 7U, 0U
-    };
-    static const int16_t channelWeight[8] = {
-        4250, 3036, 1821, 607, -607, -1821, -3036, -4250
-    };
+    bool o1 = line_track_is_active(raw, 0U);
+    bool o2 = line_track_is_active(raw, 1U);
+    bool o3 = line_track_is_active(raw, 2U);
+    bool o4 = line_track_is_active(raw, 3U);
 
-    int32_t weightedSum = 0;
-    int32_t activeCount = 0;
-
-    for (uint8_t i = 0U; i < 8U; i++) {
-        if (line_track_is_active(raw, channelBitMap[i])) {
-            weightedSum += channelWeight[i];
-            activeCount++;
-        }
-    }
-
-    if (activeCount == 0) {
+    if (!o1 && !o2 && !o3 && !o4) {
         *lineDetected = false;
-        return g_lastError;
+        *error = g_lastError;
+        return LINE_TRACK_TURN_LOST;
     }
 
     *lineDetected = true;
-    return weightedSum / activeCount;
+
+    /* Both center sensors active means the line is centered. */
+    if (o2 && o3) {
+        *error = 0;
+        return LINE_TRACK_TURN_STRAIGHT;
+    }
+
+    /* An exclusive outer sensor has priority and requests a large turn. */
+    if (o1 && !o4) {
+        *error = 2;
+        return LINE_TRACK_TURN_LARGE_LEFT;
+    }
+    if (o4 && !o1) {
+        *error = -2;
+        return LINE_TRACK_TURN_LARGE_RIGHT;
+    }
+
+    /* A single center sensor requests a small turn. */
+    if (o2 && !o3) {
+        *error = 1;
+        return LINE_TRACK_TURN_SMALL_LEFT;
+    }
+    if (o3 && !o2) {
+        *error = -1;
+        return LINE_TRACK_TURN_SMALL_RIGHT;
+    }
+
+    /* Symmetric or otherwise ambiguous active patterns go straight. */
+    *error = 0;
+    return LINE_TRACK_TURN_STRAIGHT;
+}
+
+static int32_t line_track_scale_percent(int32_t speed, int32_t percent)
+{
+    return (int32_t)(((int64_t)speed * percent) / 100);
+}
+
+static void line_track_apply_turn(line_track_turn_t turn,
+                                  int32_t *leftTarget,
+                                  int32_t *rightTarget)
+{
+    int32_t left = g_baseSpeedMmS + g_leftBaseBiasMmS;
+    int32_t right = g_baseSpeedMmS + g_rightBaseBiasMmS;
+
+    switch (turn) {
+    case LINE_TRACK_TURN_SMALL_LEFT:
+        left = line_track_scale_percent(left, g_smallTurnPercent);
+        break;
+
+    case LINE_TRACK_TURN_SMALL_RIGHT:
+        right = line_track_scale_percent(right, g_smallTurnPercent);
+        break;
+
+    case LINE_TRACK_TURN_LARGE_LEFT:
+        left = line_track_scale_percent(left, g_largeTurnPercent);
+        break;
+
+    case LINE_TRACK_TURN_LARGE_RIGHT:
+        right = line_track_scale_percent(right, g_largeTurnPercent);
+        break;
+
+    case LINE_TRACK_TURN_STRAIGHT:
+    case LINE_TRACK_TURN_LOST:
+    default:
+        break;
+    }
+
+    *leftTarget = left;
+    *rightTarget = right;
+}
+
+static void line_track_store_and_write(uint8_t raw,
+                                       bool lineDetected,
+                                       int32_t error,
+                                       int32_t leftTarget,
+                                       int32_t rightTarget)
+{
+    speed_pid_set_speed(leftTarget, rightTarget);
+
+    g_lineTrackStatus.sensorRaw = raw;
+    g_lineTrackStatus.lineDetected = lineDetected;
+    g_lineTrackStatus.error = error;
+    g_lineTrackStatus.correction = rightTarget - leftTarget;
+    g_lineTrackStatus.leftTargetMmS = leftTarget;
+    g_lineTrackStatus.rightTargetMmS = rightTarget;
+}
+
+static void line_track_update_with_raw_impl(uint8_t raw, bool stopOnLost)
+{
+    bool lineDetected;
+    int32_t error;
+    int32_t leftTarget;
+    int32_t rightTarget;
+    line_track_turn_t turn = line_track_classify(raw, &lineDetected, &error);
+
+    if (lineDetected) {
+        g_lastTurn = turn;
+        g_lastError = error;
+        line_track_apply_turn(turn, &leftTarget, &rightTarget);
+    } else if (stopOnLost) {
+        leftTarget = 0;
+        rightTarget = 0;
+    } else if (g_lastError < 0) {
+        leftTarget = LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
+        rightTarget = -LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
+    } else if (g_lastError > 0) {
+        leftTarget = -LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
+        rightTarget = LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
+    } else {
+        leftTarget = 0;
+        rightTarget = 0;
+    }
+
+    line_track_store_and_write(raw, lineDetected, error,
+                               leftTarget, rightTarget);
 }
 
 void line_track_init(void)
@@ -138,13 +173,12 @@ void line_track_init(void)
     g_lineTrackStatus.rightTargetMmS = 0;
 
     g_baseSpeedMmS = LINE_TRACK_BASE_SPEED_MM_S;
+    g_smallTurnPercent = LINE_TRACK_SMALL_TURN_INNER_PERCENT;
+    g_largeTurnPercent = LINE_TRACK_LARGE_TURN_INNER_PERCENT;
     g_leftBaseBiasMmS = LINE_TRACK_LEFT_BASE_BIAS_MM_S;
     g_rightBaseBiasMmS = LINE_TRACK_RIGHT_BASE_BIAS_MM_S;
-
+    g_lastTurn = LINE_TRACK_TURN_STRAIGHT;
     g_lastError = 0;
-    g_previousError = 0;
-    WEIFEN = 0;
-    g_hasPreviousError = false;
 }
 
 void line_track_set_base_speed(int32_t baseSpeedMmS)
@@ -152,29 +186,18 @@ void line_track_set_base_speed(int32_t baseSpeedMmS)
     g_baseSpeedMmS = baseSpeedMmS;
 }
 
-void line_track_set_turn_gains(int32_t kp, int32_t kd)
+bool line_track_set_turn_ratios(int32_t smallTurnPercent,
+                                int32_t largeTurnPercent)
 {
-    g_turnKp = kp;
-    g_turnKd = kd;
-}
-
-void line_track_set_turn_kp(int32_t kp)
-{
-    g_turnKp = kp;
-}
-
-void line_track_set_turn_kd(int32_t kd)
-{
-    g_turnKd = kd;
-}
-
-void line_track_set_max_correction(int32_t maxCorrectionMmS)
-{
-    if (maxCorrectionMmS < 0) {
-        maxCorrectionMmS = -maxCorrectionMmS;
+    if ((smallTurnPercent < 0) || (smallTurnPercent > 100) ||
+        (largeTurnPercent < 0) || (largeTurnPercent > 100) ||
+        (largeTurnPercent > smallTurnPercent)) {
+        return false;
     }
 
-    g_maxCorrectionMmS = maxCorrectionMmS;
+    g_smallTurnPercent = smallTurnPercent;
+    g_largeTurnPercent = largeTurnPercent;
+    return true;
 }
 
 void line_track_set_left_base_bias(int32_t leftBiasMmS)
@@ -198,19 +221,14 @@ int32_t line_track_get_base_speed(void)
     return g_baseSpeedMmS;
 }
 
-int32_t line_track_get_turn_kp(void)
+int32_t line_track_get_small_turn_percent(void)
 {
-    return g_turnKp;
+    return g_smallTurnPercent;
 }
 
-int32_t line_track_get_turn_kd(void)
+int32_t line_track_get_large_turn_percent(void)
 {
-    return g_turnKd;
-}
-
-int32_t line_track_get_max_correction(void)
-{
-    return g_maxCorrectionMmS;
+    return g_largeTurnPercent;
 }
 
 int32_t line_track_get_left_base_bias(void)
@@ -225,92 +243,7 @@ int32_t line_track_get_right_base_bias(void)
 
 void line_track_update(void)
 {
-    uint8_t raw = gray_serial_read();
-
-    line_track_update_with_raw_search_on_lost(raw);
-}
-
-static void line_track_update_with_raw_impl(uint8_t raw, bool stopOnLost)
-{
-    bool lineDetected;
-
-    int32_t error = line_track_calculate_error(raw, &lineDetected);
-    int32_t controlError = line_track_apply_deadband(error);
-    int32_t correction;
-    int32_t leftTarget;
-    int32_t rightTarget;
-
-    if (lineDetected) {
-        int32_t pTerm;
-        int32_t dTerm;
-        int32_t pTermLimit;
-        int32_t dTermLimit;
-        int32_t curveExtraCorrection =
-            line_track_curve_extra_correction(error);
-        int32_t curveBaseReduce = line_track_curve_base_reduce(error);
-        int32_t correctionLimit =
-            g_maxCorrectionMmS + curveExtraCorrection;
-        int32_t mixedBaseSpeed =
-            line_track_reduce_forward_base(g_baseSpeedMmS, curveBaseReduce);
-
-        if (g_hasPreviousError) {
-            WEIFEN = controlError - g_previousError;
-            WEIFEN = line_track_limit(WEIFEN, 1600);
-        } else {
-            WEIFEN = 0;
-            g_hasPreviousError = true;
-        }
-
-        g_previousError = controlError;
-        g_lastError = error;
-
-        pTerm = (int32_t)(((int64_t)controlError * g_turnKp) / 1000);
-        dTerm = (int32_t)(((int64_t)WEIFEN * g_turnKd) / 1000);
-
-        if (g_turnKd == 0) {
-            pTermLimit = correctionLimit;
-            dTermLimit = 0;
-        } else {
-            pTermLimit = (correctionLimit * 3) / 4;
-            dTermLimit = correctionLimit - pTermLimit;
-        }
-
-        pTerm = line_track_limit(pTerm, pTermLimit);
-        dTerm = line_track_limit(dTerm, dTermLimit);
-
-        correction = pTerm + dTerm;
-        correction = line_track_limit(correction, correctionLimit);
-
-        leftTarget = mixedBaseSpeed + g_leftBaseBiasMmS - correction;
-        rightTarget = mixedBaseSpeed + g_rightBaseBiasMmS + correction;
-    } else {
-        correction = 0;
-        WEIFEN = 0;
-        g_hasPreviousError = false;
-
-        if (stopOnLost) {
-            leftTarget = 0;
-            rightTarget = 0;
-        } else if (g_lastError < 0) {
-            leftTarget = LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
-            rightTarget = -LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
-        } else if (g_lastError > 0) {
-            leftTarget = -LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
-            rightTarget = LINE_TRACK_LOST_SEARCH_SPEED_MM_S;
-        } else {
-            leftTarget = 0;
-            rightTarget = 0;
-        }
-    }
-
-    speed_pid_set_speed(leftTarget, rightTarget);
-
-    g_lineTrackStatus.sensorRaw = raw;
-    g_lineTrackStatus.lineDetected = lineDetected;
-    g_lineTrackStatus.error = error;
-    g_lineTrackStatus.correction = correction;
-    g_lineTrackStatus.leftTargetMmS = leftTarget;
-    g_lineTrackStatus.rightTargetMmS = rightTarget;
+    line_track_update_with_raw_search_on_lost(gray_serial_read());
 }
 
 void line_track_update_with_raw(uint8_t raw)
@@ -323,52 +256,30 @@ void line_track_update_with_raw_search_on_lost(uint8_t raw)
     line_track_update_with_raw_impl(raw, false);
 }
 
-
 void line_track_update_with_raw_hold_on_lost(uint8_t raw)
 {
     bool lineDetected;
-    int32_t error = line_track_calculate_error(raw, &lineDetected);
-
-    if (lineDetected) {
-        line_track_update_with_raw_impl(raw, true);
-        return;
-    }
-
-    error = g_lastError;
-
-    int32_t controlError = line_track_apply_deadband(error);
-    int32_t curveExtraCorrection = line_track_curve_extra_correction(error);
-    int32_t curveBaseReduce = line_track_curve_base_reduce(error);
-    int32_t correctionLimit = g_maxCorrectionMmS + curveExtraCorrection;
-    int32_t mixedBaseSpeed =
-        line_track_reduce_forward_base(g_baseSpeedMmS, curveBaseReduce);
-    int32_t pTerm = (int32_t)(((int64_t)controlError * g_turnKp) / 1000);
-    int32_t dTerm = 0;
-    int32_t correction;
+    int32_t error;
     int32_t leftTarget;
     int32_t rightTarget;
+    line_track_turn_t turn = line_track_classify(raw, &lineDetected, &error);
 
-    pTerm = line_track_limit(pTerm, correctionLimit);
-    correction = pTerm + dTerm;
-    correction = line_track_limit(correction, correctionLimit);
-
-    leftTarget = mixedBaseSpeed + g_leftBaseBiasMmS - correction;
-    rightTarget = mixedBaseSpeed + g_rightBaseBiasMmS + correction;
-
-    speed_pid_set_speed(leftTarget, rightTarget);
-
-    g_lineTrackStatus.sensorRaw = raw;
-    g_lineTrackStatus.lineDetected = false;
-    g_lineTrackStatus.error = error;
-    g_lineTrackStatus.correction = correction;
-    g_lineTrackStatus.leftTargetMmS = leftTarget;
-    g_lineTrackStatus.rightTargetMmS = rightTarget;
-}
-void line_track_get_status(line_track_status_t *status)
-{
-    if (status == 0) {
-        return;
+    if (lineDetected) {
+        g_lastTurn = turn;
+        g_lastError = error;
+    } else {
+        turn = g_lastTurn;
+        error = g_lastError;
     }
 
-    *status = g_lineTrackStatus;
+    line_track_apply_turn(turn, &leftTarget, &rightTarget);
+    line_track_store_and_write(raw, lineDetected, error,
+                               leftTarget, rightTarget);
+}
+
+void line_track_get_status(line_track_status_t *status)
+{
+    if (status != 0) {
+        *status = g_lineTrackStatus;
+    }
 }

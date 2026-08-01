@@ -6,6 +6,7 @@ SHELL = cmd.exe
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../Src/bluetooth.c \
 ../Src/delay.c \
 ../Src/encoder.c \
 ../Src/encoder_pwm_angle.c \
@@ -17,12 +18,14 @@ C_SRCS += \
 ../Src/stepper.c \
 ../Src/task2.c \
 ../Src/task3.c \
+../Src/task4.c \
 ../Src/task5.c \
 ../Src/uart_cmd.c \
 ../Src/ultrasonic.c \
 ../Src/vofa.c 
 
 C_DEPS += \
+./Src/bluetooth.d \
 ./Src/delay.d \
 ./Src/encoder.d \
 ./Src/encoder_pwm_angle.d \
@@ -34,12 +37,14 @@ C_DEPS += \
 ./Src/stepper.d \
 ./Src/task2.d \
 ./Src/task3.d \
+./Src/task4.d \
 ./Src/task5.d \
 ./Src/uart_cmd.d \
 ./Src/ultrasonic.d \
 ./Src/vofa.d 
 
 OBJS += \
+./Src/bluetooth.o \
 ./Src/delay.o \
 ./Src/encoder.o \
 ./Src/encoder_pwm_angle.o \
@@ -51,12 +56,14 @@ OBJS += \
 ./Src/stepper.o \
 ./Src/task2.o \
 ./Src/task3.o \
+./Src/task4.o \
 ./Src/task5.o \
 ./Src/uart_cmd.o \
 ./Src/ultrasonic.o \
 ./Src/vofa.o 
 
 OBJS__QUOTED += \
+"Src\bluetooth.o" \
 "Src\delay.o" \
 "Src\encoder.o" \
 "Src\encoder_pwm_angle.o" \
@@ -68,12 +75,14 @@ OBJS__QUOTED += \
 "Src\stepper.o" \
 "Src\task2.o" \
 "Src\task3.o" \
+"Src\task4.o" \
 "Src\task5.o" \
 "Src\uart_cmd.o" \
 "Src\ultrasonic.o" \
 "Src\vofa.o" 
 
 C_DEPS__QUOTED += \
+"Src\bluetooth.d" \
 "Src\delay.d" \
 "Src\encoder.d" \
 "Src\encoder_pwm_angle.d" \
@@ -85,12 +94,14 @@ C_DEPS__QUOTED += \
 "Src\stepper.d" \
 "Src\task2.d" \
 "Src\task3.d" \
+"Src\task4.d" \
 "Src\task5.d" \
 "Src\uart_cmd.d" \
 "Src\ultrasonic.d" \
 "Src\vofa.d" 
 
 C_SRCS__QUOTED += \
+"../Src/bluetooth.c" \
 "../Src/delay.c" \
 "../Src/encoder.c" \
 "../Src/encoder_pwm_angle.c" \
@@ -102,6 +113,7 @@ C_SRCS__QUOTED += \
 "../Src/stepper.c" \
 "../Src/task2.c" \
 "../Src/task3.c" \
+"../Src/task4.c" \
 "../Src/task5.c" \
 "../Src/uart_cmd.c" \
 "../Src/ultrasonic.c" \

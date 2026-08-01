@@ -85,6 +85,7 @@ Src/task5.o: ../Src/task5.c \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h \
  C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h \
+ C:/Users/gaofu/workspace_ccstheia/C07A/Inc/bluetooth.h \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/encoder.h \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/gray_serial.h \
  C:/Users/gaofu/workspace_ccstheia/C07A/Inc/line_track.h \
@@ -176,6 +177,7 @@ C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_vref.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/dl_wwdt.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_interrupt.h:
 C:/TI/mspm0_sdk_2_10_00_04/source/ti/driverlib/m0p/dl_systick.h:
+C:/Users/gaofu/workspace_ccstheia/C07A/Inc/bluetooth.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/encoder.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/gray_serial.h:
 C:/Users/gaofu/workspace_ccstheia/C07A/Inc/line_track.h:

@@ -161,9 +161,9 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 #define GPIO_UART_1_IOMUX_TX                                     (IOMUX_PINCM23)
 #define GPIO_UART_1_IOMUX_RX_FUNC                      IOMUX_PINCM24_PF_UART1_RX
 #define GPIO_UART_1_IOMUX_TX_FUNC                      IOMUX_PINCM23_PF_UART1_TX
-#define UART_1_BAUD_RATE                                                (115200)
-#define UART_1_IBRD_40_MHZ_115200_BAUD                                      (21)
-#define UART_1_FBRD_40_MHZ_115200_BAUD                                      (45)
+#define UART_1_BAUD_RATE                                                  (9600)
+#define UART_1_IBRD_40_MHZ_9600_BAUD                                       (260)
+#define UART_1_FBRD_40_MHZ_9600_BAUD                                        (27)
 
 
 
@@ -258,12 +258,18 @@ bool SYSCFG_DL_SYSCTL_SYSPLL_init(void);
 /* Port definition for Pin Group GRAY_SERIAL */
 #define GRAY_SERIAL_PORT                                                 (GPIOA)
 
-/* Defines for DAT: GPIOA.24 with pinCMx 54 on package pin 25 */
-#define GRAY_SERIAL_DAT_PIN                                     (DL_GPIO_PIN_24)
-#define GRAY_SERIAL_DAT_IOMUX                                    (IOMUX_PINCM54)
-/* Defines for CLK: GPIOA.9 with pinCMx 20 on package pin 55 */
-#define GRAY_SERIAL_CLK_PIN                                      (DL_GPIO_PIN_9)
-#define GRAY_SERIAL_CLK_IOMUX                                    (IOMUX_PINCM20)
+/* Defines for O1: GPIOA.9 with pinCMx 20 on package pin 55 */
+#define GRAY_SERIAL_O1_PIN                                       (DL_GPIO_PIN_9)
+#define GRAY_SERIAL_O1_IOMUX                                     (IOMUX_PINCM20)
+/* Defines for O2: GPIOA.27 with pinCMx 60 on package pin 31 */
+#define GRAY_SERIAL_O2_PIN                                      (DL_GPIO_PIN_27)
+#define GRAY_SERIAL_O2_IOMUX                                     (IOMUX_PINCM60)
+/* Defines for O3: GPIOA.24 with pinCMx 54 on package pin 25 */
+#define GRAY_SERIAL_O3_PIN                                      (DL_GPIO_PIN_24)
+#define GRAY_SERIAL_O3_IOMUX                                     (IOMUX_PINCM54)
+/* Defines for O4: GPIOA.22 with pinCMx 47 on package pin 18 */
+#define GRAY_SERIAL_O4_PIN                                      (DL_GPIO_PIN_22)
+#define GRAY_SERIAL_O4_IOMUX                                     (IOMUX_PINCM47)
 
 
 

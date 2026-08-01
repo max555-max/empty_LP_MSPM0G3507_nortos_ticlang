@@ -13,28 +13,39 @@
 
 证据等级：A，来源 `empty.c`。
 
-当前 `main()` 是超声波 OLED 测距测试入口，初始化顺序为：
+当前 `main()` 是 Task2 四路循迹入口，初始化顺序为：
 
 1. `SYSCFG_DL_init()`
-2. `ultrasonic_init()`
-3. `oled_init()`
+2. `task2_run()` 内初始化四路循迹、编码器、速度 PID、固定比例循迹、蓝牙和 OLED
 
 当前主循环顺序为：
 
-1. `ultrasonic_measure(&measurement)`
-2. `ultrasonic_test_show_measurement(&measurement)`
-3. `delay_ms(ULTRASONIC_TEST_PERIOD_MS)`
+1. `bluetooth_process()` 处理 UART1 固定差速比例命令
+2. 读取四路数字循迹值
+3. 固定比例循迹写入左右轮目标速度
+4. `speed_pid_control_update()` 写入最终电机 PWM
+5. 周期刷新 OLED
 
 当前 `SysTick_Handler()` 调用：
 
 1. `delay_tick()`
+2. `encoder_tick_1ms()`
 
 因此当前实际参与主循环控制的数据链路是：
 
-超声波模块 -> `ultrasonic` -> `oled` -> OLED 显示。
+四路数字循迹 -> 固定比例左右目标速度 -> 轮速 PID -> 电机 PWM，同时 UART1 蓝牙调节小弯/大弯比例，OLED 显示运行状态。
 
-当前未在 `main()` 中调用的模块包括：`gray_serial`、`encoder`、`speed_pid`、`motor`、`line_track`、`square_track`、`mpu6050`、`attitude`、`angle_control`、`bluetooth`、`uart_cmd`、`vofa`、`icm42688` 的显式初始化或周期调用。  
-其中 `speed_pid_control_update()` 内部是否发送 VOFA 数据，需要以 `pid.c` 当前实现为准。
+Task2 从循迹运行开始累计左右轮平均里程。达到 6000 mm 后开启停车检测；此后 O2、O3 同时检测到黑线时调用 `speed_pid_stop()`，并冻结 OLED 计时。OLED 第 5 行显示 `Dist:当前/6000`，第 1 行显示 `ARM` 表示停车检测已开启。
+
+## `Task4` 独立循迹入口
+
+文件：`Inc/task4.h`、`Src/task4.c`。
+
+`task4_run()` 的运行逻辑与当前 Task2 一致：四路固定比例循迹、UART1 蓝牙调整小弯/大弯内侧轮比例、OLED 显示、左右轮平均里程，以及达到 6000 mm 后 O2/O3 同时黑线停车和冻结计时。Task4 自己的基础速度、小弯比例、大弯比例与停车检测里程定义在 `Src/task4.c` 顶部的 `TASK4_...` 宏中，不会改动 Task2 的宏。
+
+当前 `main()` 仍调用 `task2_run()`，所以 Task4 只是已加入工程、尚未运行。以后要切换时，需在 `empty.c` 改为包含 `task4.h` 并调用 `task4_run()`；两个任务均包含无限循环，不可同时调用。
+
+当前 Task2 循迹入口不处理 UART0 视觉命令，也不运行小球、步进电机、IMU、超声波或 VOFA 测试逻辑。
 
 ## 通用接入规则
 
@@ -186,19 +197,19 @@
 - 调整 `SPEED_PID_CONTROL_PERIOD_MS` 时，要同步检查编码器测速周期、积分项、微分项和主循环阻塞耗时。
 - 积分限幅和 PWM 限幅需要配合电机实际最大速度检查；这类结论最终需要实车确认。
 
-## `gray_serial` 八路灰度串行读取模块
+## `gray_serial` 四路数字循迹读取模块
 
 文件：
 
 - `Inc/gray_serial.h`
 - `Src/gray_serial.c`
 
-作用：通过 CLK/DAT 两根线读取 8 路灰度传感器数字量。
+作用：通过 4 个数字输入读取循迹板状态。
 
 使用步骤：
 
 1. `SYSCFG_DL_init()` 后调用 `gray_serial_init()`。
-2. 主循环中调用 `gray_serial_read()` 读取一次 8 bit 原始值。
+2. 主循环中调用 `gray_serial_read()` 读取一次 4 bit 原始值。
 3. 需要调试时可用 `gray_serial_print(raw)` 打印从左到右的通道状态。
 
 常用接口：
@@ -209,7 +220,7 @@
 
 注意事项：
 
-- 原始 bit 顺序不一定等于物理从左到右顺序；循迹模块里使用映射表转换。
+- 原始 bit 顺序与物理从左到右顺序一致：bit0 对应 O1，bit3 对应 O4。
 - 当前循迹宏 `LINE_TRACK_ACTIVE_LEVEL` 表示“检测到黑线”的有效电平。
 - 传感器真实接线、电平和安装方向需要实车确认。
 
@@ -269,7 +280,7 @@
 - `Inc/line_track.h`
 - `Src/line_track.c`
 
-作用：把 8 路灰度数据转换为循迹误差，并用 PD 生成左右轮目标速度。
+作用：把 4 路数字灰度数据转换为固定比例的左右轮目标速度，不使用循迹 PD。
 
 使用步骤：
 
@@ -285,23 +296,22 @@
 
 - `line_track_init()`
 - `line_track_set_base_speed()`
-- `line_track_set_turn_kp()`
-- `line_track_set_turn_kd()`
-- `line_track_set_max_correction()`
+- `line_track_set_turn_ratios()`
 - `line_track_get_status()`
 
 参数约定：
 
 - `LINE_TRACK_ACTIVE_LEVEL`：灰度检测到黑线时的有效电平。
 - `LINE_TRACK_BASE_SPEED_MM_S`：基础前进速度。
-- `LINE_TRACK_TURN_KP` / `LINE_TRACK_TURN_KD`：按 `/1000` 使用。
-- `LINE_TRACK_MAX_CORRECTION_MM_S`：最大差速修正量。
+- `LINE_TRACK_SMALL_TURN_INNER_PERCENT`：小弯内侧轮速度百分比，默认 90%。
+- `LINE_TRACK_LARGE_TURN_INNER_PERCENT`：大弯内侧轮速度百分比，默认 60%。
 
 注意事项：
 
-- 当前误差约定由代码确认：左侧通道权重为正，右侧通道权重为负。
-- 当前混控为 `left = base + correction`，`right = base - correction`。
-- 如果实车越修越偏，不要先改 PID；先确认传感器左右映射、电机方向、编码器方向和 `motor` 左右交换。
+- O2、O3 同时有效时左右轮同速。
+- O2 或 O3 单独有效时，对应内侧轮按小弯比例降速。
+- O1 或 O4 有效时，对应内侧轮按大弯比例降速。
+- 如果实车越修越偏，先确认传感器左右映射、电机方向、编码器方向和 `motor` 左右交换。
 
 ## `square_track` 正方形循迹状态机
 
@@ -457,7 +467,7 @@
 - `Inc/bluetooth.h`
 - `Src/bluetooth.c`
 
-作用：通过 UART1 接收 `{...}` 格式命令，调节角度环和循迹环参数。
+作用：通过 UART1 接收 `{...}` 格式命令，一次调节小弯和大弯的固定内侧轮比例。
 
 使用步骤：
 
@@ -467,22 +477,15 @@
 
 常用命令：
 
-- `{AKP=10000}`：角度环 Kp，`/1000` 缩放。
-- `{AKD=0}`：角度环 Kd，`/1000` 缩放。
-- `{ABS=300}`：角度环基础速度，单位 mm/s。
-- `{AMX=220}`：角度环最大差速修正，单位 mm/s。
-- `{ANG=90}`：以当前 yaw 为基准，目标角增加 90 度。
-- `{LKP=250}`：循迹 Kp，`/1000` 缩放。
-- `{LKD=120}`：循迹 Kd，`/1000` 缩放。
-- `{LBS=300}`：循迹基础速度，单位 mm/s。
-- `{LMX=280}`：循迹最大差速修正，单位 mm/s。
-- `{GET}`：查询当前参数。
+- `{DIFF=0.90,0.60}`：小弯内侧轮 90%，大弯内侧轮 60%。
+- `{SET 90,60}`：使用整数百分比设置同一组参数。
+- `{GET}`：查询当前小弯、大弯比例。
+- `{HELP}`：查看帮助。
 
 注意事项：
 
-- 当前 `main()` 未接入蓝牙模块。证据等级 A。
-- 蓝牙命令可能改变角度环和循迹环参数，使用前要确认当前主循环实际调用了对应控制环。
-- `{ANG=...}` 依赖 `attitude_get_euler()` 的 yaw，因此需要姿态解算正在更新。
+- UART1 不能同时再给其他模块做 RX 监视。
+- 现在蓝牙模块只保留循迹调参，角度环命令已移除。
 
 ## `mpu6050` MPU6050 IMU 模块
 
@@ -592,7 +595,7 @@
 注意事项：
 
 - 角度环只写速度目标，不直接写 PWM。
-- 使用蓝牙 `{ANG=...}` 指令时，必须保证姿态 yaw 正在更新。
+- 当前仓库未保留角度环源码，`{ANG=...}` 这类指令不适用。
 - 当前 `main()` 未接入角度环。证据等级 A。
 
 ## `icm42688` ICM42688 旧 IMU 模块

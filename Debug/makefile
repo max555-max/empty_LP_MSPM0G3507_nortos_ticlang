@@ -13,6 +13,7 @@ ORDERED_OBJS += \
 "./empty.o" \
 "./ti_msp_dl_config.o" \
 "./startup_mspm0g350x_ticlang.o" \
+"./Src/bluetooth.o" \
 "./Src/delay.o" \
 "./Src/encoder.o" \
 "./Src/encoder_pwm_angle.o" \
@@ -24,6 +25,7 @@ ORDERED_OBJS += \
 "./Src/stepper.o" \
 "./Src/task2.o" \
 "./Src/task3.o" \
+"./Src/task4.o" \
 "./Src/task5.o" \
 "./Src/uart_cmd.o" \
 "./Src/ultrasonic.o" \
@@ -153,8 +155,8 @@ C07A.out: $(OBJS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(GEN_MISC_FILES__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "Src\delay.o" "Src\encoder.o" "Src\encoder_pwm_angle.o" "Src\gray_serial.o" "Src\line_track.o" "Src\motor.o" "Src\oled.o" "Src\pid.o" "Src\stepper.o" "Src\task2.o" "Src\task3.o" "Src\task5.o" "Src\uart_cmd.o" "Src\ultrasonic.o" "Src\vofa.o" 
-	-$(RM) "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "Src\delay.d" "Src\encoder.d" "Src\encoder_pwm_angle.d" "Src\gray_serial.d" "Src\line_track.d" "Src\motor.d" "Src\oled.d" "Src\pid.d" "Src\stepper.d" "Src\task2.d" "Src\task3.d" "Src\task5.d" "Src\uart_cmd.d" "Src\ultrasonic.d" "Src\vofa.d" 
+	-$(RM) "empty.o" "ti_msp_dl_config.o" "startup_mspm0g350x_ticlang.o" "Src\bluetooth.o" "Src\delay.o" "Src\encoder.o" "Src\encoder_pwm_angle.o" "Src\gray_serial.o" "Src\line_track.o" "Src\motor.o" "Src\oled.o" "Src\pid.o" "Src\stepper.o" "Src\task2.o" "Src\task3.o" "Src\task4.o" "Src\task5.o" "Src\uart_cmd.o" "Src\ultrasonic.o" "Src\vofa.o" 
+	-$(RM) "empty.d" "ti_msp_dl_config.d" "startup_mspm0g350x_ticlang.d" "Src\bluetooth.d" "Src\delay.d" "Src\encoder.d" "Src\encoder_pwm_angle.d" "Src\gray_serial.d" "Src\line_track.d" "Src\motor.d" "Src\oled.d" "Src\pid.d" "Src\stepper.d" "Src\task2.d" "Src\task3.d" "Src\task4.d" "Src\task5.d" "Src\uart_cmd.d" "Src\ultrasonic.d" "Src\vofa.d" 
 	-@echo ' '
 
 .PHONY: all clean dependents
